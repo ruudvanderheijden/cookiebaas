@@ -537,10 +537,12 @@ function cm_build_embed_placeholder( $original_tag, $src, $info ) {
     if ( preg_match( '/\bwidth\s*=\s*["\']?(\d+)/i', $original_tag, $wm ) ) $width = $wm[1];
     if ( preg_match( '/\bheight\s*=\s*["\']?(\d+)/i', $original_tag, $hm ) ) $height = $hm[1];
 
-    // Bereken aspect ratio padding (standaard 16:9)
-    $ratio_pct = '56.25%';
-    if ( $width && $height && (int)$width > 0 ) {
-        $ratio_pct = number_format( ( (int)$height / (int)$width ) * 100, 4, '.', '' ) . '%';
+    // Bereken aspect ratio (standaard 16:9)
+    $aspect_w = 16;
+    $aspect_h = 9;
+    if ( $width && $height && (int)$width > 0 && (int)$height > 0 ) {
+        $aspect_w = (int)$width;
+        $aspect_h = (int)$height;
     }
 
     // Teksten ophalen (taalafhankelijk)
@@ -553,12 +555,11 @@ function cm_build_embed_placeholder( $original_tag, $src, $info ) {
     $prefs_txt  = cm_t('txt_embed_prefs');
 
     // Thumbnail voor YouTube
-    $thumb_style = '';
+    $thumb_bg = '';
     if ( stripos( $src, 'youtube' ) !== false || stripos( $src, 'youtu.be' ) !== false ) {
-        // Haal video ID uit YouTube URL
         if ( preg_match( '/(?:embed\/|v\/|v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $src, $vid ) ) {
             $thumb_url = 'https://img.youtube.com/vi/' . $vid[1] . '/hqdefault.jpg';
-            $thumb_style = ' style="background-image:url(\'' . esc_url( $thumb_url ) . '\')"';
+            $thumb_bg = 'background-image:url(\'' . esc_url( $thumb_url ) . '\');';
         }
     }
 
@@ -567,7 +568,7 @@ function cm_build_embed_placeholder( $original_tag, $src, $info ) {
 
     $html  = '<!--cm-embed-placeholder-->';
     $html .= '<div class="cm-embed-placeholder" data-cm-embed-cat="' . $cat . '" data-cm-embed-src="' . esc_attr( $src ) . '" data-cm-embed-service="' . $service . '" data-cm-embed-tag="' . esc_attr( $encoded_tag ) . '">';
-    $html .= '<div class="cm-embed-ratio" style="padding-bottom:' . $ratio_pct . '"' . $thumb_style . '>';
+    $html .= '<div class="cm-embed-ratio" style="aspect-ratio:' . $aspect_w . '/' . $aspect_h . ';' . $thumb_bg . '">';
     $html .= '<div class="cm-embed-inner">';
     $html .= '<div class="cm-embed-icon">' . $icon . '</div>';
     $html .= '<div class="cm-embed-title">' . esc_html( $title_txt ) . '</div>';

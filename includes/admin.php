@@ -4685,6 +4685,57 @@ function cm_render_help_content() {
         </tbody></table>
     </div>
     <div class="cm-group">
+        <h3 class="cm-group-title">Automatische updates</h3>
+        <div style="padding:16px 20px;line-height:1.7">
+            <p style="margin:0 0 12px;font-size:13px;color:#3c434a">Cookiebaas controleert automatisch op nieuwe versies via GitHub. Bij een publieke repository hoeft u niets in te vullen. Gebruikt u een <strong>private repository</strong>? Vul dan hieronder uw GitHub Personal Access Token in.</p>
+            <?php
+            $gh_token = get_option( 'cm_github_token', '' );
+            $is_connected = ! empty( $gh_token );
+            // Test de connectie
+            $connection_status = '';
+            if ( $is_connected ) {
+                $test_url = sprintf( 'https://api.github.com/repos/%s/%s', 'ruudvanderheijden', 'cookiebaas' );
+                $test = wp_remote_get( $test_url, array(
+                    'headers' => array(
+                        'Accept'        => 'application/vnd.github.v3+json',
+                        'Authorization' => 'Bearer ' . $gh_token,
+                        'User-Agent'    => 'Cookiebaas-Updater/' . CM_VERSION,
+                    ),
+                    'timeout' => 5,
+                ));
+                if ( ! is_wp_error($test) && wp_remote_retrieve_response_code($test) === 200 ) {
+                    $connection_status = '<span style="color:#00a32a;font-weight:500">&#10003; Verbonden met GitHub</span>';
+                } else {
+                    $connection_status = '<span style="color:#b32d2e;font-weight:500">&#10007; Token is ongeldig of verlopen</span>';
+                }
+            }
+            ?>
+            <table class="form-table cm-form-table" style="margin:0"><tbody>
+            <tr>
+                <th><label for="cm_github_token">GitHub Token</label></th>
+                <td>
+                    <input type="password" id="cm_github_token" name="cm_github_token" value="<?php echo esc_attr( $gh_token ); ?>" class="regular-text" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+                    <button type="button" class="button button-small" onclick="var f=document.getElementById('cm_github_token');f.type=f.type==='password'?'text':'password'" style="margin-left:4px">Toon/verberg</button>
+                    <?php if ( $connection_status ) echo '<br>' . $connection_status; ?>
+                    <p class="description" style="margin-top:6px">
+                        Alleen nodig bij een <strong>private</strong> repository. Maak een token aan op
+                        <a href="https://github.com/settings/tokens?type=beta" target="_blank">github.com/settings/tokens</a>
+                        &rarr; Fine-grained tokens &rarr; Selecteer alleen de <code>cookiebaas</code> repository &rarr; Permissions: <strong>Contents: Read-only</strong>.
+                    </p>
+                </td>
+            </tr>
+            </tbody></table>
+            <div style="margin-top:12px">
+                <button type="button" class="button" id="cm-save-github-token">Token opslaan</button>
+                <?php if ( $is_connected ) : ?>
+                <button type="button" class="button" id="cm-remove-github-token" style="margin-left:8px;color:#b32d2e">Token verwijderen</button>
+                <?php endif; ?>
+                <button type="button" class="button" id="cm-check-update-btn" style="margin-left:8px">Nu controleren op updates</button>
+                <span id="cm-github-token-status" style="margin-left:12px;font-size:13px"></span>
+            </div>
+        </div>
+    </div>
+    <div class="cm-group">
         <h3 class="cm-group-title">Snel aan de slag</h3>
         <div style="padding:16px 20px;line-height:1.8">
             <ol style="margin:0;padding-left:18px">

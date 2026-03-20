@@ -3,9 +3,8 @@
  * Cookiebaas — GitHub Updater
  *
  * Koppelt WordPress' ingebouwde update-systeem aan een GitHub repository.
+ * Ondersteunt zowel publieke als private repositories (via personal access token).
  * Controleert automatisch op nieuwe releases en biedt 1-klik updates in wp-admin.
- *
- * Vereist: een publieke GitHub repository met Releases (tags).
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -29,6 +28,30 @@ class CM_GitHub_Updater {
         add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'check_update' ) );
         add_filter( 'plugins_api',                           array( $this, 'plugin_info' ), 20, 3 );
         add_filter( 'upgrader_post_install',                 array( $this, 'after_install' ), 10, 3 );
+        add_filter( 'http_request_args',                     array( $this, 'add_auth_to_download' ), 10, 2 );
+    }
+
+    /**
+     * Haal het GitHub token op (opgeslagen als WordPress-optie).
+     */
+    private function get_token() {
+        $token = get_option( 'cm_github_token', '' );
+        return is_string( $token ) ? trim( $token ) : '';
+    }
+
+    /**
+     * Bouw de HTTP headers voor GitHub API requests.
+     */
+    private function api_headers() {
+        $headers = array(
+            'Accept'     => 'application/vnd.github.v3+json',
+            'User-Agent' => 'Cookiebaas-Updater/' . $this->current_version,
+        );
+        $token = $this->get_token();
+        if ( $token ) {
+            $headers['Authorization'] = 'Bearer ' . $token;
+        }
+        return $headers;
     }
 
     /**
@@ -54,10 +77,7 @@ class CM_GitHub_Updater {
         );
 
         $response = wp_remote_get( $url, array(
-            'headers' => array(
-                'Accept'     => 'application/vnd.github.v3+json',
-                'User-Agent' => 'Cookiebaas-Updater/' . $this->current_version,
-            ),
+            'headers' => $this->api_headers(),
             'timeout' => 10,
         ) );
 
@@ -79,6 +99,52 @@ class CM_GitHub_Updater {
     }
 
     /**
+     * Bepaal de download-URL voor de release.
+     * Private repos: gebruik de API-URL voor assets (vereist auth header).
+     */
+    private function get_download_url( $release ) {
+        $token = $this->get_token();
+
+        if ( ! empty( $release['assets'] ) ) {
+            foreach ( $release['assets'] as $asset ) {
+                if ( substr( $asset['name'], -4 ) === '.zip' ) {
+                    if ( $token ) {
+                        return $asset['url'];
+                    }
+                    return $asset['browser_download_url'];
+                }
+            }
+        }
+
+        if ( ! empty( $release['zipball_url'] ) ) {
+            return $release['zipball_url'];
+        }
+
+        return '';
+    }
+
+    /**
+     * Voeg de auth header toe aan download-requests voor private repo assets.
+     */
+    public function add_auth_to_download( $args, $url ) {
+        $token = $this->get_token();
+        if ( ! $token ) return $args;
+
+        $api_prefix  = sprintf( 'https://api.github.com/repos/%s/%s/', $this->github_user, $this->github_repo );
+        $site_prefix = sprintf( 'https://github.com/%s/%s/', $this->github_user, $this->github_repo );
+
+        if ( strpos( $url, $api_prefix ) !== 0 && strpos( $url, $site_prefix ) !== 0 ) {
+            return $args;
+        }
+
+        if ( ! isset( $args['headers'] ) ) $args['headers'] = array();
+        $args['headers']['Authorization'] = 'Bearer ' . $token;
+        $args['headers']['Accept']        = 'application/octet-stream';
+
+        return $args;
+    }
+
+    /**
      * Vergelijk versies en voeg update toe aan WordPress transient.
      */
     public function check_update( $transient ) {
@@ -89,24 +155,10 @@ class CM_GitHub_Updater {
         $release = $this->get_github_release();
         if ( ! $release ) return $transient;
 
-        // Verwijder 'v' prefix van tag (bijv. 'v1.4.1' → '1.4.1')
         $remote_version = ltrim( $release['tag_name'], 'vV' );
 
         if ( version_compare( $this->current_version, $remote_version, '<' ) ) {
-            // Zoek het ZIP-bestand in de release assets, of gebruik de source zipball
-            $download_url = '';
-            if ( ! empty( $release['assets'] ) ) {
-                foreach ( $release['assets'] as $asset ) {
-                    if ( substr( $asset['name'], -4 ) === '.zip' ) {
-                        $download_url = $asset['browser_download_url'];
-                        break;
-                    }
-                }
-            }
-            // Fallback: GitHub zipball (broncode ZIP)
-            if ( ! $download_url && ! empty( $release['zipball_url'] ) ) {
-                $download_url = $release['zipball_url'];
-            }
+            $download_url = $this->get_download_url( $release );
 
             if ( $download_url ) {
                 $transient->response[ $this->slug ] = (object) array(
@@ -154,29 +206,14 @@ class CM_GitHub_Updater {
                 'description'   => 'Cookiemelding plugin volgens AVG/GDPR-conformiteit met Google Consent Mode (v2) integratie en privacyverklaring generator.',
                 'changelog'     => nl2br( esc_html( $release['body'] ?? 'Geen changelog beschikbaar.' ) ),
             ),
-            'download_link'     => '',
+            'download_link'     => $this->get_download_url( $release ),
         );
-
-        // Download URL
-        if ( ! empty( $release['assets'] ) ) {
-            foreach ( $release['assets'] as $asset ) {
-                if ( substr( $asset['name'], -4 ) === '.zip' ) {
-                    $info->download_link = $asset['browser_download_url'];
-                    break;
-                }
-            }
-        }
-        if ( ! $info->download_link && ! empty( $release['zipball_url'] ) ) {
-            $info->download_link = $release['zipball_url'];
-        }
 
         return $info;
     }
 
     /**
      * Na installatie: hernoem de map naar de juiste plugin-mapnaam.
-     * GitHub zipball heeft een map als 'user-repo-hashcode', die moet
-     * hernoemd worden naar 'cookiebaas'.
      */
     public function after_install( $response, $hook_extra, $result ) {
         if ( ! isset( $hook_extra['plugin'] ) || $hook_extra['plugin'] !== $this->slug ) {
@@ -188,13 +225,11 @@ class CM_GitHub_Updater {
         $plugin_dir  = WP_PLUGIN_DIR . '/' . dirname( $this->slug );
         $install_dir = $result['destination'];
 
-        // Als de geïnstalleerde map niet overeenkomt, hernoemen
         if ( $install_dir !== $plugin_dir ) {
             $wp_filesystem->move( $install_dir, $plugin_dir );
             $result['destination'] = $plugin_dir;
         }
 
-        // Heractiveer de plugin
         activate_plugin( $this->slug );
 
         return $result;
