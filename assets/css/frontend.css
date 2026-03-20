@@ -1,0 +1,650 @@
+/* ============================================================
+   COOKIEMELDING — Frontend CSS  |  WAKKR  |  v1.0.0
+============================================================ */
+
+/* ---- OVERLAY ---- */
+#cm-overlay {
+    position: fixed !important;
+    inset: 0;
+    background: rgba(0, 0, 0, var(--cm-overlay-alpha, 0.6));
+    z-index: 2147483645 !important;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+}
+#cm-overlay.cm-active { opacity: 1; pointer-events: all; }
+
+/* ---- BANNER ---- */
+#cm-banner {
+    position: fixed !important;
+    z-index: 2147483647 !important;
+    display: flex !important;
+    transform: translateY(130%);
+    transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
+    pointer-events: none;
+    visibility: hidden;
+}
+#cm-banner.cm-active { transform: translateY(0) !important; pointer-events: all; visibility: visible; }
+
+/* Positie: onderaan gecentreerd (standaard) */
+#cm-banner[data-position="bottom-center"],
+#cm-banner:not([data-position]) {
+    bottom: 0 !important; left: 0 !important; right: 0 !important; top: auto !important;
+    justify-content: center;
+    padding: 0 20px 28px;
+}
+#cm-banner[data-position="bottom-center"] .cm-box,
+#cm-banner:not([data-position]) .cm-box {
+    max-width: 760px;
+    width: 100%;
+}
+
+/* Positie: midden van het scherm */
+#cm-banner[data-position="center"] {
+    inset: 0 !important;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    transform: scale(0.92); opacity: 0;
+}
+#cm-banner[data-position="center"].cm-active { transform: scale(1) !important; opacity: 1; }
+#cm-banner[data-position="center"] .cm-box {
+    max-width: 620px;
+    width: 100%;
+}
+
+/* Positie: linksonder */
+#cm-banner[data-position="bottom-left"] {
+    bottom: 0 !important; left: 0 !important; right: auto !important; top: auto !important;
+    justify-content: flex-start;
+    padding: 0 0 20px 20px;
+    transform: translateX(-110%);
+}
+#cm-banner[data-position="bottom-left"].cm-active { transform: translateX(0) !important; }
+#cm-banner[data-position="bottom-left"] .cm-box {
+    max-width: 420px;
+    width: 100%;
+}
+
+/* Positie: rechtsonder */
+#cm-banner[data-position="bottom-right"] {
+    bottom: 0 !important; right: 0 !important; left: auto !important; top: auto !important;
+    justify-content: flex-end;
+    padding: 0 20px 20px 0;
+    transform: translateX(110%);
+}
+#cm-banner[data-position="bottom-right"].cm-active { transform: translateX(0) !important; }
+#cm-banner[data-position="bottom-right"] .cm-box {
+    max-width: 420px;
+    width: 100%;
+}
+
+/* Compacte posities: alle knoppen full-width onder elkaar */
+#cm-banner[data-position="bottom-left"] .cm-footer,
+#cm-banner[data-position="bottom-right"] .cm-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+#cm-banner[data-position="bottom-left"] .cm-footer-right,
+#cm-banner[data-position="bottom-right"] .cm-footer-right {
+    display: contents;
+}
+#cm-banner[data-position="bottom-left"] .cm-footer-left,
+#cm-banner[data-position="bottom-right"] .cm-footer-left {
+    width: 100%;
+    order: 3;
+}
+#cm-banner[data-position="bottom-left"] #cm-btn-accept,
+#cm-banner[data-position="bottom-right"] #cm-btn-accept { order: 1; }
+#cm-banner[data-position="bottom-left"] #cm-btn-reject,
+#cm-banner[data-position="bottom-right"] #cm-btn-reject { order: 2; }
+#cm-banner[data-position="bottom-left"] .cm-btn,
+#cm-banner[data-position="bottom-right"] .cm-btn {
+    width: 100% !important;
+    min-width: 0;
+    text-align: center;
+    justify-content: center;
+}
+
+/* Extra smal (480px): center-positie padding */
+@media (max-width: 480px) {
+    #cm-banner[data-position="center"] {
+        padding: 8px;
+    }
+}
+
+.cm-box {
+    background: var(--cm-popup-bg, #fff);
+    border-radius: var(--cm-popup-radius, 20px);
+    padding: 32px 36px 28px;
+    max-width: 760px;
+    width: 100%;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.08);
+}
+.cm-title { font-size: 1.2rem; font-weight: 700; color: var(--cm-title-color, #111); margin: 0 0 12px; line-height: 1.3; }
+.cm-text { font-size: 0.9rem; line-height: 1.65; color: var(--cm-body-color, #555); margin-bottom: 24px; }
+.cm-text a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.cm-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.cm-footer-left  { flex: 1; }
+.cm-footer-right { display: flex; align-items: center; gap: 10px; }
+
+/* ---- BUTTONS ---- */
+.cm-btn {
+    font-size: 0.88rem !important; font-weight: 500 !important; padding: 11px 22px !important; cursor: pointer !important;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease !important;
+    white-space: nowrap !important; border-radius: var(--cm-btn-radius, 10px) !important;
+    font-family: inherit !important; line-height: 1 !important;
+    display: inline-flex !important; align-items: center !important; justify-content: center !important;
+    text-decoration: none !important; box-sizing: border-box !important;
+    letter-spacing: normal !important; text-transform: none !important;
+    min-width: 120px !important; /* gelijke minimale breedte voor alle knoppen */
+}
+
+/* Akkoord */
+.cm-btn-accept {
+    background: var(--cm-accept-bg, #111) !important;
+    color: var(--cm-accept-text, #fff) !important;
+    border: 1.5px solid var(--cm-accept-border, transparent) !important;
+    border-radius: var(--cm-btn-radius, 10px) !important;
+}
+.cm-btn-accept:hover,
+body #cm-banner .cm-btn-accept:hover,
+body #cm-prefs .cm-btn-accept:hover {
+    background: var(--cm-accept-hover-bg, #0091ff) !important;
+    border-color: var(--cm-accept-border, transparent) !important;
+    color: var(--cm-accept-hover-text, #fff) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Weigeren — zelfde grootte als akkoord (EDPB gelijke prominentie) */
+.cm-btn-reject {
+    background: var(--cm-reject-bg, #111) !important;
+    color: var(--cm-reject-text, #fff) !important;
+    border: 1.5px solid var(--cm-reject-border, transparent) !important;
+    border-radius: var(--cm-btn-radius, 10px) !important;
+    text-decoration: none !important;
+}
+.cm-btn-reject:hover,
+body #cm-banner .cm-btn-reject:hover,
+body #cm-prefs .cm-btn-reject:hover {
+    background: var(--cm-reject-hover-bg, #0091ff) !important;
+    color: var(--cm-reject-hover-text, #fff) !important;
+    border-color: var(--cm-reject-border, transparent) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Cookie voorkeuren — rand + tekst */
+.cm-btn-ghost {
+    background: transparent !important;
+    border: 1.5px solid var(--cm-prefs-border, #d5d0c8) !important;
+    color: var(--cm-prefs-text, #555) !important;
+    padding: 10px 20px !important;
+    border-radius: var(--cm-btn-radius, 10px) !important;
+}
+.cm-btn-ghost:hover {
+    border-color: var(--cm-prefs-hover-border, #999) !important;
+    color: var(--cm-prefs-hover-text, #111) !important;
+    background: transparent !important;
+}
+
+/* Alles afwijzen (in prefs footer) */
+.cm-btn-outline {
+    background: transparent !important; border: 1.5px solid #ccc !important;
+    color: #333 !important;
+    border-radius: var(--cm-btn-radius, 10px) !important;
+}
+.cm-btn-outline:hover { background: #f5f2ee !important; border-color: #aaa !important; color: #111 !important; }
+
+/* Extra hoge specificiteit — wint van thema !important regels */
+#cm-banner .cm-btn,
+#cm-prefs .cm-btn,
+body #cm-banner .cm-btn,
+body #cm-prefs .cm-btn {
+    border-radius: var(--cm-btn-radius, 10px) !important;
+}
+#cm-banner .cm-btn-accept,
+#cm-prefs .cm-btn-accept,
+body #cm-banner .cm-btn-accept,
+body #cm-prefs .cm-btn-accept {
+    border-radius: var(--cm-btn-radius, 10px) !important;
+    background: var(--cm-accept-bg, #111) !important;
+    border: 1.5px solid var(--cm-accept-border, transparent) !important;
+}
+#cm-banner .cm-btn-reject,
+#cm-prefs .cm-btn-reject,
+body #cm-banner .cm-btn-reject,
+body #cm-prefs .cm-btn-reject {
+    border-radius: var(--cm-btn-radius, 10px) !important;
+    background: var(--cm-reject-bg, #111) !important;
+    border: 1.5px solid var(--cm-reject-border, transparent) !important;
+    text-decoration: none !important;
+}
+#cm-prefs .cm-btn-ghost,
+#cm-prefs .cm-btn-outline,
+body #cm-prefs .cm-btn-ghost,
+body #cm-prefs .cm-btn-outline {
+    border-radius: var(--cm-btn-radius, 10px) !important;
+}
+
+/* ---- PREFERENCES MODAL ---- */
+#cm-prefs {
+    position: fixed !important; inset: 0;
+    z-index: 2147483646 !important;
+    display: flex !important; align-items: center; justify-content: center;
+    padding: 20px; opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease; visibility: hidden;
+}
+#cm-prefs.cm-active { opacity: 1; pointer-events: all; visibility: visible; }
+
+.cm-prefs-box {
+    background: var(--cm-popup-bg, #fff);
+    border-radius: var(--cm-popup-radius, 20px);
+    width: 100%; max-width: 620px; max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 32px 100px rgba(0,0,0,0.28);
+    transform: scale(0.95) translateY(10px);
+    transition: transform 0.35s cubic-bezier(0.34, 1.3, 0.64, 1);
+    display: flex; flex-direction: column;
+}
+#cm-prefs.cm-active .cm-prefs-box { transform: scale(1) translateY(0); }
+
+.cm-prefs-header {
+    padding: 32px 36px 20px;
+    background: var(--cm-popup-bg, #fff);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    flex-shrink: 0; position: relative;
+}
+
+/* Sluitknop — hover zwart (niet blauw) */
+.cm-prefs-close {
+    position: absolute; top: 22px; right: 24px;
+    background: var(--cm-close-bg, #f0ede8); color: var(--cm-close-icon, #555);
+    border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 1rem;
+    transition: background 0.2s, color 0.2s; line-height: 1;
+}
+.cm-prefs-close:hover { background: #111 !important; color: #fff !important; }
+
+.cm-prefs-title { font-size: 1.15rem; font-weight: 700; color: var(--cm-title-color, #111); margin: 0 0 10px; padding-right: 40px; line-height: 1.3; }
+.cm-prefs-text { font-size: 0.875rem; line-height: 1.65; color: var(--cm-body-color, #555); margin-bottom: 22px; }
+.cm-prefs-text a { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Alle cookies toestaan — standaard zwart, hover blauw */
+.cm-allow-all {
+    width: 100%;
+    background: var(--cm-allowall-bg, #111);
+    color: var(--cm-allowall-text, #fff);
+    font-family: inherit; font-size: 0.92rem; font-weight: 600;
+    padding: 14px 24px; border: none !important;
+    border-radius: var(--cm-btn-radius, 10px) !important;
+    cursor: pointer; transition: background 0.2s, transform 0.15s;
+}
+.cm-allow-all:hover { background: var(--cm-allowall-hover-bg, #0091ff) !important; transform: translateY(-1px); }
+#cm-prefs .cm-allow-all,
+body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !important; }
+
+/* ---- PREFS BODY ---- */
+.cm-prefs-body { padding: 24px 36px; overflow-y: auto; flex: 1; scrollbar-width: thin; scrollbar-color: #ddd transparent; }
+
+/* "Cookievoorkeuren beheren" — zwart, geen kapitalen */
+.cm-section-label { font-size: 0.88rem; font-weight: 700; color: var(--cm-title-color, #111); margin-bottom: 14px; }
+
+.cm-categories { border: 1.5px solid var(--cm-cat-border, #e8e4de); border-radius: 12px; overflow: hidden; }
+.cm-category { border-bottom: 1.5px solid var(--cm-cat-border, #e8e4de); }
+.cm-category:last-child { border-bottom: none; }
+.cm-cat-header { display: flex; align-items: center; padding: 16px 20px; gap: 14px; cursor: pointer; user-select: none; transition: background 0.15s; }
+.cm-cat-header:hover { background: rgba(0,0,0,0.02); }
+.cm-expand-icon { width: 22px; height: 22px; border-radius: 6px; background: var(--cm-expand-bg, #f0ede8); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem; color: var(--cm-expand-icon, #666); transition: background 0.25s, color 0.25s, transform 0.25s; font-weight: 700; line-height: 1; }
+.cm-category.cm-open .cm-expand-icon { background: var(--cm-expand-open-bg, #111); color: var(--cm-expand-open-icon, #fff); transform: rotate(45deg); }
+.cm-cat-info { flex: 1; min-width: 0; }
+.cm-cat-name { font-size: 0.92rem; font-weight: 700; color: var(--cm-title-color, #111); margin-bottom: 2px; }
+.cm-cat-desc { font-size: 0.78rem; color: #1d2327; margin-top: -5px; }
+
+/* Toggle */
+.cm-toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; cursor: pointer; }
+.cm-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.cm-toggle-track { position: absolute; inset: 0; border-radius: 24px; background: #ddd; cursor: pointer; transition: background 0.2s; }
+.cm-toggle-track::after { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+.cm-toggle input:checked + .cm-toggle-track { background: var(--cm-toggle-on, #0091ff); }
+.cm-toggle input:checked + .cm-toggle-track::after { transform: translateX(20px); }
+.cm-always-on { font-size: 0.73rem; font-weight: 700; color: var(--cm-toggle-on, #0091ff); background: var(--cm-always-bg, #e8f4ff); padding: 4px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+
+/* Category detail */
+.cm-cat-detail { max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.2s ease; padding: 0 20px; }
+.cm-category.cm-open .cm-cat-detail { max-height: 1000px; padding: 0 20px 20px; }
+.cm-cat-detail > p { font-size: 0.82rem; line-height: 1.65; color: #666; border-top: 1px solid var(--cm-cat-border, #f0ede8); padding-top: 14px; margin: 0 0 12px; }
+
+/* Cookie lijst */
+.cm-cookie-list { display: flex; flex-direction: column; gap: 6px; }
+.cm-cookie-item { background: var(--cm-cookie-item-bg, #ffffff); border-radius: 6px; padding: 8px 12px; border: 1px solid var(--cm-cat-border, #e8e4de); }
+.cm-cookie-name { font-size: 0.78rem; font-weight: 700; color: #333; margin-bottom: 3px; font-family: monospace; }
+.cm-cookie-meta { font-size: 0.72rem; color: #4e4e4e; display: flex; flex-direction: column; gap: 2px; line-height: 1.5; }
+.cm-cookie-meta-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.cm-cookie-meta-provider { font-weight: 500; }
+
+/* Derde-partij / buiten EU badge */
+.cm-badge-thirdparty {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.67rem;
+    font-weight: 600;
+    color: #7a4f00;
+    background: #fff3cd;
+    border: 1px solid #f0c040;
+    border-radius: 4px;
+    padding: 1px 6px;
+    margin-left: 7px;
+    vertical-align: middle;
+    white-space: nowrap;
+    line-height: 1.6;
+}
+@media (prefers-color-scheme: dark) {
+    .cm-badge-thirdparty {
+        color: #ffd97a;
+        background: #3a2e00;
+        border-color: #6b5200;
+    }
+}
+
+/* Dienst-lijst (per provider gegroepeerd) */
+.cm-service-list { display: flex; flex-direction: column; gap: 8px; }
+.cm-service { background: var(--cm-service-bg, #f6f4f1); border-radius: 8px; overflow: hidden; border: 1px solid var(--cm-cat-border, #e8e4de); }
+.cm-service-header { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; gap: 8px; cursor: pointer; user-select: none; }
+.cm-service-header::before {
+    content: '+'; font-size: 0.75rem; font-weight: 700; color: var(--cm-expand-icon, #666);
+    width: 18px; height: 18px; border-radius: 4px; background: var(--cm-expand-bg, #f0ede8);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: background 0.2s, color 0.2s, transform 0.2s; line-height: 1;
+}
+.cm-service.cm-svc-open .cm-service-header::before {
+    transform: rotate(45deg); background: var(--cm-expand-open-bg, #111); color: var(--cm-expand-open-icon, #fff);
+}
+.cm-service-name { font-size: 0.82rem; font-weight: 600; color: #333; flex: 1; }
+.cm-service .cm-cookie-list { padding: 0 10px 0; gap: 4px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding-bottom 0.2s ease; }
+.cm-service.cm-svc-open .cm-cookie-list { max-height: 2000px; padding-bottom: 10px; }
+.cm-service .cm-cookie-item { background: var(--cm-cookie-item-bg, #ffffff); padding: 6px 10px; }
+
+/* Kleine toggle voor diensten */
+.cm-toggle--sm { transform: scale(0.78); transform-origin: right center; flex-shrink: 0; }
+.cm-cookie-provider { font-style: italic; }
+.cm-no-cookies { font-size: 0.82rem; color: var(--cm-body-color, #999); font-style: italic; margin: 4px 0 0; opacity: 0.7; }
+.cm-cookie-empty { font-size: 0.78rem; color: #bbb; font-style: italic; padding: 2px 0; }
+
+/* Prefs footer — keuzes opslaan is ook zwart/blauw via cm-btn-accept */
+.cm-prefs-footer { padding: 20px 36px 28px; border-top: 1px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; flex-shrink: 0; }
+
+/* ---- FLOAT BUTTON — geen emoji ---- */
+#cm-float { position: fixed !important; bottom: 24px; z-index: 98900; display: none; }
+#cm-float[data-float-pos="left"], #cm-float:not([data-float-pos]) { left: 24px; right: auto; }
+#cm-float[data-float-pos="right"] { right: 24px; left: auto; }
+#cm-float.cm-visible { display: block; }
+/* Tekstknop stijl — gebruikt CSS-variabelen */
+#cm-float-btn {
+    background: var(--cm-float-text-bg, #fff);
+    border: 1.5px solid var(--cm-float-text-border, #e0dbd3);
+    border-radius: 50px;
+    padding: 10px 18px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--cm-float-text-color, #444);
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+#cm-float-btn:hover {
+    background: var(--cm-float-text-hover-bg, #f6f7f7);
+    color: var(--cm-float-text-hover-color, #111);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    transform: translateY(-1px);
+}
+
+/* ---- RESPONSIVE ---- */
+
+/* Tablet (601px – 900px) — knoppen iets compacter maar naast elkaar */
+@media (min-width: 601px) and (max-width: 900px) {
+    .cm-box { padding: 26px 24px 22px; }
+    .cm-footer { gap: 12px; }
+    .cm-btn { min-width: 100px !important; padding: 10px 16px !important; }
+}
+
+/* Mobiel (≤600px) — fullwidth, volgorde: Akkoord, Weigeren, Cookie voorkeuren */
+@media (max-width: 600px) {
+    .cm-box { padding: 22px 18px 20px; }
+    #cm-banner { padding: 0; }
+    /* Center-positie: volle border-radius, padding rondom, gecentreerd op scherm */
+    #cm-banner[data-position="center"] .cm-box { border-radius: var(--cm-popup-radius, 20px) !important; }
+    #cm-banner[data-position="center"] { padding: 12px; }
+
+    /* Alle bottom-posities: dezelfde look als center maar onderaan het scherm */
+    #cm-banner:not([data-position="center"]) {
+        padding: 12px !important;
+        left: 0 !important; right: 0 !important;
+        bottom: 0 !important; top: auto !important;
+        justify-content: center !important;
+        transform: translateY(130%);
+    }
+    #cm-banner:not([data-position="center"]).cm-active {
+        transform: translateY(0) !important;
+    }
+    #cm-banner:not([data-position="center"]) .cm-box {
+        max-width: 100%;
+        border-radius: var(--cm-popup-radius, 20px) !important;
+    }
+
+    /* Alle knoppen full-width onder elkaar — geldt voor alle posities */
+    .cm-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .cm-footer-right {
+        display: contents;
+    }
+    #cm-btn-accept { order: 1; }
+    #cm-btn-reject { order: 2; }
+    .cm-footer-left { order: 3; }
+    #cm-banner .cm-btn,
+    body #cm-banner .cm-btn {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .cm-prefs-header { padding: 24px 20px 18px; }
+    .cm-prefs-body { padding: 18px 20px; }
+    .cm-prefs-footer { padding: 16px 20px 24px; gap: 10px; }
+    .cm-prefs-footer .cm-btn { flex: 1; }
+    #cm-prefs { padding: 0; align-items: flex-end; }
+    .cm-prefs-box { border-radius: 16px 16px 0 0; max-height: 92vh; }
+}
+
+/* ---- FLOAT KNOP — ICOONTJE VARIANT ---- */
+#cm-float-btn.cm-float-icon {
+    width: 52px !important;
+    height: 52px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background: var(--cm-float-icon-bg, #111) !important;
+    color: var(--cm-float-icon-color, #fff) !important;
+    border: none !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.22) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+/* Klein icoontje — 75% van normaal */
+#cm-float-btn.cm-float-icon.cm-float-small {
+    width: 40px !important;
+    height: 40px !important;
+}
+#cm-float-btn.cm-float-icon.cm-float-small svg {
+    width: 24px !important;
+    height: 24px !important;
+}
+#cm-float-btn.cm-float-icon:hover {
+    background: var(--cm-float-icon-hover-bg, #0091ff) !important;
+    color: var(--cm-float-icon-hover-color, #fff) !important;
+    transform: scale(1.1);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.28) !important;
+}
+#cm-float-btn.cm-float-icon svg { display: block; flex-shrink: 0; }
+
+/* ================================================================
+   WCAG 2.1 AA — zichtbare focusstijlen
+================================================================ */
+#cm-banner :focus-visible,
+#cm-prefs :focus-visible {
+    outline: 3px solid var(--cm-toggle-on, #0091ff) !important;
+    outline-offset: 2px !important;
+    border-radius: 3px !important;
+}
+#cm-float-btn:focus-visible {
+    outline: 3px solid var(--cm-toggle-on, #0091ff) !important;
+    outline-offset: 3px !important;
+}
+.cm-cat-header:focus-visible {
+    outline: 3px solid var(--cm-toggle-on, #0091ff) !important;
+    outline-offset: 2px !important;
+    border-radius: 4px !important;
+}
+/* Verberg standaard outline alleen als :focus-visible beschikbaar is */
+#cm-banner :focus:not(:focus-visible),
+#cm-prefs  :focus:not(:focus-visible) {
+    outline: none !important;
+}
+
+/* ================================================================
+   EMBED PLACEHOLDER — vervangt geblokkeerde iframes
+================================================================ */
+.cm-embed-placeholder {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--cm-embed-bg, #000000) !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.cm-embed-ratio {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 default */
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+}
+/* Donkere overlay over thumbnail */
+.cm-embed-ratio[style*="background-image"]::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 1;
+}
+.cm-embed-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
+    text-align: center;
+    z-index: 2;
+}
+.cm-embed-icon {
+    display: none;
+}
+.cm-embed-placeholder .cm-embed-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--cm-embed-title, #ffffff) !important;
+}
+.cm-embed-placeholder .cm-embed-body {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--cm-embed-body, #ffffff) !important;
+    opacity: 0.85;
+    margin-bottom: 8px;
+    max-width: 440px;
+}
+.cm-embed-placeholder .cm-embed-body strong {
+    color: var(--cm-embed-title, #ffffff) !important;
+    font-weight: 600;
+    opacity: 1;
+}
+button.cm-embed-accept-btn,
+.cm-embed-placeholder .cm-embed-accept-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 11px 28px;
+    margin-top: 14px;
+    border: none !important;
+    border-radius: var(--cm-btn-radius, 10px);
+    background: var(--cm-embed-btn-bg, #ffffff) !important;
+    color: var(--cm-embed-btn-text, #000000) !important;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, transform 0.15s;
+    white-space: nowrap;
+    box-shadow: none;
+    text-transform: none;
+    letter-spacing: normal;
+    line-height: 1;
+}
+button.cm-embed-accept-btn:hover,
+.cm-embed-placeholder .cm-embed-accept-btn:hover {
+    background: var(--cm-embed-btn-hover-bg, #0091ff) !important;
+    color: var(--cm-embed-btn-hover-text, #ffffff) !important;
+    transform: translateY(-1px);
+}
+.cm-embed-placeholder .cm-embed-prefs-link {
+    font-size: 0.78rem;
+    margin-top: 10px;
+    color: rgba(255, 255, 255, 0.6);
+}
+.cm-embed-placeholder .cm-embed-prefs-link a {
+    color: rgba(255, 255, 255, 0.8) !important;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.cm-embed-placeholder .cm-embed-prefs-link a:hover {
+    color: #ffffff !important;
+}
+
+/* Responsive: kleiner op mobiel */
+@media (max-width: 600px) {
+    .cm-embed-inner {
+        padding: 16px 14px;
+    }
+    .cm-embed-placeholder .cm-embed-title {
+        font-size: 0.92rem;
+    }
+    .cm-embed-placeholder .cm-embed-body {
+        font-size: 0.78rem;
+        margin-bottom: 6px;
+    }
+    button.cm-embed-accept-btn,
+    .cm-embed-placeholder .cm-embed-accept-btn {
+        font-size: 0.82rem;
+        padding: 9px 22px;
+        margin-top: 10px;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .cm-embed-placeholder {
+        background: var(--cm-embed-bg, #000000) !important;
+    }
+}
