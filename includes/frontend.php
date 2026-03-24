@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 add_action( 'wp_head', 'cm_output_inline_css', 1 );
 function cm_output_inline_css() {
     if ( is_admin() ) return;
-    $s  = array_merge( cm_default_settings(), (array) get_option( 'cm_settings', array() ) );
+    $s  = cm_get_settings();
     $op = intval( cm_get('overlay_opacity') ) / 100;
     $rp = intval( cm_get('radius_popup') )   . 'px';
     $rb = intval( cm_get('radius_btn') )     . 'px';
@@ -24,6 +24,8 @@ function cm_output_inline_css() {
     echo '--cm-btn-radius:'     . esc_attr($rb) . ';';
     echo '--cm-title-color:'    . esc_attr( cm_get('color_title') )              . ';';
     echo '--cm-body-color:'     . esc_attr( cm_get('color_body') )               . ';';
+    echo '--cm-link-color:'     . esc_attr( cm_get('color_link') ?: '#0091ff' )  . ';';
+    echo '--cm-link-color:'     . esc_attr( cm_get('color_link') ?: 'inherit' )  . ';';
     echo '--cm-accept-bg:'      . esc_attr( cm_get('color_accept_bg') )          . ';';
     echo '--cm-accept-text:'    . esc_attr( cm_get('color_accept_text') )        . ';';
     echo '--cm-accept-hover-bg:'. esc_attr( cm_get('color_accept_hover_bg') )    . ';';
@@ -31,8 +33,8 @@ function cm_output_inline_css() {
     echo '--cm-accept-border:'  . $ab . ';';
     echo '--cm-reject-text:'    . esc_attr( cm_get('color_reject_text') )        . ';';
     echo '--cm-reject-hover-text:' . esc_attr( cm_get('color_reject_hover_text') ) . ';';
-    echo '--cm-reject-bg:'      . esc_attr( cm_get('color_reject_bg') ?: '#f5f2ee' )   . ';';
-    echo '--cm-reject-hover-bg:'. esc_attr( cm_get('color_reject_hover_bg') ?: '#e8e4de' ) . ';';
+    echo '--cm-reject-bg:'      . esc_attr( cm_get('color_reject_bg') ?: '#111111' )   . ';';
+    echo '--cm-reject-hover-bg:'. esc_attr( cm_get('color_reject_hover_bg') ?: '#0091ff' ) . ';';
     echo '--cm-reject-border:'  . $rb_border . ';';
     echo '--cm-prefs-border:'   . esc_attr( cm_get('color_prefs_border') )       . ';';
     echo '--cm-prefs-text:'     . esc_attr( cm_get('color_prefs_text') )         . ';';
@@ -43,6 +45,22 @@ function cm_output_inline_css() {
     echo '--cm-allowall-hover-bg:'  . esc_attr( cm_get('color_allowall_hover_bg') )  . ';';
     echo '--cm-allowall-hover-text:'. esc_attr( cm_get('color_allowall_hover_text') ) . ';';
     echo '--cm-allowall-border:'. $alb . ';';
+    // Alles afwijzen button (outline stijl)
+    echo '--cm-outline-border:'      . esc_attr( cm_get('color_outline_border') ?: '#d5d0c8' )      . ';';
+    echo '--cm-outline-text:'        . esc_attr( cm_get('color_outline_text') ?: '#38342e' )         . ';';
+    echo '--cm-outline-hover-border:'. esc_attr( cm_get('color_outline_hover_border') ?: '#38342e' ) . ';';
+    echo '--cm-outline-hover-text:'  . esc_attr( cm_get('color_outline_hover_text') ?: '#38342e' )   . ';';
+    // Alles afwijzen button (outline stijl in prefs)
+    $alb_outline_border       = cm_get('color_outline_border')      ?: cm_get('color_prefs_border')      ?: '#d5d0c8';
+    $alb_outline_text         = cm_get('color_outline_text')         ?: cm_get('color_prefs_text')         ?: '#555555';
+    $alb_outline_hover_border = cm_get('color_outline_hover_border') ?: cm_get('color_prefs_hover_border') ?: '#999999';
+    $alb_outline_hover_text   = cm_get('color_outline_hover_text')   ?: cm_get('color_prefs_hover_text')   ?: '#111111';
+    $alb_outline_hover_bg     = cm_get('color_outline_hover_bg')     ?: 'transparent';
+    echo '--cm-outline-border:'       . esc_attr( $alb_outline_border )       . ';';
+    echo '--cm-outline-text:'         . esc_attr( $alb_outline_text )         . ';';
+    echo '--cm-outline-hover-border:' . esc_attr( $alb_outline_hover_border ) . ';';
+    echo '--cm-outline-hover-text:'   . esc_attr( $alb_outline_hover_text )   . ';';
+    echo '--cm-outline-hover-bg:'     . esc_attr( $alb_outline_hover_bg )     . ';';
     echo '--cm-close-bg:'       . esc_attr( cm_get('color_close_bg') )           . ';';
     echo '--cm-close-hover-bg:' . esc_attr( cm_get('color_close_hover_bg') )     . ';';
     echo '--cm-close-icon:'     . esc_attr( cm_get('color_close_icon') )         . ';';
@@ -74,6 +92,10 @@ function cm_output_inline_css() {
     echo '--cm-embed-btn-text:'        . esc_attr( cm_get('color_embed_btn_text') ?: '#000000' )       . ';';
     echo '--cm-embed-btn-hover-bg:'    . esc_attr( cm_get('color_embed_btn_hover_bg') ?: '#0091ff' )   . ';';
     echo '--cm-embed-btn-hover-text:'  . esc_attr( cm_get('color_embed_btn_hover_text') ?: '#ffffff' ) . ';';
+    // Banner breedtes
+    echo '--cm-banner-w-bottom:' . intval( cm_get('banner_width_bottom_center') ?: 760 ) . 'px;';
+    echo '--cm-banner-w-center:' . intval( cm_get('banner_width_center') ?: 620 ) . 'px;';
+    echo '--cm-banner-w-compact:' . intval( cm_get('banner_width_compact') ?: 420 ) . 'px;';
     echo '}</style>' . "\n";
 
     // Dark mode CSS variabelen
@@ -134,6 +156,7 @@ function cm_output_inline_css() {
         $css = str_replace( array(' { ', ' } ', '{ ', ' }', '; ', ': ', ', '), array('{', '}', '{', '}', ';', ':', ','), $css );
         $css = trim( $css );
         echo '<style id="cm-frontend-css">' . $css . '</style>' . "\n";
+        do_action('cm_frontend_css_loaded');
     }
 }
 
@@ -155,7 +178,7 @@ function cm_ui( $key ) {
                 'outside_eu'      => 'Buiten EU',
                 'third_party'     => 'Derde partij',
                 'data_outside_eu' => 'Gegevens worden doorgegeven buiten de EU',
-                'no_cookies'      => 'Er worden momenteel geen cookies gebruikt in deze categorie.',
+                'no_cookies'      => 'Geen cookies in deze categorie gevonden.',
             ),
             'en' => array(
                 'always_active'   => 'Always active',
@@ -573,8 +596,8 @@ function cm_build_embed_placeholder( $original_tag, $src, $info ) {
     $html .= '<div class="cm-embed-icon">' . $icon . '</div>';
     $html .= '<div class="cm-embed-title">' . esc_html( $title_txt ) . '</div>';
     $html .= '<div class="cm-embed-body">' . wp_kses( $body_txt, array( 'strong' => array(), 'em' => array() ) ) . '</div>';
-    $html .= '<button type="button" class="cm-embed-accept-btn" data-cm-embed-cat="' . $cat . '">' . esc_html( $btn_txt ) . '</button>';
-    $html .= '<div class="cm-embed-prefs-link">' . wp_kses( $prefs_txt, array( 'a' => array( 'href' => array(), 'class' => array() ) ) ) . '</div>';
+    $html .= '<button type="button" class="cm-embed-accept-btn" data-cm-embed-cat="' . $cat . '">Accepteer en bekijk</button>';
+    $html .= '<div class="cm-embed-prefs-link"><a href="#" onclick="Cookiebaas.openPrefs();return false;">Cookievoorkeuren aanpassen</a></div>';
     $html .= '</div></div></div>';
     $html .= '<!--/cm-embed-placeholder-->';
 
@@ -742,6 +765,12 @@ function cm_render_frontend() {
     if ( ! empty( $GLOBALS['cm_rendered'] ) ) return;
     if ( is_admin() ) return;
 
+    // Licentie check — zonder geldige licentie geen banner
+    if ( ! cm_license_is_valid() ) {
+        $GLOBALS['cm_rendered'] = true;
+        return;
+    }
+
     // Pagina-uitzonderingen — geen banner op uitgesloten pagina's
     if ( cm_is_excluded_page() ) {
         $GLOBALS['cm_rendered'] = true;
@@ -759,7 +788,8 @@ function cm_render_frontend() {
             $outside = cm_get('geo_outside_eu') ?: 'hide';
             if ( $outside === 'accept' ) {
                 // Automatisch consent geven via JS
-                echo '<script>(function(){if(!document.cookie.includes("cc_cm_consent=")){var exp=new Date(Date.now()+365*24*3600*1000).toUTCString();var c="cc_cm_consent="+encodeURIComponent(JSON.stringify({v:"2.0",sv:"1",analytics:true,marketing:true,method:"geo-auto",exp:exp}))+"; expires="+exp+"; path=/; SameSite=Lax";if(location.protocol==="https:")c+="; Secure";document.cookie=c;}})();</script>' . "\n";
+                $cd = cm_get('subdomain_sharing') && cm_get('subdomain_root_domain') ? '; domain=' . esc_js( cm_get('subdomain_root_domain') ) : '';
+                echo '<script>(function(){if(!document.cookie.includes("cc_cm_consent=")){var exp=new Date(Date.now()+365*24*3600*1000).toUTCString();var c="cc_cm_consent="+encodeURIComponent(JSON.stringify({v:"2.0",sv:"1",analytics:true,marketing:true,method:"geo-auto",exp:exp}))+"; expires="+exp+"; path=/; SameSite=Lax";if(location.protocol==="https:")c+="; Secure";c+="' . $cd . '";document.cookie=c;}})();</script>' . "\n";
             }
             // Beide opties: geen banner renderen
             return;
@@ -885,7 +915,9 @@ function cm_render_frontend() {
     <div id="cm-banner" role="dialog" aria-modal="true"
          aria-labelledby="cm-banner-title"
          aria-describedby="cm-banner-desc"
+         tabindex="-1"
          data-position="<?php echo esc_attr( cm_get('banner_position') ?: 'bottom-center' ); ?>"
+         data-mobile-padding="<?php echo cm_get('banner_mobile_padding') ? '1' : '0'; ?>"
          style="display:none">
         <div class="cm-box">
             <h2 class="cm-title" id="cm-banner-title"><?php echo esc_html( cm_t('txt_banner_title') ); ?></h2>
@@ -960,6 +992,7 @@ function cm_render_frontend() {
                             </div>
                             <label class="cm-toggle" onclick="event.stopPropagation()">
                                 <input type="checkbox" id="cm-toggle-analytics"
+                                    role="switch"
                                     aria-label="<?php echo esc_attr( cm_t('txt_cat2_name') ); ?>"
                                     onchange="cmCatToggleAll(this,'analytics')"
                                     aria-controls="cm-cat-detail-analytics">
@@ -980,6 +1013,7 @@ function cm_render_frontend() {
                                         <label class="cm-toggle cm-toggle--sm" onclick="event.stopPropagation()">
                                             <input type="checkbox"
                                                 class="cm-service-toggle"
+                                                role="switch"
                                                 data-cat="analytics"
                                                 data-service="<?php echo esc_attr($service_id); ?>"
                                                 data-cookies="<?php echo esc_attr(implode(',', $cookie_names)); ?>"
@@ -1025,6 +1059,7 @@ function cm_render_frontend() {
                             </div>
                             <label class="cm-toggle" onclick="event.stopPropagation()">
                                 <input type="checkbox" id="cm-toggle-marketing"
+                                    role="switch"
                                     aria-label="<?php echo esc_attr( cm_t('txt_cat3_name') ); ?>"
                                     onchange="cmCatToggleAll(this,'marketing')"
                                     aria-controls="cm-cat-detail-marketing">
@@ -1045,6 +1080,7 @@ function cm_render_frontend() {
                                         <label class="cm-toggle cm-toggle--sm" onclick="event.stopPropagation()">
                                             <input type="checkbox"
                                                 class="cm-service-toggle"
+                                                role="switch"
                                                 data-cat="marketing"
                                                 data-service="<?php echo esc_attr($service_id); ?>"
                                                 data-cookies="<?php echo esc_attr(implode(',', $cookie_names)); ?>"
@@ -1082,8 +1118,8 @@ function cm_render_frontend() {
                 </div>
             </div>
             <div class="cm-prefs-footer">
-                <button type="button" class="cm-btn cm-btn-outline" id="cm-rejectall-btn"><?php echo esc_html( cm_t('txt_btn_rejectall') ); ?></button>
                 <button type="button" class="cm-btn cm-btn-accept" id="cm-save-btn"><?php echo esc_html( cm_t('txt_btn_save') ); ?></button>
+                <button type="button" class="cm-btn cm-btn-outline" id="cm-rejectall-btn"><?php echo esc_html( cm_t('txt_btn_rejectall') ); ?></button>
             </div>
         </div>
     </div>
@@ -1120,7 +1156,9 @@ function cm_render_frontend() {
         var LOG_NONCE         = '<?php echo wp_create_nonce("cm_log_consent"); ?>';
         var ANALYTICS_DEFAULT = <?php echo cm_get('analytics_default') ? 'true' : 'false'; ?>;
         var RESPECT_DNT       = <?php echo cm_get('respect_dnt') ? 'true' : 'false'; ?>;
+        var RESPECT_GPC       = <?php echo cm_get('respect_gpc') ? 'true' : 'false'; ?>;
         var IS_DNT            = RESPECT_DNT && (navigator.doNotTrack === '1' || window.doNotTrack === '1' || navigator.msDoNotTrack === '1');
+        var IS_GPC            = RESPECT_GPC && (navigator.globalPrivacyControl === true);
         window.CM_CONFIG      = { expiry_months: EXPIRY_MONTHS, show_float: SHOW_FLOAT, consent_version: '<?php echo esc_js( (string) get_option("cm_consent_version", 1) ); ?>' };
 
         // Cookienamen per categorie — gebruikt bij intrekking consent
@@ -1315,6 +1353,7 @@ function cm_render_frontend() {
         }
 
         var IS_SECURE = <?php echo is_ssl() ? 'true' : 'false'; ?>;
+        var COOKIE_DOMAIN = '<?php echo esc_js( cm_get('subdomain_sharing') && cm_get('subdomain_root_domain') ? cm_get('subdomain_root_domain') : '' ); ?>';
 
         function setConsent(data) {
             var now     = new Date();
@@ -1328,6 +1367,7 @@ function cm_render_frontend() {
             var cookie = COOKIE_NAME + '=' + encodeURIComponent(JSON.stringify(payload))
                 + '; expires=' + expires.toUTCString() + '; path=/; SameSite=Lax';
             if (IS_SECURE) cookie += '; Secure';
+            if (COOKIE_DOMAIN) cookie += '; domain=' + COOKIE_DOMAIN;
             document.cookie = cookie;
         }
 
@@ -1357,13 +1397,22 @@ function cm_render_frontend() {
         /* ---- WCAG 2.1 AA: focus trap en focus herstel ---- */
         var _lastFocus = null;
 
+        function isVisible(el) {
+            if (!el) return false;
+            /* offsetParent is null voor hidden elementen, maar ook voor
+               position:fixed — gebruik daarom getComputedStyle als fallback */
+            if (el.offsetParent !== null) return true;
+            var style = getComputedStyle(el);
+            return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+        }
+
         function getFocusable(container) {
             return Array.prototype.slice.call(
                 container.querySelectorAll(
-                    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), ' +
+                    'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), ' +
                     'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
                 )
-            ).filter(function(el) { return el.offsetParent !== null; });
+            ).filter(isVisible);
         }
 
         function trapFocus(container, e) {
@@ -1371,20 +1420,72 @@ function cm_render_frontend() {
             if (!focusable.length) return;
             var first = focusable[0];
             var last  = focusable[focusable.length - 1];
+            var active = document.activeElement;
+
+            /* Als focus buiten container staat of op container zelf (tabindex=-1)
+               of op een element dat niet in de focusable lijst staat: stuur naar first/last */
+            var inList = focusable.indexOf(active) !== -1;
+            if (!container.contains(active) || !inList) {
+                e.preventDefault();
+                if (e.shiftKey) { last.focus(); } else { first.focus(); }
+                return;
+            }
+
             if (e.shiftKey) {
-                if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+                if (active === first) { e.preventDefault(); last.focus(); }
             } else {
-                if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
+                if (active === last)  { e.preventDefault(); first.focus(); }
             }
         }
 
         function focusFirst(container) {
-            var focusable = getFocusable(container);
-            if (focusable.length) focusable[0].focus();
+            /* Wacht tot transitie klaar is en elementen zichtbaar zijn */
+            setTimeout(function() {
+                var focusable = getFocusable(container);
+                if (focusable.length) focusable[0].focus();
+            }, 50);
+        }
+
+        /* Focus op Akkoord-knop bij openen banner (eerste in gewenste tabvolgorde) */
+        function focusFirstButton(container) {
+            setTimeout(function() {
+                var acceptBtn = document.getElementById('cm-btn-accept');
+                if (acceptBtn && isVisible(acceptBtn)) {
+                    acceptBtn.focus();
+                } else {
+                    var buttons = Array.prototype.slice.call(
+                        container.querySelectorAll('button:not([disabled])')
+                    ).filter(isVisible);
+                    if (buttons.length) buttons[0].focus();
+                    else focusFirst(container);
+                }
+            }, 50);
         }
 
         function saveFocus() { _lastFocus = document.activeElement; }
         function restoreFocus() { if (_lastFocus) { _lastFocus.focus(); _lastFocus = null; } }
+
+        /* ---- WCAG: inert management — blokkeer Tab-navigatie buiten banner/prefs ---- */
+        var _inertElements = [];
+        function setPageInert() {
+            clearPageInert();
+            Array.prototype.slice.call(document.body.children).forEach(function(el) {
+                if (el.id === 'cm-overlay' || el.id === 'cm-banner' || el.id === 'cm-prefs' || el.id === 'cm-float') return;
+                if (el.nodeType !== 1) return; /* skip text nodes */
+                if (!el.hasAttribute('inert')) {
+                    el.setAttribute('inert', '');
+                    el.setAttribute('aria-hidden', 'true');
+                    _inertElements.push(el);
+                }
+            });
+        }
+        function clearPageInert() {
+            _inertElements.forEach(function(el) {
+                el.removeAttribute('inert');
+                el.removeAttribute('aria-hidden');
+            });
+            _inertElements = [];
+        }
 
         /* ---- aria-expanded sync voor categorie-headers ---- */
         function updateAriaExpanded(cat) {
@@ -1397,23 +1498,28 @@ function cm_render_frontend() {
         }
 
         function showBanner() {
+            setPageInert();
             if (ov()) ov().classList.add('cm-active');
             if (bn()) {
                 var b = bn();
-                b.classList.remove('cm-active');
-                requestAnimationFrame(function() {
-                    requestAnimationFrame(function() {
-                        b.classList.add('cm-active');
-                        b.removeAttribute('aria-hidden');
-                        // Stuur focus naar eerste knop in de banner
-                        focusFirst(b);
-                    });
-                });
+                b.classList.add('cm-active');
+                b.removeAttribute('aria-hidden');
+                // Zet focus direct op Akkoord-knop (tab1 in gewenste WCAG-volgorde)
+                // 200ms zodat muisklik-focus volledig is losgelaten door de browser
+                setTimeout(function() {
+                    var acceptBtn = document.getElementById('cm-btn-accept');
+                    if (acceptBtn && isVisible(acceptBtn)) {
+                        acceptBtn.focus();
+                    } else {
+                        b.focus({ preventScroll: true });
+                    }
+                }, 200);
             }
             hideFloat();
         }
 
         function hideBanner() {
+            clearPageInert();
             if (ov()) ov().classList.remove('cm-active');
             if (bn()) {
                 bn().classList.remove('cm-active');
@@ -1423,7 +1529,14 @@ function cm_render_frontend() {
         }
 
         function openPrefs() {
+            // Als het prefs element in page-mode staat, scroll erheen
+            if (pr() && pr().classList.contains('cm-page-mode')) {
+                var container = document.getElementById('cm-page-prefs-container');
+                if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
             saveFocus();
+            setPageInert();
             prefsOpen = true;
             if (pr()) {
                 pr().classList.add('cm-active');
@@ -1516,6 +1629,7 @@ function cm_render_frontend() {
 
         function closePrefs() {
             prefsOpen = false;
+            clearPageInert();
             if (pr()) {
                 pr().classList.remove('cm-active');
                 pr().setAttribute('aria-hidden', 'true');
@@ -1534,8 +1648,11 @@ function cm_render_frontend() {
         function applyConsent(analytics, marketing, method, serviceConsent) {
             var prev = getConsent();
             setConsent({ analytics: analytics, marketing: marketing, method: method, services: serviceConsent || null });
-            if (pr()) pr().classList.remove('cm-active');
-            hideBanner();
+            var isPageMode = pr() && pr().classList.contains('cm-page-mode');
+            if (!isPageMode) {
+                if (pr()) pr().classList.remove('cm-active');
+                hideBanner();
+            }
             logConsent(analytics ? 1 : 0, marketing ? 1 : 0, method);
 
             var hadAnalytics = prev && prev.analytics;
@@ -1543,18 +1660,42 @@ function cm_render_frontend() {
             var revokeA = hadAnalytics && !analytics;
             var revokeM = hadMarketing && !marketing;
 
+            // In page-mode: verwijder cookies bij intrekking en reload altijd
+            if (isPageMode) {
+                if (revokeA) deleteCookiesByType('analytics');
+                if (revokeM) deleteCookiesByType('marketing');
+                // Granulaire intrekking per dienst
+                if (serviceConsent) {
+                    var toDelete = [];
+                    document.querySelectorAll('.cm-service-toggle').forEach(function(cb) {
+                        var svcId = cb.getAttribute('data-service');
+                        if (!serviceConsent[svcId]) {
+                            var names = (cb.getAttribute('data-cookies') || '').split(',').filter(Boolean);
+                            names.forEach(function(n) { if (toDelete.indexOf(n) === -1) toDelete.push(n); });
+                        }
+                    });
+                    if (toDelete.length) deleteCookiesByName(toDelete);
+                }
+                // Zet revoke-flag zodat cookies na reload nogmaals verwijderd worden
+                // (GA kan cookies opnieuw plaatsen vóór consent-script laadt)
+                if (revokeA || revokeM) {
+                    try { sessionStorage.setItem('cm_revoke', JSON.stringify({ analytics: revokeA, marketing: revokeM })); } catch(e) {}
+                }
+                setTimeout(function(){ window.location.reload(); }, 300);
+                return;
+            }
+
             if (revokeA || revokeM) {
                 revokeAndReload(revokeA, revokeM);
                 return;
             }
 
-            // Granulaire intrekking per dienst: verwijder cookies van uitgezette diensten
+            // Granulaire intrekking per dienst
             if (serviceConsent) {
                 var toDelete = [];
                 document.querySelectorAll('.cm-service-toggle').forEach(function(cb) {
                     var svcId = cb.getAttribute('data-service');
                     if (!serviceConsent[svcId]) {
-                        // Dienst uitgevinkt — verzamel cookienamen
                         var names = (cb.getAttribute('data-cookies') || '').split(',').filter(Boolean);
                         names.forEach(function(n) { if (toDelete.indexOf(n) === -1) toDelete.push(n); });
                     }
@@ -1713,6 +1854,8 @@ function cm_render_frontend() {
             ['cm-overlay','cm-banner','cm-prefs','cm-float'].forEach(function(id) {
                 var node = document.getElementById(id);
                 if (!node) return;
+                // Niet verplaatsen als prefs in page-mode staat
+                if (id === 'cm-prefs' && node.classList.contains('cm-page-mode')) return;
                 if (node.parentNode !== document.body) document.body.appendChild(node);
                 // cm-float: display wordt uitsluitend door showFloat/hideFloat beheerd
                 if (id !== 'cm-float') node.style.display = '';
@@ -1731,6 +1874,21 @@ function cm_render_frontend() {
         }
 
         function bindAll() {
+            // Neutraliseer responsive video wrapper padding van thema's/page builders
+            document.querySelectorAll('.cm-embed-placeholder').forEach(function(ph) {
+                var parent = ph.parentElement;
+                if (!parent) return;
+                var pt = parseFloat(getComputedStyle(parent).paddingTop);
+                var pw = parent.offsetWidth;
+                // Als padding-top meer dan 40% van de breedte is, is het een responsive wrapper
+                if (pw > 0 && pt > pw * 0.4) {
+                    parent.style.paddingTop = '0';
+                    parent.style.paddingBottom = '0';
+                    parent.style.height = 'auto';
+                    parent.style.position = 'relative';
+                }
+            });
+
             on('cm-btn-prefs',     openPrefs);
             on('cm-btn-reject',    rejectAll);
             on('cm-btn-accept',    acceptAll);
@@ -1739,17 +1897,20 @@ function cm_render_frontend() {
             on('cm-rejectall-btn', rejectAll);
             on('cm-save-btn',      savePrefs);
             on('cm-float-btn', function() {
+                // Blur de float-knop zodat de focus niet daar blijft na muisklik
+                var fb = document.getElementById('cm-float-btn');
+                if (fb) fb.blur();
                 hideFloat();
                 showBanner();
             });
-            document.querySelectorAll('.cm-cat-header').forEach(function(h) {
+            document.querySelectorAll('#cm-prefs .cm-cat-header').forEach(function(h) {
                 h.addEventListener('click', function() {
                     var cat = this.getAttribute('data-cat');
                     toggleCat(cat);
                 });
             });
             /* Dienst-headers: klik om cookies in/uit te klappen */
-            document.querySelectorAll('.cm-service-header').forEach(function(h) {
+            document.querySelectorAll('#cm-prefs .cm-service-header').forEach(function(h) {
                 h.addEventListener('click', function(e) {
                     /* Niet triggeren als de toggle zelf wordt geklikt */
                     if (e.target.closest('.cm-toggle')) return;
@@ -1778,9 +1939,26 @@ function cm_render_frontend() {
                     return;
                 }
 
-                // Focus trap in banner-dialog
-                if (isTab && bn() && bn().classList.contains('cm-active')) {
-                    trapFocus(bn(), e);
+                // Focus trap in banner-dialog met vaste volgorde: Akkoord → Weigeren → Cookievoorkeuren → links
+                var b = bn();
+                if (isTab && b && (b.classList.contains('cm-active') || b.contains(document.activeElement))) {
+                    e.preventDefault();
+                    var acceptBtn  = document.getElementById('cm-btn-accept');
+                    var rejectBtn  = document.getElementById('cm-btn-reject');
+                    var prefsBtn   = document.getElementById('cm-btn-prefs');
+                    var bannerLinks = Array.prototype.slice.call(b.querySelectorAll('a[href]')).filter(isVisible);
+                    var focusable = [];
+                    if (acceptBtn && isVisible(acceptBtn)) focusable.push(acceptBtn);
+                    if (rejectBtn && isVisible(rejectBtn)) focusable.push(rejectBtn);
+                    if (prefsBtn  && isVisible(prefsBtn))  focusable.push(prefsBtn);
+                    focusable = focusable.concat(bannerLinks);
+                    if (!focusable.length) return;
+                    var idx = focusable.indexOf(document.activeElement);
+                    if (e.shiftKey) {
+                        focusable[idx <= 0 ? focusable.length - 1 : idx - 1].focus();
+                    } else {
+                        focusable[idx === -1 || idx >= focusable.length - 1 ? 0 : idx + 1].focus();
+                    }
                 }
             });
 
@@ -1835,9 +2013,9 @@ function cm_render_frontend() {
             var versionMismatch = c && c.sv && c.sv !== SERVER_VERSION;
             var needsBanner = !c || isExpired(c) || versionMismatch;
 
-            // Do Not Track: automatisch weigeren als DNT actief is en geen consent opgeslagen
-            if (IS_DNT && needsBanner) {
-                applyConsent(false, false, 'dnt');
+            // Do Not Track / Global Privacy Control: automatisch weigeren als actief en geen consent opgeslagen
+            if ((IS_DNT || IS_GPC) && needsBanner) {
+                applyConsent(false, false, IS_GPC ? 'gpc' : 'dnt');
                 return;
             }
 
@@ -1865,11 +2043,112 @@ function cm_render_frontend() {
         /* Globale API — voor gebruik vanuit footer-links, custom knoppen etc. */
         window.Cookiebaas = {
             showBanner: function() { showBanner(); },
-            openPrefs:  function() { openPrefs(); }
+            openPrefs:  function() { openPrefs(); },
+            _applyConsent: function(a, m, method) { applyConsent(a, m, method); }
         };
 
     })();
     </script>
     <!-- ===== /COOKIEMELDING PLUGIN ===== -->
     <?php
+}
+
+
+/* ================================================================
+   SHORTCODE: [cookiebaas_voorkeuren]
+   Toont het voorkeuren-venster inline op de pagina (geen overlay).
+   Hergebruikt exact dezelfde #cm-prefs HTML, CSS en JS.
+   ================================================================ */
+add_shortcode( 'cookiebaas_voorkeuren', 'cm_render_voorkeuren_shortcode' );
+function cm_render_voorkeuren_shortcode( $atts ) {
+    ob_start();
+    ?>
+    <div id="cm-page-prefs-container">
+        <noscript>JavaScript is vereist om de cookievoorkeuren te tonen.</noscript>
+    </div>
+    <style>
+    /* Inline pagina-modus: override overlay-stijlen */
+    #cm-prefs.cm-page-mode {
+        position: relative !important;
+        inset: auto !important;
+        z-index: auto !important;
+        padding: 0 !important;
+        opacity: 1 !important;
+        pointer-events: all !important;
+        visibility: visible !important;
+        display: block !important;
+    }
+    #cm-prefs.cm-page-mode .cm-prefs-box {
+        max-width: 100% !important;
+        max-height: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        border: none !important;
+        transform: none !important;
+        background: transparent !important;
+    }
+    #cm-prefs.cm-page-mode .cm-prefs-header {
+        padding: 0 0 20px !important;
+        background: transparent !important;
+        border-bottom: 1px solid #e8e8e8 !important;
+    }
+    #cm-prefs.cm-page-mode .cm-prefs-close { display: none !important; }
+    #cm-prefs.cm-page-mode .cm-allow-all { display: none !important; }
+    #cm-prefs.cm-page-mode .cm-prefs-body { max-height: none !important; overflow: visible !important; padding: 24px 0 !important; }
+    #cm-prefs.cm-page-mode .cm-prefs-footer { border-top: 1px solid #e8e8e8 !important; padding: 20px 0 28px !important; }
+    /* Overlay verbergen als prefs in page-mode staan */
+    #cm-overlay.cm-page-mode-active { display: none !important; }
+    </style>
+    <script>
+    (function(){
+        function initPagePrefs() {
+            var prefs = document.getElementById('cm-prefs');
+            var container = document.getElementById('cm-page-prefs-container');
+            if (!prefs || !container) return;
+
+            // Verplaats het prefs element naar de pagina-container
+            container.appendChild(prefs);
+
+            // Verwijder overlay-gedrag
+            prefs.classList.add('cm-page-mode');
+            prefs.classList.add('cm-active');
+            prefs.removeAttribute('aria-modal');
+            prefs.setAttribute('role', 'region');
+            prefs.style.display = '';
+
+            // Overlay markeren zodat die niet zichtbaar is
+            var ov = document.getElementById('cm-overlay');
+            if (ov) ov.classList.add('cm-page-mode-active');
+
+            // Sync toggle-states met bestaande consent cookie
+            try {
+                var cv = document.cookie.match('(^|;)\\s*cc_cm_consent\\s*=\\s*([^;]+)');
+                if (cv) {
+                    var c = JSON.parse(decodeURIComponent(cv.pop()));
+                    var tA = document.getElementById('cm-toggle-analytics');
+                    var tM = document.getElementById('cm-toggle-marketing');
+                    if (tA) tA.checked = !!c.analytics;
+                    if (tM) tM.checked = !!c.marketing;
+                    // Sync service toggles
+                    document.querySelectorAll('.cm-service-toggle').forEach(function(cb) {
+                        var cat = cb.getAttribute('data-cat');
+                        if (c.services && c.services[cb.getAttribute('data-service')] !== undefined) {
+                            cb.checked = c.services[cb.getAttribute('data-service')];
+                        } else {
+                            cb.checked = !!c[cat];
+                        }
+                    });
+                }
+            } catch(e) {}
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPagePrefs);
+        } else {
+            // Als DOM al klaar is, wacht even tot de main Cookiebaas JS klaar is
+            setTimeout(initPagePrefs, 100);
+        }
+    })();
+    </script>
+    <?php
+    return ob_get_clean();
 }

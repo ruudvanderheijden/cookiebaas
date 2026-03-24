@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: Cookiebaas
- * Plugin URI:  https://www.ruudvdheijden.nl/
+ * Plugin URI:  https://www.cookiebaas.nl/
  * Description: Cookiemelding plugin volgens AVG/GDPR-conformiteit met Google Consent Mode (v2) integratie en privacyverklaring generator.
- * Version:     1.4.1
+ * Version:     1.4.6
  * Author:      Ruud van der Heijden
- * Author URI:  https://www.ruudvdheijden.nl/
+ * Author URI:  https://www.cookiebaas.nl/
  * License:     GPL-2.0+
  * Text Domain: cookiemelding
  */
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'CM_VERSION',     '1.4.1' );
+define( 'CM_VERSION',     '1.4.6' );
 define( 'CM_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'CM_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 
@@ -22,6 +22,7 @@ require_once CM_PLUGIN_DIR . 'includes/defaults.php';
 require_once CM_PLUGIN_DIR . 'includes/admin.php';
 require_once CM_PLUGIN_DIR . 'includes/frontend.php';
 require_once CM_PLUGIN_DIR . 'includes/privacy.php';
+require_once CM_PLUGIN_DIR . 'includes/license.php';
 require_once CM_PLUGIN_DIR . 'includes/updater.php';
 
 // GitHub Updater — controleer op nieuwe versies via GitHub Releases
@@ -157,6 +158,13 @@ add_action( 'plugins_loaded', function() {
             // v1.4.0: Banner positie-keuze (layout tab)
             // Nieuwe instelling banner_position wordt via defaults merge automatisch toegevoegd
 
+            // v1.4.6: Reset reject_border — de v1.2.2 migratie zette deze foutief op #111111
+            if ( version_compare( $stored_version, '1.4.6', '<' ) ) {
+                if ( ($merged['color_reject_border'] ?? '') === '#111111' ) {
+                    $merged['color_reject_border'] = '';
+                }
+            }
+
             update_option( 'cm_settings', $merged );
         }
         update_option( 'cm_version', CM_VERSION );
@@ -225,6 +233,9 @@ register_deactivation_hook( __FILE__, function() {
     // Ook auto-scan cron verwijderen
     $ts2 = wp_next_scheduled('cm_auto_scan_cron');
     if ( $ts2 ) wp_unschedule_event( $ts2, 'cm_auto_scan_cron' );
+    // Licentie cron verwijderen
+    $ts3 = wp_next_scheduled('cm_license_cron');
+    if ( $ts3 ) wp_unschedule_event( $ts3, 'cm_license_cron' );
 });
 
 /* ================================================================

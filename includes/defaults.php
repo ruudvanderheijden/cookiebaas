@@ -21,7 +21,7 @@ function cm_default_settings() {
         // Popup
         'color_popup_bg'            => '#ffffff',
         'color_title'               => '#111111',
-        'color_body'                => '#444444',
+        'color_body'                => '#494949',
         'color_link'                => '#0091ff',
         // Akkoord button
         'color_accept_bg'           => '#111111',
@@ -36,37 +36,43 @@ function cm_default_settings() {
         'color_reject_hover_text'   => '#ffffff',
         'color_reject_border'       => '',
         // Cookie voorkeuren button
-        'color_prefs_border'        => '#d5d0c8',
-        'color_cat_border'          => '#e8e4de',  // universele border in popup
-        'color_service_bg'          => '#f6f4f1',  // achtergrond dienst-blok
-        'color_cookie_item_bg'      => '#ffffff',  // achtergrond individuele cookie-rij
-        'color_prefs_text'          => '#555555',
-        'color_prefs_hover_border'  => '#999999',
+        'color_prefs_border'        => '#d1d1d1',
+        'color_cat_border'          => '#eaeaea',
+        'color_service_bg'          => '#f9f5f2',
+        'color_cookie_item_bg'      => '#ffffff',
+        'color_prefs_text'          => '#111111',
+        'color_prefs_hover_border'  => '#111111',
         'color_prefs_hover_text'    => '#111111',
         // Alle cookies toestaan button
-        'color_allowall_bg'         => '#111111',
+        'color_allowall_bg'         => '#0091ff',
         'color_allowall_text'       => '#ffffff',
-        'color_allowall_hover_bg'   => '#0091ff',
+        'color_allowall_hover_bg'   => '#111111',
         'color_allowall_hover_text' => '#ffffff',
         'color_allowall_border'     => '',
+        // Alles afwijzen button (outline stijl in prefs)
+        'color_outline_border'       => '#d1d1d1',
+        'color_outline_text'         => '#111111',
+        'color_outline_hover_border' => '#111111',
+        'color_outline_hover_text'   => '#111111',
+        'color_outline_hover_bg'     => '',
         // Sluit-knop
-        'color_close_bg'            => '#f0ede8',
-        'color_close_hover_bg'      => '#111111',
+        'color_close_bg'            => '#eaeaea',
+        'color_close_hover_bg'      => '#38342e',
         'color_close_icon'          => '#555555',
         // Toggles & badges
         'color_toggle_on'           => '#0091ff',
         'color_always_bg'           => '#e8f4ff',
         // Expand-icoon
-        'color_expand_bg'           => '#f0ede8',
-        'color_expand_icon'         => '#666666',
-        'color_expand_open_bg'      => '#111111',
+        'color_expand_bg'           => '#eaeaea',
+        'color_expand_icon'         => '#111111',
+        'color_expand_open_bg'      => '#0091ff',
         'color_expand_open_icon'    => '#ffffff',
         // Stijl
-        'radius_popup'              => 20,
-        'radius_btn'                => 10,
-        'overlay_opacity'           => 62,
+        'radius_popup'              => 18,
+        'radius_btn'                => 6,
+        'overlay_opacity'           => 19,
         // Gedrag
-        'analytics_default'         => 1,
+        'analytics_default'         => 0,
         'show_float_btn'            => 1,
         'expiry_months'             => 12,
         // Google integratie — beheerd door plugin (verwijder GA snippet uit Header/Footer plugin)
@@ -133,8 +139,8 @@ function cm_default_settings() {
         // Zweefknop stijl: 'text' = tekstknop (standaard), 'icon' = rond icoontje
         'float_btn_style'              => 'icon',
         'float_position'               => 'left',    // left | right
-        'color_float_icon_bg'          => '#111111',
-        'color_float_icon_color'       => '#ffffff',
+        'color_float_icon_bg'          => '#ffffff',
+        'color_float_icon_color'       => '#111111',
         'color_float_icon_hover_bg'    => '#0091ff',
         'color_float_icon_hover_color' => '#ffffff',
         // Dark mode kleuren (leeg = dark mode uitgeschakeld / zelfde als light)
@@ -173,6 +179,9 @@ function cm_default_settings() {
         // Geo-targeting
         'geo_enabled'                  => '0',   // '0' = altijd tonen, '1' = alleen landen met wetgeving
         'respect_dnt'                  => 0,      // 1 = respecteer Do Not Track signaal van de browser
+        'respect_gpc'                  => 0,      // 1 = respecteer Global Privacy Control signaal
+        'subdomain_sharing'            => 0,      // 1 = deel consent cookie tussen subdomeinen
+        'subdomain_root_domain'        => '',     // bijv. .voorbeeld.nl
         'geo_outside_eu'               => 'hide', // 'hide' of 'accept'
         // Pagina-uitzonderingen — geen banner op deze pagina's
         'exclude_page_ids'             => '',   // komma-gescheiden post/page IDs
@@ -180,12 +189,16 @@ function cm_default_settings() {
         'exclude_login_page'           => 1,    // wp-login.php
         'exclude_woocommerce_checkout' => 0,    // WooCommerce checkout & betaalpagina's
         'banner_position'              => 'bottom-center',  // bottom-center | bottom-left | bottom-right | center
+        'banner_width_bottom_center'   => 760,    // px — breedte bij onderaan gecentreerd
+        'banner_width_center'          => 620,    // px — breedte bij midden scherm
+        'banner_width_compact'         => 420,    // px — breedte bij linksonder/rechtsonder
+        'banner_mobile_padding'        => 1,      // 1 = padding rondom op mobiel, 0 = geen padding
         // Zweefknop — tekstknop kleuren
         'color_float_text_bg'          => '#ffffff',
-        'color_float_text_color'       => '#444444',
-        'color_float_text_border'      => '#e0dbd3',
-        'color_float_text_hover_bg'    => '#f6f7f7',
-        'color_float_text_hover_color' => '#111111',
+        'color_float_text_color'       => '#111111',
+        'color_float_text_border'      => '#d1d1d1',
+        'color_float_text_hover_bg'    => '#ffffff',
+        'color_float_text_hover_color' => '#0091ff',
         // Zweefknop — icoontje grootte en custom SVG
         'float_icon_size'              => 'normal',   // normal | small
         'float_icon_custom_svg'        => '',          // leeg = standaard icoontje, anders: volledige SVG markup
@@ -203,13 +216,13 @@ function cm_default_settings() {
         'txt_embed_btn_en'             => 'Load content',
         'txt_embed_prefs_en'           => 'Or adjust your <a href="#" class="cm-embed-open-prefs">cookie preferences</a>.',
         // Embed blocker kleuren
-        'color_embed_bg'               => '#000000',   // Achtergrond placeholder
+        'color_embed_bg'               => '#111111',   // Achtergrond placeholder
         'color_embed_title'            => '#ffffff',   // Titel kleur
         'color_embed_body'             => '#ffffff',   // Tekst kleur
         'color_embed_btn_bg'           => '#ffffff',   // Knop achtergrond
-        'color_embed_btn_text'         => '#000000',   // Knop tekst
+        'color_embed_btn_text'         => '#111111',   // Knop tekst
         'color_embed_btn_hover_bg'     => '#0091ff',   // Knop hover achtergrond
-        'color_embed_btn_hover_text'   => '#ffffff',   // Knop hover tekst
+        'color_embed_btn_hover_text'   => '#111111',   // Knop hover tekst
         // API
         'api_key'                      => '',
         'log_retention_months'      => 36, // 36 maanden = aanbevolen AVG-termijn
@@ -476,9 +489,26 @@ function cm_get_cookie_list() {
 function cm_get( $key ) {
     static $merged = null;
     if ( $merged === null ) {
-        $merged = array_merge( cm_default_settings(), (array) get_option( 'cm_settings', array() ) );
+        $merged = cm_get_settings();
     }
     return isset( $merged[ $key ] ) ? $merged[ $key ] : '';
+}
+
+/**
+ * Geeft de volledige instellingen-array terug waarbij lege DB-waarden
+ * terugvallen op de default (zodat een reset altijd de juiste kleuren toont).
+ */
+function cm_get_settings() {
+    $defaults = cm_default_settings();
+    $saved    = (array) get_option( 'cm_settings', array() );
+    $merged   = $defaults;
+    foreach ( $saved as $k => $v ) {
+        if ( $v === '' && isset( $defaults[ $k ] ) && $defaults[ $k ] !== '' ) {
+            continue; // lege DB-waarde → gebruik default
+        }
+        $merged[ $k ] = $v;
+    }
+    return $merged;
 }
 
 /**

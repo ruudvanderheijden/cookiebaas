@@ -538,7 +538,7 @@
             if (item === 'cookielist') $.post(CM_DATA.ajax_url, { action:'cm_reset_cookielist', nonce:CM_DATA.nonce }, checkDone('Cookielijst')).fail(checkDone('Cookielijst'));
             if (item === 'privacy')    $.post(CM_DATA.ajax_url, { action:'cm_reset_privacy',    nonce:CM_DATA.nonce }, checkDone('Privacyverklaring')).fail(checkDone('Privacyverklaring'));
             if (item === 'log')        $.post(CM_DATA.ajax_url, { action:'cm_clear_log',         nonce:CM_DATA.nonce }, checkDone('Consent log')).fail(checkDone('Consent log'));
-            if (item === 'consent')    $.post(CM_DATA.ajax_url, { action:'cm_bump_consent_version', nonce:CM_DATA.nonce }, checkDone('Consent data')).fail(checkDone('Consent data'));
+            if (item === 'consent' || item === 'consent_data') $.post(CM_DATA.ajax_url, { action:'cm_bump_consent_version', nonce:CM_DATA.nonce }, checkDone('Consent data')).fail(checkDone('Consent data'));
         });
     });
 
@@ -1641,6 +1641,64 @@
     /* ---- Geo-targeting: toon/verberg overige landen optie ---- */
     $(document).on('change', 'input[name="geo_enabled"]', function() {
         $('#cm-geo-outside-row').toggle($(this).val() === '1');
+    });
+
+    /* ---- Subdomain sharing: toon/verberg root-domein veld ---- */
+    $(document).on('change', '#cm-subdomain-sharing-cb', function() {
+        $('#cm-subdomain-root-row').toggle(this.checked);
+    });
+
+    /* ---- Licentie knoppen ---- */
+    $(document).on('click', '#cm-license-activate', function() {
+        var key = $('#cm_license_key').val().trim();
+        if (!key) { $('#cm-license-status').text('Vul een licentiesleutel in.').css('color','#b32d2e'); return; }
+        var $btn = $(this).prop('disabled', true).text('Activeren...');
+        $.post(CM_DATA.ajax_url, { action: 'cm_license_activate', nonce: CM_DATA.nonce, license_key: key }, function(r) {
+            $btn.prop('disabled', false).text('Activeren');
+            if (r.success) {
+                $('#cm-license-status').text(r.data.msg).css('color','#00a32a');
+                setTimeout(function(){ location.reload(); }, 1000);
+            } else {
+                $('#cm-license-status').text(r.data.msg).css('color','#b32d2e');
+            }
+        }).fail(function() {
+            $btn.prop('disabled', false).text('Activeren');
+            $('#cm-license-status').text('Verbinding met licentieserver mislukt.').css('color','#b32d2e');
+        });
+    });
+
+    $(document).on('click', '#cm-license-deactivate', function() {
+        if (!confirm('Weet u zeker dat u de licentie wilt deactiveren? De banner stopt direct.')) return;
+        var $btn = $(this).prop('disabled', true).text('Deactiveren...');
+        $.post(CM_DATA.ajax_url, { action: 'cm_license_deactivate', nonce: CM_DATA.nonce }, function(r) {
+            $btn.prop('disabled', false).text('Deactiveren');
+            if (r.success) {
+                $('#cm-license-status').text(r.data.msg).css('color','#00a32a');
+                setTimeout(function(){ location.reload(); }, 1000);
+            } else {
+                $('#cm-license-status').text(r.data.msg).css('color','#b32d2e');
+            }
+        });
+    });
+
+    $(document).on('click', '#cm-license-check', function() {
+        var $btn = $(this).prop('disabled', true).text('Controleren...');
+        $.post(CM_DATA.ajax_url, { action: 'cm_license_check', nonce: CM_DATA.nonce }, function(r) {
+            $btn.prop('disabled', false).text('Status controleren');
+            if (r.success) {
+                $('#cm-license-status').text('Status: ' + r.data.status).css('color', r.data.status === 'active' ? '#00a32a' : '#b32d2e');
+                setTimeout(function(){ location.reload(); }, 1500);
+            }
+        });
+    });
+
+    $(document).on('click', '#cm-license-save-url', function() {
+        var url = $('#cm_license_api_url').val().trim();
+        $.post(CM_DATA.ajax_url, { action: 'cm_save_license_url', nonce: CM_DATA.nonce, api_url: url }, function(r) {
+            if (r.success) {
+                $('#cm-license-status').text('API-URL opgeslagen.').css('color','#00a32a');
+            }
+        });
     });
 
     /* ---- INIT ---- */

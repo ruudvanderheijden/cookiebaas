@@ -1751,18 +1751,27 @@ function cm_ajax_get_cookie_list() {
     ));
 }
 
+add_action( 'wp_ajax_cm_save_license_url', 'cm_ajax_save_license_url' );
+function cm_ajax_save_license_url() {
+    check_ajax_referer( 'cm_save_settings', 'nonce' );
+    if ( ! current_user_can( 'manage_options' ) ) wp_die();
+    $url = esc_url_raw( wp_unslash( $_POST['api_url'] ?? '' ) );
+    update_option( 'cm_license_api_url', $url );
+    wp_send_json_success( array( 'msg' => 'API-URL opgeslagen.' ) );
+}
+
 /* ================================================================
    RENDER
 ================================================================ */
 function cm_render_admin_page() {
-    $s = array_merge( cm_default_settings(), (array) get_option( 'cm_settings', array() ) );
+    $s = cm_get_settings();
     ?>
     <div class="wrap" id="cm-admin-wrap">
 
         <div class="cm-page-header">
             <div>
                 <h1 class="wp-heading-inline">Cookiebaas &mdash; Instellingen</h1>
-                <span class="cm-version-tag">v<?php echo esc_html(CM_VERSION); ?> &mdash; door <a href="https://www.ruudvdheijden.nl/" target="_blank">Ruud van der Heijden</a></span>
+                <span class="cm-version-tag">v<?php echo esc_html(CM_VERSION); ?> &mdash; door <a href="https://www.cookiebaas.nl/" target="_blank">Ruud van der Heijden</a></span>
             </div>
         </div>
         <?php cm_saved_toast(); ?>
@@ -1776,7 +1785,7 @@ function cm_render_admin_page() {
                     <a class="nav-tab nav-tab-active" data-tab="kleuren" href="#">Vormgeving</a>
                     <a class="nav-tab" data-tab="teksten" href="#">Teksten</a>
                     <a class="nav-tab" data-tab="layout" href="#">Layout</a>
-                    <a class="nav-tab" data-tab="gedrag" href="#">Gedrag</a>
+                    <a class="nav-tab" data-tab="gedrag" href="#">Algemeen</a>
                     <a class="nav-tab" data-tab="google" href="#">Google</a>
                     <a class="nav-tab" data-tab="embeds" href="#">Embeds</a>
                 </nav>
@@ -1885,6 +1894,12 @@ function cm_render_admin_page() {
                         <tr><th><label>Achtergrond hover</label></th><td><?php cm_color_field('color_allowall_hover_bg',$s); ?></td></tr>
                         <tr><th><label>Tekstkleur hover</label></th><td><?php cm_color_field('color_allowall_hover_text',$s); ?></td></tr>
                         <tr><th><label>Randkleur (optioneel)</label></th><td><?php cm_color_field_optional('color_allowall_border',$s); ?></td></tr>
+                        <tr><td colspan="2"><h4 class="cm-sub-head cm-btn-sub-head">Alles afwijzen <span style="font-weight:400;font-size:12px;opacity:.7">(in voorkeuren-venster)</span></h4></td></tr>
+                        <tr><th><label>Randkleur</label></th><td><?php cm_color_field('color_outline_border',$s); ?></td></tr>
+                        <tr><th><label>Tekstkleur</label></th><td><?php cm_color_field('color_outline_text',$s); ?></td></tr>
+                        <tr><th><label>Randkleur hover</label></th><td><?php cm_color_field('color_outline_hover_border',$s); ?></td></tr>
+                        <tr><th><label>Tekstkleur hover</label></th><td><?php cm_color_field('color_outline_hover_text',$s); ?></td></tr>
+                        <tr><th><label>Achtergrond hover</label></th><td><?php cm_color_field_optional('color_outline_hover_bg',$s); ?></td></tr>
                         <tr><td colspan="2"><h4 class="cm-sub-head">Border radius buttons</h4></td></tr>
                         <tr><th><label>Afronding</label></th><td><?php cm_radius_field('radius_btn',$s,0,60); ?><p class="description">Geldt voor alle buttons.</p></td></tr>
                         </tbody></table>
@@ -1912,6 +1927,25 @@ function cm_render_admin_page() {
                         <tr><th><label>Randkleur (universeel)</label></th><td><?php cm_color_field('color_cat_border',$s); ?><p class="description">Rand om categorieën, diensten en cookie-items.</p></td></tr>
                         <tr><th><label>Achtergrond dienst</label></th><td><?php cm_color_field('color_service_bg',$s); ?></td></tr>
                         <tr><th><label>Achtergrond cookie-rij</label></th><td><?php cm_color_field('color_cookie_item_bg',$s); ?></td></tr>
+                        </tbody></table>
+                        </div>
+                    </div>
+
+                    <div class="cm-group cm-accordion">
+                        <h3 class="cm-group-title cm-accordion-head">
+                            <span class="cm-acc-icon">+</span> Embed placeholder
+                            <span class="cm-acc-sub">&mdash; kleuren van de geblokkeerde video/iframe weergave</span>
+                        </h3>
+                        <div class="cm-accordion-body" style="display:none">
+                        <table class="form-table cm-form-table"><tbody>
+                        <tr><th><label>Achtergrond</label></th><td><?php cm_color_field('color_embed_bg',$s); ?></td></tr>
+                        <tr><th><label>Titel kleur</label></th><td><?php cm_color_field('color_embed_title',$s); ?></td></tr>
+                        <tr><th><label>Tekst kleur</label></th><td><?php cm_color_field('color_embed_body',$s); ?></td></tr>
+                        <tr><td colspan="2"><h4 class="cm-btn-sub-head">Knop &ldquo;Inhoud laden&rdquo;</h4></td></tr>
+                        <tr><th><label>Achtergrond</label></th><td><?php cm_color_field('color_embed_btn_bg',$s); ?></td></tr>
+                        <tr><th><label>Tekst</label></th><td><?php cm_color_field('color_embed_btn_text',$s); ?></td></tr>
+                        <tr><th><label>Achtergrond hover</label></th><td><?php cm_color_field('color_embed_btn_hover_bg',$s); ?></td></tr>
+                        <tr><th><label>Tekst hover</label></th><td><?php cm_color_field('color_embed_btn_hover_text',$s); ?></td></tr>
                         </tbody></table>
                         </div>
                     </div>
@@ -1972,26 +2006,6 @@ function cm_render_admin_page() {
                         <tr><th><label>Icoontje kleur hover</label></th><td><?php cm_color_field('dm_float_icon_hover_color',$s); ?></td></tr>
                         </tbody></table>
                         </div><!-- /cm-dm-fields -->
-                        </div>
-                    </div>
-
-                    <!-- Embed placeholder kleuren -->
-                    <div class="cm-group cm-accordion">
-                        <h3 class="cm-group-title cm-accordion-head">
-                            <span class="cm-acc-icon">+</span> Embed placeholder
-                            <span class="cm-acc-sub">&mdash; kleuren van de geblokkeerde video/iframe weergave</span>
-                        </h3>
-                        <div class="cm-accordion-body" style="display:none">
-                        <table class="form-table cm-form-table"><tbody>
-                        <tr><th><label>Achtergrond</label></th><td><?php cm_color_field('color_embed_bg',$s); ?></td></tr>
-                        <tr><th><label>Titel kleur</label></th><td><?php cm_color_field('color_embed_title',$s); ?></td></tr>
-                        <tr><th><label>Tekst kleur</label></th><td><?php cm_color_field('color_embed_body',$s); ?></td></tr>
-                        <tr><td colspan="2"><h4 class="cm-btn-sub-head">Knop &ldquo;Inhoud laden&rdquo;</h4></td></tr>
-                        <tr><th><label>Achtergrond</label></th><td><?php cm_color_field('color_embed_btn_bg',$s); ?></td></tr>
-                        <tr><th><label>Tekst</label></th><td><?php cm_color_field('color_embed_btn_text',$s); ?></td></tr>
-                        <tr><th><label>Achtergrond hover</label></th><td><?php cm_color_field('color_embed_btn_hover_bg',$s); ?></td></tr>
-                        <tr><th><label>Tekst hover</label></th><td><?php cm_color_field('color_embed_btn_hover_text',$s); ?></td></tr>
-                        </tbody></table>
                         </div>
                     </div>
 
@@ -2058,6 +2072,37 @@ function cm_render_admin_page() {
 
                             </div>
                         </div>
+                    </div>
+
+                    <div class="cm-group">
+                        <h3 class="cm-group-title">Breedte cookiebanner</h3>
+                        <table class="form-table cm-form-table"><tbody>
+                        <tr>
+                            <th><label>Onderaan gecentreerd</label></th>
+                            <td><?php cm_range_field('banner_width_bottom_center', $s, 400, 1200, 'px'); ?><p class="description">Standaard: 760px</p></td>
+                        </tr>
+                        <tr>
+                            <th><label>Midden van het scherm</label></th>
+                            <td><?php cm_range_field('banner_width_center', $s, 400, 1000, 'px'); ?><p class="description">Standaard: 620px</p></td>
+                        </tr>
+                        <tr>
+                            <th><label>Linksonder / rechtsonder</label></th>
+                            <td><?php cm_range_field('banner_width_compact', $s, 300, 600, 'px'); ?><p class="description">Standaard: 420px</p></td>
+                        </tr>
+                        </tbody></table>
+                    </div>
+
+                    <div class="cm-group">
+                        <h3 class="cm-group-title">Mobiele weergave</h3>
+                        <table class="form-table cm-form-table"><tbody>
+                        <tr>
+                            <th><label>Marge rondom banner</label></th>
+                            <td>
+                                <label><input type="checkbox" name="banner_mobile_padding" value="1" <?php checked($s['banner_mobile_padding'],1); ?>> Toon padding/marge rondom de cookiebanner op mobiel</label>
+                                <p class="description">Uit = banner plakt direct tegen de schermranden (volledig schermbreedte). Aan = kleine marge rondom voor een zwevend effect.</p>
+                            </td>
+                        </tr>
+                        </tbody></table>
                     </div>
 
                     <!-- Zweefknop layout -->
@@ -2324,7 +2369,45 @@ function cm_render_admin_page() {
                             <th><label>Do Not Track</label></th>
                             <td>
                                 <label><input type="checkbox" name="respect_dnt" value="1" <?php checked($s['respect_dnt'],1); ?>> Respecteer het Do Not Track (DNT) signaal van de browser</label>
-                                <p class="description">Als een bezoeker DNT heeft ingeschakeld in de browser, worden analytics- en marketing-cookies automatisch geweigerd. De banner wordt nog wel getoond, maar de toggles staan uit en de consent wordt gelogd als &ldquo;dnt&rdquo;.</p>
+                                <p class="description">Als een bezoeker DNT heeft ingeschakeld in de browser, worden analytics- en marketing-cookies automatisch geweigerd. De banner wordt overgeslagen en de consent wordt gelogd als &ldquo;dnt&rdquo;.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><label>Global Privacy Control</label></th>
+                            <td>
+                                <label><input type="checkbox" name="respect_gpc" value="1" <?php checked($s['respect_gpc'],1); ?>> Respecteer het Global Privacy Control (GPC) signaal van de browser</label>
+                                <p class="description">GPC is de opvolger van DNT en is wettelijk verplicht in 12+ Amerikaanse staten (o.a. Californi&euml;, Colorado, Connecticut). Europese toezichthouders (CNIL, ICO) zien GPC als geldige uitoefening van het recht op bezwaar (AVG art. 21). Als GPC actief is, worden analytics- en marketing-cookies automatisch geweigerd.</p>
+                            </td>
+                        </tr>
+                        </tbody></table>
+                    </div>
+
+                    <div class="cm-group">
+                        <h3 class="cm-group-title">Voorkeurenpagina <span style="font-size:11px;font-weight:400;color:#787c82">— cookievoorkeuren als pagina-inhoud</span></h3>
+                        <div style="padding:16px 20px;line-height:1.7">
+                            <p style="margin:0 0 10px;font-size:13px;color:#3c434a">Plaats de shortcode op een pagina om bezoekers hun cookievoorkeuren te laten aanpassen zonder popup.</p>
+                            <div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:10px 14px;display:inline-block">
+                                <code style="font-size:13px;font-weight:600">[cookiebaas_voorkeuren]</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cm-group">
+                        <h3 class="cm-group-title">Subdomain consent sharing <span style="font-size:11px;font-weight:400;color:#787c82">— deel consent tussen subdomeinen</span></h3>
+                        <table class="form-table cm-form-table"><tbody>
+                        <tr>
+                            <th><label>Consent delen</label></th>
+                            <td>
+                                <label><input type="checkbox" name="subdomain_sharing" value="1" <?php checked($s['subdomain_sharing'],1); ?> id="cm-subdomain-sharing-cb"> Deel de consent-cookie tussen subdomeinen</label>
+                                <p class="description">Als dit aanstaat, wordt de consent-cookie gezet op het root-domein zodat alle subdomeinen dezelfde consent delen. De bezoeker hoeft maar &eacute;&eacute;n keer consent te geven.</p>
+                            </td>
+                        </tr>
+                        <tr id="cm-subdomain-root-row" style="<?php echo $s['subdomain_sharing'] ? '' : 'display:none'; ?>">
+                            <th><label for="subdomain_root_domain">Root-domein</label></th>
+                            <td>
+                                <input type="text" id="subdomain_root_domain" name="subdomain_root_domain" value="<?php echo esc_attr( $s['subdomain_root_domain'] ); ?>" class="regular-text" placeholder=".voorbeeld.nl">
+                                <p class="description">Vul het root-domein in met een punt ervoor, bijv. <code>.voorbeeld.nl</code>. De consent-cookie wordt dan gedeeld tussen alle subdomeinen (shop.voorbeeld.nl, blog.voorbeeld.nl, etc.).</p>
+                                <p class="description" style="margin-top:6px"><strong>Belangrijk:</strong> Installeer de plugin op elk subdomein met dezelfde instelling. Vermeld in de bannertekst welke domeinen de consent dekt (AVG-transparantievereiste).</p>
                             </td>
                         </tr>
                         </tbody></table>
@@ -2871,7 +2954,7 @@ function cm_page_header( $title ) {
     <div class="cm-page-header">
         <div>
             <h1 class="wp-heading-inline">Cookiebaas &mdash; <?php echo esc_html( $title ); ?></h1>
-            <span class="cm-version-tag">v<?php echo esc_html(CM_VERSION); ?> &mdash; door <a href="https://www.ruudvdheijden.nl/" target="_blank">Ruud van der Heijden</a></span>
+            <span class="cm-version-tag">v<?php echo esc_html(CM_VERSION); ?> &mdash; door <a href="https://www.cookiebaas.nl/" target="_blank">Ruud van der Heijden</a></span>
         </div>
     </div>
     <?php cm_saved_toast(); ?>
@@ -3286,7 +3369,7 @@ function cm_render_log_page() {
    PAGINA — COMPLIANCE CHECK
 ================================================================ */
 function cm_render_compliance_page() {
-    $s   = array_merge( cm_default_settings(), (array) get_option( 'cm_settings', array() ) );
+    $s   = cm_get_settings();
     $pv  = array_merge( cm_default_privacy(),  (array) get_option( 'cm_privacy',  array() ) );
     $cookies = cm_get_cookie_list();
 
@@ -3337,7 +3420,7 @@ function cm_render_compliance_page() {
         'title'  => 'Analytics standaard uitgeschakeld',
         'desc'   => 'AVG art. 7: toestemming moet actief gegeven worden, niet vooraf aangevinkt.',
         'status' => empty( $s['analytics_default'] ) ? 'ok' : 'fail',
-        'fix'    => $link('cookiemelding', 'gedrag', 'Gedrag instellingen'),
+        'fix'    => $link('cookiemelding', 'gedrag', 'Algemeen instellingen'),
     );
 
     // 3. Privacyverklaring link in bannertekst
@@ -3397,7 +3480,7 @@ function cm_render_compliance_page() {
             ? ( $has_self_loader && ! $block_a && ! $block_m
                 ? 'GA4/GTM wordt geblokkeerd via de ingebouwde Consent Mode v2 self-loader (default: denied).'
                 : '' )
-            : 'Vul een GA4/GTM ID in, of stel Script blocking patronen in bij Instellingen → Gedrag.',
+            : 'Vul een GA4/GTM ID in, of stel Script blocking patronen in bij Instellingen → Algemeen.',
     );
 
     // 7. Intrekkingsmogelijkheid (zweefknop)
@@ -3441,33 +3524,6 @@ function cm_render_compliance_page() {
                     ( $retention > 36 ? 'Overweeg een kortere bewaarperiode dan ' . $retention . ' maanden.' : '' ),
     );
 
-    // 11. Privacyverklaring: bedrijfsnaam ingevuld
-    $checks[] = array(
-        'cat'    => 'Privacyverklaring',
-        'title'  => 'Bedrijfsnaam ingevuld',
-        'desc'   => 'AVG art. 13: de verwerkingsverantwoordelijke moet duidelijk worden vermeld.',
-        'status' => ! empty( $pv['pv_bedrijfsnaam'] ) ? 'ok' : 'fail',
-        'fix'    => $link('cookiemelding-privacy', '', 'Privacyverklaring aanvullen'),
-    );
-
-    // 12. Privacyverklaring: e-mailadres ingevuld
-    $checks[] = array(
-        'cat'    => 'Privacyverklaring',
-        'title'  => 'Contactgegevens ingevuld',
-        'desc'   => 'AVG art. 13: contactgegevens van de verwerkingsverantwoordelijke zijn verplicht.',
-        'status' => ! empty( $pv['pv_email'] ) ? 'ok' : 'fail',
-        'fix'    => $link('cookiemelding-privacy', '', 'Privacyverklaring aanvullen'),
-    );
-
-    // 13. Privacyverklaring: datum bijgewerkt
-    $checks[] = array(
-        'cat'    => 'Privacyverklaring',
-        'title'  => 'Datum bijgewerkt ingevuld',
-        'desc'   => 'Bezoekers moeten kunnen zien wanneer de privacyverklaring voor het laatst is bijgewerkt.',
-        'status' => ! empty( $pv['pv_datum'] ) ? 'ok' : 'warn',
-        'fix'    => $link('cookiemelding-privacy', '', 'Datum invullen'),
-    );
-
     // ── Score berekenen ──────────────────────────────────────────────────────
     $total  = count( $checks );
     $ok     = count( array_filter( $checks, fn($c) => $c['status'] === 'ok' ) );
@@ -3477,6 +3533,30 @@ function cm_render_compliance_page() {
 
     $score_color = $fails > 0 ? '#b32d2e' : ( $warns > 2 ? '#996800' : '#00a32a' );
     $score_label = $fails > 0 ? 'Kritieke punten aanwezig' : ( $warns > 0 ? 'Bijna compliant' : 'Volledig compliant' );
+
+    // ── Privacyverklaring — apart blok, telt niet mee in score ───────────────
+    $pv_checks = array();
+    $pv_checks[] = array(
+        'cat'    => 'Privacyverklaring',
+        'title'  => 'Bedrijfsnaam ingevuld',
+        'desc'   => 'AVG art. 13: de verwerkingsverantwoordelijke moet duidelijk worden vermeld.',
+        'status' => ! empty( $pv['pv_bedrijfsnaam'] ) ? 'ok' : 'fail',
+        'fix'    => $link('cookiemelding-privacy', '', 'Privacyverklaring aanvullen'),
+    );
+    $pv_checks[] = array(
+        'cat'    => 'Privacyverklaring',
+        'title'  => 'Contactgegevens ingevuld',
+        'desc'   => 'AVG art. 13: contactgegevens van de verwerkingsverantwoordelijke zijn verplicht.',
+        'status' => ! empty( $pv['pv_email'] ) ? 'ok' : 'fail',
+        'fix'    => $link('cookiemelding-privacy', '', 'Privacyverklaring aanvullen'),
+    );
+    $pv_checks[] = array(
+        'cat'    => 'Privacyverklaring',
+        'title'  => 'Datum bijgewerkt ingevuld',
+        'desc'   => 'Bezoekers moeten kunnen zien wanneer de privacyverklaring voor het laatst is bijgewerkt.',
+        'status' => ! empty( $pv['pv_datum'] ) ? 'ok' : 'warn',
+        'fix'    => $link('cookiemelding-privacy', '', 'Datum invullen'),
+    );
 
     // ── Groepeer per categorie ────────────────────────────────────────────────
     $cats_grouped = array();
@@ -3540,6 +3620,29 @@ function cm_render_compliance_page() {
                 </table>
             </div>
             <?php endforeach; ?>
+
+            <!-- Privacyverklaring — apart blok, telt niet mee in score -->
+            <h3 style="font-size:14px;font-weight:600;color:#1d2327;margin:32px 0 12px;padding:0">Privacyverklaring</h3>
+            <p style="font-size:12px;color:#646970;margin:0 0 12px">Deze checks zijn ter informatie en tellen niet mee in de score hierboven.</p>
+            <div class="cm-group" style="margin-bottom:16px">
+                <table style="width:100%;border-collapse:collapse">
+                    <?php foreach ( $pv_checks as $check ) :
+                        $icon  = $check['status'] === 'ok' ? '✓' : ( $check['status'] === 'fail' ? '✗' : '⚠' );
+                        $color = $check['status'] === 'ok' ? '#00a32a' : ( $check['status'] === 'fail' ? '#b32d2e' : '#996800' );
+                    ?>
+                    <tr style="border-bottom:1px solid #f0f0f1">
+                        <td style="padding:12px 8px 12px 16px;width:28px;vertical-align:top;font-size:16px;color:<?php echo esc_attr($color); ?>"><?php echo $icon; ?></td>
+                        <td style="padding:12px 8px;vertical-align:top">
+                            <div style="font-size:13px;font-weight:600;color:#1d2327;margin-bottom:2px"><?php echo $check['title']; ?></div>
+                            <div style="font-size:12px;color:#646970;line-height:1.5"><?php echo esc_html($check['desc']); ?></div>
+                        </td>
+                        <td style="padding:12px 16px 12px 8px;vertical-align:middle;text-align:right;white-space:nowrap;font-size:12px">
+                            <?php if ( $check['status'] !== 'ok' ) echo $check['fix']; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+            </div>
 
             <p style="font-size:12px;color:#787c82;margin-top:8px">
                 Deze check is gebaseerd op de EDPB-richtlijnen, de AP-handhavingscriteria en AVG artikelen 5, 7 en 13.
@@ -3833,7 +3936,7 @@ function cm_render_cookies_page() {
    PAGINA — TRACKING SCRIPTS
 ================================================================ */
 function cm_render_tracking_page() {
-    $s = array_merge( cm_default_settings(), (array) get_option( 'cm_settings', array() ) );
+    $s = cm_get_settings();
     ?>
     <div class="wrap" id="cm-admin-wrap">
         <?php cm_page_header('Google integratie'); ?>
@@ -4021,7 +4124,7 @@ function cm_render_help_page() {
                 <h3 class="cm-group-title">Plugin informatie</h3>
                 <table class="form-table cm-form-table"><tbody>
                 <tr><th>Versie</th><td><?php echo esc_html(CM_VERSION); ?></td></tr>
-                <tr><th>Gemaakt door</th><td><a href="https://www.ruudvdheijden.nl/" target="_blank"><strong>Ruud van der Heijden</strong></a></td></tr>
+                <tr><th>Gemaakt door</th><td><a href="https://www.cookiebaas.nl/" target="_blank"><strong>Ruud van der Heijden</strong></a></td></tr>
                 <tr><th>Cookie naam</th><td><code>cc_cm_consent</code></td></tr>
                 <tr><th>AVG-compliant</th><td>Ja &mdash; opt-in, geen pre-aangevinkte marketing cookies, gelijke button-prominentie</td></tr>
                 </tbody></table>
@@ -4048,6 +4151,7 @@ function cm_render_help_page() {
                 <table class="form-table cm-form-table"><tbody>
                 <tr><th>Volledige privacyverklaring</th><td><code>[cookiebaas_privacy]</code></td></tr>
                 <tr><th>Alleen cookieparagraaf (hoofdstuk 4)</th><td><code>[cookiebaas_cookies]</code></td></tr>
+                <tr><th>Cookievoorkeuren pagina</th><td><code>[cookiebaas_voorkeuren]</code></td></tr>
                 </tbody></table>
             </div>
 
@@ -4064,7 +4168,7 @@ function cm_render_help_page() {
             <div class="cm-group">
                 <h3 class="cm-group-title">Contact &amp; ondersteuning</h3>
                 <div style="padding:16px 20px;line-height:1.8">
-                    <p style="margin:0">Voor vragen en ondersteuning kunt u contact opnemen via <a href="https://www.ruudvdheijden.nl/" target="_blank">ruudvdheijden.nl</a>.</p>
+                    <p style="margin:0">Voor vragen en ondersteuning kunt u contact opnemen via <a href="https://www.cookiebaas.nl/" target="_blank">cookiebaas.nl</a>.</p>
                 </div>
             </div>
 
@@ -4218,6 +4322,7 @@ function cm_render_beheer_page() {
                 <a class="nav-tab nav-tab-active" data-tab="compliance" href="#">Compliance</a>
                 <a class="nav-tab" data-tab="exportimport" href="#">Export / Import</a>
                 <a class="nav-tab" data-tab="reset" href="#">Reset</a>
+                <a class="nav-tab" data-tab="licentie" href="#">Licentie</a>
                 <a class="nav-tab" data-tab="info" href="#">Info</a>
             </nav>
 
@@ -4236,6 +4341,11 @@ function cm_render_beheer_page() {
                 <?php cm_render_reset_content(); ?>
             </div>
 
+            <!-- ======== TAB LICENTIE ======== -->
+            <div class="cm-tab-pane" id="cm-pane-licentie">
+                <?php cm_render_licentie_content(); ?>
+            </div>
+
             <!-- ======== TAB INFO ======== -->
             <div class="cm-tab-pane" id="cm-pane-info">
                 <?php cm_render_help_content(); ?>
@@ -4249,7 +4359,7 @@ function cm_render_beheer_page() {
 /* ---- Beheer sub-renderers: herbruikbare content blokken ---- */
 
 function cm_render_compliance_content() {
-    $s   = array_merge( cm_default_settings(), (array) get_option( 'cm_settings', array() ) );
+    $s   = cm_get_settings();
     $pv  = array_merge( cm_default_privacy(),  (array) get_option( 'cm_privacy',  array() ) );
     $cookies = cm_get_cookie_list();
     $link = function( $page, $tab, $label ) {
@@ -4305,7 +4415,7 @@ function cm_render_compliance_content() {
         'desc'   => 'Analytics- en marketing-toggles staan standaard uit in het voorkeuren-venster. Consent vereist een actieve handeling (opt-in).',
         'ref'    => 'AP vuistregel 2 &middot; HvJEU Planet49 (C-673/17)',
         'status' => empty( $s['analytics_default'] ) ? 'ok' : 'fail',
-        'fix'    => $link('cookiemelding', 'gedrag', 'Gedrag instellingen'),
+        'fix'    => $link('cookiemelding', 'gedrag', 'Algemeen instellingen'),
     );
     $checks[] = array(
         'cat'    => 'AP 9 vuistregels cookiebanners',
@@ -4399,8 +4509,9 @@ function cm_render_compliance_content() {
         'detail' => count($managed) === 0 ? 'Geen cookies in de lijst.' : ( count($incomplete) > 0 ? count($incomplete) . ' cookie(s) missen doel of looptijd.' : '' ),
     );
 
-    // ── Privacyverklaring ──
-    $checks[] = array(
+    // ── Privacyverklaring — apart blok, telt niet mee in score ───────────────
+    $pv_checks = array();
+    $pv_checks[] = array(
         'cat'    => 'Privacyverklaring',
         'title'  => 'Bedrijfsnaam ingevuld',
         'desc'   => 'De verwerkingsverantwoordelijke moet duidelijk worden vermeld in de privacyverklaring.',
@@ -4408,7 +4519,7 @@ function cm_render_compliance_content() {
         'status' => ! empty( $pv['pv_bedrijfsnaam'] ) ? 'ok' : 'fail',
         'fix'    => $link('cookiemelding-privacy', '', 'Privacyverklaring aanvullen'),
     );
-    $checks[] = array(
+    $pv_checks[] = array(
         'cat'    => 'Privacyverklaring',
         'title'  => 'Contactgegevens ingevuld',
         'desc'   => 'Contactgegevens van de verwerkingsverantwoordelijke zijn verplicht zodat betrokkenen hun rechten kunnen uitoefenen.',
@@ -4416,7 +4527,7 @@ function cm_render_compliance_content() {
         'status' => ! empty( $pv['pv_email'] ) ? 'ok' : 'fail',
         'fix'    => $link('cookiemelding-privacy', '', 'Privacyverklaring aanvullen'),
     );
-    $checks[] = array(
+    $pv_checks[] = array(
         'cat'    => 'Privacyverklaring',
         'title'  => 'Datum bijgewerkt ingevuld',
         'desc'   => 'Bezoekers moeten kunnen zien wanneer de privacyverklaring voor het laatst is bijgewerkt.',
@@ -4549,6 +4660,35 @@ function cm_render_compliance_content() {
     </div>
     <?php endforeach; ?>
 
+    <!-- Privacyverklaring — apart blok, telt niet mee in score -->
+    <h3 style="font-size:14px;font-weight:600;color:#1d2327;margin:32px 0 12px;padding:0">Privacyverklaring</h3>
+    <p style="font-size:12px;color:#646970;margin:0 0 12px">Deze checks zijn ter informatie en tellen niet mee in de score hierboven.</p>
+    <div class="cm-group" style="margin-bottom:16px">
+        <table style="width:100%;border-collapse:collapse">
+            <?php foreach ( $pv_checks as $check ) :
+                $icon  = $check['status'] === 'ok' ? '&#10003;' : ( $check['status'] === 'fail' ? '&#10007;' : '&#9888;' );
+                $color = $check['status'] === 'ok' ? '#00a32a' : ( $check['status'] === 'fail' ? '#b32d2e' : '#996800' );
+                $bg    = $check['status'] === 'ok' ? '#f0faf0' : ( $check['status'] === 'fail' ? '#fcf0f1' : '#fef8ee' );
+            ?>
+            <tr style="border-bottom:1px solid #f0f0f1">
+                <td style="width:36px;padding:12px 8px 12px 16px;vertical-align:top">
+                    <span style="display:inline-flex;width:24px;height:24px;border-radius:50%;background:<?php echo esc_attr($bg); ?>;color:<?php echo esc_attr($color); ?>;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0"><?php echo $icon; ?></span>
+                </td>
+                <td style="padding:12px 8px;vertical-align:top">
+                    <div style="font-weight:600;font-size:13px;color:#1d2327;margin-bottom:2px"><?php echo $check['title']; ?></div>
+                    <div style="font-size:12px;color:#646970;line-height:1.5"><?php echo $check['desc']; ?></div>
+                    <?php if ( ! empty($check['ref']) ) : ?>
+                    <div style="font-size:11px;color:#a7aaad;margin-top:3px"><?php echo $check['ref']; ?></div>
+                    <?php endif; ?>
+                </td>
+                <td style="padding:12px 16px 12px 8px;vertical-align:middle;text-align:right;white-space:nowrap;font-size:12px">
+                    <?php if ( $check['status'] !== 'ok' ) echo $check['fix']; ?>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </table>
+    </div>
+
     <!-- DEEL 2: Ingebouwde kenmerken -->
     <h3 style="font-size:14px;font-weight:600;color:#1d2327;margin:32px 0 12px;padding:0">Ingebouwd in Cookiebaas</h3>
     <p style="font-size:12px;color:#646970;margin:0 0 16px">Deze kenmerken zijn standaard actief en vereisen geen configuratie. Ze worden niet meegenomen in de score.</p>
@@ -4658,8 +4798,16 @@ function cm_render_reset_content() {
                     <span><strong>Consent data wissen</strong><span style="display:block;font-size:12px;color:#646970;margin-top:2px">Verhoogt de consent-versie zodat alle bezoekers opnieuw de banner zien.</span></span>
                 </label>
             </div>
-            <button type="button" class="button" id="cm-reset-selected" style="color:#d63638;border-color:#d63638;font-weight:600">Geselecteerde items resetten</button>
-            <span id="cm-reset-selected-status" style="margin-left:12px;font-size:13px"></span>
+            <button type="button" class="button" id="cm-reset-selective-preview" disabled style="color:#d63638;border-color:#d63638;font-weight:600">Geselecteerde items resetten</button>
+            <span id="cm-reset-selective-none" style="margin-left:12px;font-size:13px;display:none;color:#d63638">Selecteer minimaal één item.</span>
+
+            <div id="cm-reset-summary" style="display:none;margin-top:16px;padding:14px 16px;background:#fef7f7;border:1px solid #f5c6c7;border-radius:4px">
+                <p style="margin:0 0 10px;font-weight:600;color:#d63638">Weet u zeker dat u de volgende items wilt resetten?</p>
+                <ul id="cm-reset-summary-list" style="margin:0 0 14px;padding-left:18px;font-size:13px"></ul>
+                <button type="button" class="button button-primary" id="cm-reset-selective-confirm" style="background:#d63638;border-color:#d63638">Ja, definitief resetten</button>
+                <button type="button" class="button" id="cm-reset-selective-cancel" style="margin-left:8px">Annuleren</button>
+                <span id="cm-reset-selective-status" style="margin-left:12px;font-size:13px"></span>
+            </div>
         </div>
     </div>
     <div class="cm-group" style="border-color:#8a0000;background:#fff5f5">
@@ -4673,67 +4821,82 @@ function cm_render_reset_content() {
     <?php
 }
 
+function cm_render_licentie_content() {
+    $lic = cm_license_get();
+    $is_valid = cm_license_is_valid();
+    $has_key = ! empty( $lic['key'] );
+    ?>
+    <div class="cm-group" style="border-color:<?php echo $is_valid ? '#00a32a' : '#b32d2e'; ?>">
+        <h3 class="cm-group-title" style="background:<?php echo $is_valid ? '#edf7f0' : '#fef7f7'; ?>;border-color:<?php echo $is_valid ? '#c3e6cd' : '#f5c6c7'; ?>;color:<?php echo $is_valid ? '#1a7a45' : '#b32d2e'; ?>">Licentie</h3>
+        <div style="padding:16px 20px;line-height:1.7">
+            <?php if ( $is_valid ) : ?>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                    <span style="color:#00a32a;font-size:18px;font-weight:700">&#10003;</span>
+                    <span style="font-weight:600;color:#1a7a45">Licentie actief</span>
+                </div>
+            <?php elseif ( $has_key ) : ?>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                    <span style="color:#b32d2e;font-size:18px;font-weight:700">&#10007;</span>
+                    <span style="font-weight:600;color:#b32d2e">Licentie <?php echo esc_html( $lic['status'] === 'expired' ? 'verlopen' : 'ongeldig' ); ?> — banner is niet actief</span>
+                </div>
+            <?php else : ?>
+                <p style="margin:0 0 12px;font-size:13px;color:#b32d2e;font-weight:600">Geen licentie geactiveerd — de cookiebanner wordt niet getoond.</p>
+            <?php endif; ?>
+
+            <table class="form-table cm-form-table" style="margin:0"><tbody>
+            <tr>
+                <th><label for="cm_license_key">Licentiesleutel</label></th>
+                <td>
+                    <input type="text" id="cm_license_key" value="<?php echo esc_attr( $lic['key'] ); ?>" class="regular-text" placeholder="CB-XXXXX-XXXXX-XXXXX-XXXXX" <?php echo $is_valid ? 'readonly' : ''; ?> style="font-family:monospace;letter-spacing:0.5px">
+                </td>
+            </tr>
+            <?php if ( $has_key ) : ?>
+            <tr>
+                <th>Status</th>
+                <td>
+                    <span style="font-weight:600;color:<?php echo $is_valid ? '#00a32a' : '#b32d2e'; ?>"><?php echo esc_html( ucfirst( $lic['status'] ?: 'onbekend' ) ); ?></span>
+                    <?php if ( $lic['expires_at'] ) : ?>
+                        &mdash; verloopt <?php echo date_i18n( 'd F Y', strtotime( $lic['expires_at'] ) ); ?>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <tr>
+                <th>Domein</th>
+                <td><code><?php echo esc_html( $lic['domain'] ?: cm_license_get_domain() ); ?></code></td>
+            </tr>
+            <tr>
+                <th>Laatste controle</th>
+                <td><?php echo $lic['last_check'] ? date_i18n( 'd-m-Y H:i', $lic['last_check'] ) : 'Nog niet gecontroleerd'; ?></td>
+            </tr>
+            <?php endif; ?>
+            </tbody></table>
+
+            <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+                <?php if ( ! $is_valid ) : ?>
+                    <button type="button" class="button button-primary" id="cm-license-activate">Activeren</button>
+                <?php endif; ?>
+                <?php if ( $has_key ) : ?>
+                    <button type="button" class="button" id="cm-license-check">Status controleren</button>
+                    <button type="button" class="button" id="cm-license-deactivate" style="color:#b32d2e">Deactiveren</button>
+                <?php endif; ?>
+                <span id="cm-license-status" style="margin-left:8px;font-size:13px;line-height:30px"></span>
+            </div>
+
+        </div>
+    </div>
+    <?php
+}
+
 function cm_render_help_content() {
     ?>
     <div class="cm-group">
         <h3 class="cm-group-title">Plugin informatie</h3>
         <table class="form-table cm-form-table"><tbody>
         <tr><th>Versie</th><td><?php echo esc_html(CM_VERSION); ?></td></tr>
-        <tr><th>Gemaakt door</th><td><a href="https://www.ruudvdheijden.nl/" target="_blank"><strong>Ruud van der Heijden</strong></a></td></tr>
+        <tr><th>Gemaakt door</th><td><a href="https://www.cookiebaas.nl/" target="_blank"><strong>Ruud van der Heijden</strong></a></td></tr>
         <tr><th>Cookie naam</th><td><code>cc_cm_consent</code></td></tr>
         <tr><th>AVG-compliant</th><td>Ja &mdash; opt-in, geen pre-aangevinkte marketing cookies</td></tr>
         </tbody></table>
-    </div>
-    <div class="cm-group">
-        <h3 class="cm-group-title">Automatische updates</h3>
-        <div style="padding:16px 20px;line-height:1.7">
-            <p style="margin:0 0 12px;font-size:13px;color:#3c434a">Cookiebaas controleert automatisch op nieuwe versies via GitHub. Bij een publieke repository hoeft u niets in te vullen. Gebruikt u een <strong>private repository</strong>? Vul dan hieronder uw GitHub Personal Access Token in.</p>
-            <?php
-            $gh_token = get_option( 'cm_github_token', '' );
-            $is_connected = ! empty( $gh_token );
-            // Test de connectie
-            $connection_status = '';
-            if ( $is_connected ) {
-                $test_url = sprintf( 'https://api.github.com/repos/%s/%s', 'ruudvanderheijden', 'cookiebaas' );
-                $test = wp_remote_get( $test_url, array(
-                    'headers' => array(
-                        'Accept'        => 'application/vnd.github.v3+json',
-                        'Authorization' => 'Bearer ' . $gh_token,
-                        'User-Agent'    => 'Cookiebaas-Updater/' . CM_VERSION,
-                    ),
-                    'timeout' => 5,
-                ));
-                if ( ! is_wp_error($test) && wp_remote_retrieve_response_code($test) === 200 ) {
-                    $connection_status = '<span style="color:#00a32a;font-weight:500">&#10003; Verbonden met GitHub</span>';
-                } else {
-                    $connection_status = '<span style="color:#b32d2e;font-weight:500">&#10007; Token is ongeldig of verlopen</span>';
-                }
-            }
-            ?>
-            <table class="form-table cm-form-table" style="margin:0"><tbody>
-            <tr>
-                <th><label for="cm_github_token">GitHub Token</label></th>
-                <td>
-                    <input type="password" id="cm_github_token" name="cm_github_token" value="<?php echo esc_attr( $gh_token ); ?>" class="regular-text" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
-                    <button type="button" class="button button-small" onclick="var f=document.getElementById('cm_github_token');f.type=f.type==='password'?'text':'password'" style="margin-left:4px">Toon/verberg</button>
-                    <?php if ( $connection_status ) echo '<br>' . $connection_status; ?>
-                    <p class="description" style="margin-top:6px">
-                        Alleen nodig bij een <strong>private</strong> repository. Maak een token aan op
-                        <a href="https://github.com/settings/tokens?type=beta" target="_blank">github.com/settings/tokens</a>
-                        &rarr; Fine-grained tokens &rarr; Selecteer alleen de <code>cookiebaas</code> repository &rarr; Permissions: <strong>Contents: Read-only</strong>.
-                    </p>
-                </td>
-            </tr>
-            </tbody></table>
-            <div style="margin-top:12px">
-                <button type="button" class="button" id="cm-save-github-token">Token opslaan</button>
-                <?php if ( $is_connected ) : ?>
-                <button type="button" class="button" id="cm-remove-github-token" style="margin-left:8px;color:#b32d2e">Token verwijderen</button>
-                <?php endif; ?>
-                <button type="button" class="button" id="cm-check-update-btn" style="margin-left:8px">Nu controleren op updates</button>
-                <span id="cm-github-token-status" style="margin-left:12px;font-size:13px"></span>
-            </div>
-        </div>
     </div>
     <div class="cm-group">
         <h3 class="cm-group-title">Snel aan de slag</h3>
@@ -4752,6 +4915,7 @@ function cm_render_help_content() {
         <table class="form-table cm-form-table"><tbody>
         <tr><th>Volledige privacyverklaring</th><td><code>[cookiebaas_privacy]</code></td></tr>
         <tr><th>Alleen cookieparagraaf</th><td><code>[cookiebaas_cookies]</code></td></tr>
+        <tr><th>Cookievoorkeuren pagina</th><td><code>[cookiebaas_voorkeuren]</code></td></tr>
         </tbody></table>
     </div>
     <div class="cm-group" style="border-color:#b32d2e">
@@ -4785,7 +4949,7 @@ function cm_render_help_content() {
     <div class="cm-group">
         <h3 class="cm-group-title">Contact &amp; ondersteuning</h3>
         <div style="padding:16px 20px;line-height:1.8">
-            <p style="margin:0">Voor vragen: <a href="https://www.ruudvdheijden.nl/" target="_blank">ruudvdheijden.nl</a>.</p>
+            <p style="margin:0">Voor vragen: <a href="https://www.cookiebaas.nl/" target="_blank">cookiebaas.nl</a>.</p>
         </div>
     </div>
     <?php

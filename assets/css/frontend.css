@@ -5,7 +5,10 @@
 /* ---- OVERLAY ---- */
 #cm-overlay {
     position: fixed !important;
-    inset: 0;
+    top: calc(-1 * env(safe-area-inset-top, 0px));
+    left: calc(-1 * env(safe-area-inset-left, 0px));
+    right: calc(-1 * env(safe-area-inset-right, 0px));
+    bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
     background: rgba(0, 0, 0, var(--cm-overlay-alpha, 0.6));
     z-index: 2147483645 !important;
     opacity: 0;
@@ -35,7 +38,7 @@
 }
 #cm-banner[data-position="bottom-center"] .cm-box,
 #cm-banner:not([data-position]) .cm-box {
-    max-width: 760px;
+    max-width: var(--cm-banner-w-bottom, 760px);
     width: 100%;
 }
 
@@ -49,7 +52,7 @@
 }
 #cm-banner[data-position="center"].cm-active { transform: scale(1) !important; opacity: 1; }
 #cm-banner[data-position="center"] .cm-box {
-    max-width: 620px;
+    max-width: var(--cm-banner-w-center, 620px);
     width: 100%;
 }
 
@@ -62,7 +65,7 @@
 }
 #cm-banner[data-position="bottom-left"].cm-active { transform: translateX(0) !important; }
 #cm-banner[data-position="bottom-left"] .cm-box {
-    max-width: 420px;
+    max-width: var(--cm-banner-w-compact, 420px);
     width: 100%;
 }
 
@@ -75,7 +78,7 @@
 }
 #cm-banner[data-position="bottom-right"].cm-active { transform: translateX(0) !important; }
 #cm-banner[data-position="bottom-right"] .cm-box {
-    max-width: 420px;
+    max-width: var(--cm-banner-w-compact, 420px);
     width: 100%;
 }
 
@@ -124,10 +127,14 @@
 }
 .cm-title { font-size: 1.2rem; font-weight: 700; color: var(--cm-title-color, #111); margin: 0 0 12px; line-height: 1.3; }
 .cm-text { font-size: 0.9rem; line-height: 1.65; color: var(--cm-body-color, #555); margin-bottom: 24px; }
-.cm-text a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.cm-text a { color: var(--cm-link-color, inherit); text-decoration: underline; text-underline-offset: 3px; }
 .cm-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .cm-footer-left  { flex: 1; }
 .cm-footer-right { display: flex; align-items: center; gap: 10px; }
+
+/* Prefs footer: Opslaan staat eerder in DOM (betere tabvolgorde) maar visueel rechts */
+#cm-save-btn      { order: 2; }
+#cm-rejectall-btn { order: 1; }
 
 /* ---- BUTTONS ---- */
 .cm-btn {
@@ -138,7 +145,25 @@
     display: inline-flex !important; align-items: center !important; justify-content: center !important;
     text-decoration: none !important; box-sizing: border-box !important;
     letter-spacing: normal !important; text-transform: none !important;
-    min-width: 120px !important; /* gelijke minimale breedte voor alle knoppen */
+    min-width: 120px !important;
+    border: 1.5px solid transparent !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+}
+/* WCAG 2.1 AA: zichtbare focusring op knoppen bij toetsenbordnavigatie */
+.cm-btn:focus-visible {
+    outline: 3px solid var(--cm-toggle-on, #0091ff) !important;
+    outline-offset: 2px !important;
+    box-shadow: none !important;
+}
+.cm-btn:focus:not(:focus-visible),
+.cm-btn:focus-within:not(:focus-visible),
+.cm-btn:active {
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 /* Akkoord */
@@ -157,13 +182,25 @@ body #cm-prefs .cm-btn-accept:hover {
     transform: translateY(-1px) !important;
 }
 
-/* Weigeren — zelfde grootte als akkoord (EDPB gelijke prominentie) */
+/* Weigeren — zelfde vormgeving als akkoord (EDPB gelijke prominentie) */
 .cm-btn-reject {
     background: var(--cm-reject-bg, #111) !important;
     color: var(--cm-reject-text, #fff) !important;
     border: 1.5px solid var(--cm-reject-border, transparent) !important;
     border-radius: var(--cm-btn-radius, 10px) !important;
     text-decoration: none !important;
+    box-shadow: none !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+}
+.cm-btn-reject:focus:not(:focus-visible),
+.cm-btn-reject:active,
+body #cm-banner .cm-btn-reject:focus:not(:focus-visible),
+body #cm-prefs .cm-btn-reject:focus:not(:focus-visible) {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: var(--cm-reject-border, transparent) !important;
 }
 .cm-btn-reject:hover,
 body #cm-banner .cm-btn-reject:hover,
@@ -190,11 +227,16 @@ body #cm-prefs .cm-btn-reject:hover {
 
 /* Alles afwijzen (in prefs footer) */
 .cm-btn-outline {
-    background: transparent !important; border: 1.5px solid #ccc !important;
-    color: #333 !important;
+    background: transparent !important;
+    border: 1.5px solid var(--cm-outline-border, #d5d0c8) !important;
+    color: var(--cm-outline-text, #555) !important;
     border-radius: var(--cm-btn-radius, 10px) !important;
 }
-.cm-btn-outline:hover { background: #f5f2ee !important; border-color: #aaa !important; color: #111 !important; }
+.cm-btn-outline:hover {
+    background: var(--cm-outline-hover-bg, transparent) !important;
+    border-color: var(--cm-outline-hover-border, #999) !important;
+    color: var(--cm-outline-hover-text, #111) !important;
+}
 
 /* Extra hoge specificiteit — wint van thema !important regels */
 #cm-banner .cm-btn,
@@ -202,6 +244,31 @@ body #cm-prefs .cm-btn-reject:hover {
 body #cm-banner .cm-btn,
 body #cm-prefs .cm-btn {
     border-radius: var(--cm-btn-radius, 10px) !important;
+    border: 1.5px solid transparent !important;
+    box-shadow: none !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+}
+/* WCAG: focus-visible mag NOOIT worden overschreven door hoge-specificiteit regels */
+#cm-banner .cm-btn:focus-visible,
+#cm-prefs .cm-btn:focus-visible,
+body #cm-banner .cm-btn:focus-visible,
+body #cm-prefs .cm-btn:focus-visible {
+    outline: 3px solid var(--cm-toggle-on, #0091ff) !important;
+    outline-offset: 2px !important;
+}
+#cm-banner .cm-btn:focus:not(:focus-visible),
+#cm-prefs .cm-btn:focus:not(:focus-visible),
+body #cm-banner .cm-btn:focus:not(:focus-visible),
+body #cm-prefs .cm-btn:focus:not(:focus-visible) {
+    outline: none !important;
+    box-shadow: none !important;
+}
+#cm-banner .cm-btn:hover,
+#cm-prefs .cm-btn:hover,
+body #cm-banner .cm-btn:hover,
+body #cm-prefs .cm-btn:hover {
+    box-shadow: none !important;
 }
 #cm-banner .cm-btn-accept,
 #cm-prefs .cm-btn-accept,
@@ -209,7 +276,18 @@ body #cm-banner .cm-btn-accept,
 body #cm-prefs .cm-btn-accept {
     border-radius: var(--cm-btn-radius, 10px) !important;
     background: var(--cm-accept-bg, #111) !important;
+    color: var(--cm-accept-text, #fff) !important;
     border: 1.5px solid var(--cm-accept-border, transparent) !important;
+    box-shadow: none !important;
+}
+#cm-banner .cm-btn-accept:hover,
+#cm-prefs .cm-btn-accept:hover,
+body #cm-banner .cm-btn-accept:hover,
+body #cm-prefs .cm-btn-accept:hover {
+    background: var(--cm-accept-hover-bg, #0091ff) !important;
+    color: var(--cm-accept-hover-text, #fff) !important;
+    border-color: var(--cm-accept-border, transparent) !important;
+    box-shadow: none !important;
 }
 #cm-banner .cm-btn-reject,
 #cm-prefs .cm-btn-reject,
@@ -217,14 +295,59 @@ body #cm-banner .cm-btn-reject,
 body #cm-prefs .cm-btn-reject {
     border-radius: var(--cm-btn-radius, 10px) !important;
     background: var(--cm-reject-bg, #111) !important;
+    color: var(--cm-reject-text, #fff) !important;
     border: 1.5px solid var(--cm-reject-border, transparent) !important;
+    box-shadow: none !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
     text-decoration: none !important;
 }
+#cm-banner .cm-btn-reject:hover,
+#cm-prefs .cm-btn-reject:hover,
+body #cm-banner .cm-btn-reject:hover,
+body #cm-prefs .cm-btn-reject:hover {
+    background: var(--cm-reject-hover-bg, #0091ff) !important;
+    color: var(--cm-reject-hover-text, #fff) !important;
+    border-color: var(--cm-reject-border, transparent) !important;
+    box-shadow: none !important;
+}
+#cm-banner .cm-btn-reject:focus:not(:focus-visible),
+#cm-prefs .cm-btn-reject:focus:not(:focus-visible),
+body #cm-banner .cm-btn-reject:focus:not(:focus-visible),
+body #cm-prefs .cm-btn-reject:focus:not(:focus-visible) {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+}
 #cm-prefs .cm-btn-ghost,
-#cm-prefs .cm-btn-outline,
+#cm-banner .cm-btn-ghost,
 body #cm-prefs .cm-btn-ghost,
+body #cm-banner .cm-btn-ghost {
+    border-radius: var(--cm-btn-radius, 10px) !important;
+    background: transparent !important;
+    border: 1.5px solid var(--cm-prefs-border, #d5d0c8) !important;
+    color: var(--cm-prefs-text, #555) !important;
+}
+#cm-prefs .cm-btn-ghost:hover,
+#cm-banner .cm-btn-ghost:hover,
+body #cm-prefs .cm-btn-ghost:hover,
+body #cm-banner .cm-btn-ghost:hover {
+    border-color: var(--cm-prefs-hover-border, #999) !important;
+    color: var(--cm-prefs-hover-text, #111) !important;
+    background: transparent !important;
+}
+#cm-prefs .cm-btn-outline,
 body #cm-prefs .cm-btn-outline {
     border-radius: var(--cm-btn-radius, 10px) !important;
+    background: transparent !important;
+    border: 1.5px solid var(--cm-outline-border, #d5d0c8) !important;
+    color: var(--cm-outline-text, #555) !important;
+}
+#cm-prefs .cm-btn-outline:hover,
+body #cm-prefs .cm-btn-outline:hover {
+    background: var(--cm-outline-hover-bg, transparent) !important;
+    border-color: var(--cm-outline-hover-border, #999) !important;
+    color: var(--cm-outline-hover-text, #111) !important;
 }
 
 /* ---- PREFERENCES MODAL ---- */
@@ -265,10 +388,14 @@ body #cm-prefs .cm-btn-outline {
     transition: background 0.2s, color 0.2s; line-height: 1;
 }
 .cm-prefs-close:hover { background: #111 !important; color: #fff !important; }
+.cm-prefs-close:focus-visible {
+    outline: 3px solid var(--cm-toggle-on, #0091ff) !important;
+    outline-offset: 2px !important;
+}
 
 .cm-prefs-title { font-size: 1.15rem; font-weight: 700; color: var(--cm-title-color, #111); margin: 0 0 10px; padding-right: 40px; line-height: 1.3; }
 .cm-prefs-text { font-size: 0.875rem; line-height: 1.65; color: var(--cm-body-color, #555); margin-bottom: 22px; }
-.cm-prefs-text a { text-decoration: underline; text-underline-offset: 3px; }
+.cm-prefs-text a { color: var(--cm-link-color, inherit); text-decoration: underline; text-underline-offset: 3px; }
 
 /* Alle cookies toestaan — standaard zwart, hover blauw */
 .cm-allow-all {
@@ -280,7 +407,11 @@ body #cm-prefs .cm-btn-outline {
     border-radius: var(--cm-btn-radius, 10px) !important;
     cursor: pointer; transition: background 0.2s, transform 0.15s;
 }
-.cm-allow-all:hover { background: var(--cm-allowall-hover-bg, #0091ff) !important; transform: translateY(-1px); }
+.cm-allow-all:hover { background: var(--cm-allowall-hover-bg, #0091ff) !important; color: var(--cm-allowall-hover-text, #fff) !important; transform: translateY(-1px); }
+.cm-allow-all:focus-visible {
+    outline: 3px solid var(--cm-toggle-on, #0091ff) !important;
+    outline-offset: 2px !important;
+}
 #cm-prefs .cm-allow-all,
 body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !important; }
 
@@ -308,6 +439,8 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
 .cm-toggle-track::after { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
 .cm-toggle input:checked + .cm-toggle-track { background: var(--cm-toggle-on, #0091ff); }
 .cm-toggle input:checked + .cm-toggle-track::after { transform: translateX(20px); }
+/* WCAG: zichtbare focus ring op toggle bij keyboard navigatie */
+.cm-toggle input:focus-visible + .cm-toggle-track { outline: 3px solid var(--cm-toggle-on, #0091ff); outline-offset: 2px; border-radius: 24px; }
 .cm-always-on { font-size: 0.73rem; font-weight: 700; color: var(--cm-toggle-on, #0091ff); background: var(--cm-always-bg, #e8f4ff); padding: 4px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
 
 /* Category detail */
@@ -419,6 +552,8 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
     /* Center-positie: volle border-radius, padding rondom, gecentreerd op scherm */
     #cm-banner[data-position="center"] .cm-box { border-radius: var(--cm-popup-radius, 20px) !important; }
     #cm-banner[data-position="center"] { padding: 12px; }
+    #cm-banner[data-position="center"][data-mobile-padding="0"] { padding: 0; }
+    #cm-banner[data-position="center"][data-mobile-padding="0"] .cm-box { border-radius: 0 !important; }
 
     /* Alle bottom-posities: dezelfde look als center maar onderaan het scherm */
     #cm-banner:not([data-position="center"]) {
@@ -428,12 +563,22 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
         justify-content: center !important;
         transform: translateY(130%);
     }
+    /* Geen padding variant */
+    #cm-banner:not([data-position="center"])[data-mobile-padding="0"] {
+        padding: 0 !important;
+    }
+    #cm-banner:not([data-position="center"])[data-mobile-padding="0"] .cm-box {
+        border-radius: 0 !important;
+    }
     #cm-banner:not([data-position="center"]).cm-active {
         transform: translateY(0) !important;
     }
     #cm-banner:not([data-position="center"]) .cm-box {
         max-width: 100%;
         border-radius: var(--cm-popup-radius, 20px) !important;
+    }
+    #cm-banner:not([data-position="center"])[data-mobile-padding="0"] .cm-box {
+        border-radius: 0 !important;
     }
 
     /* Alle knoppen full-width onder elkaar — geldt voor alle posities */
@@ -495,7 +640,7 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
 #cm-float-btn.cm-float-icon svg { display: block; flex-shrink: 0; }
 
 /* ================================================================
-   WCAG 2.1 AA — zichtbare focusstijlen
+   WCAG 2.1 AA — zichtbare focusstijlen (alleen keyboard, niet touch)
 ================================================================ */
 #cm-banner :focus-visible,
 #cm-prefs :focus-visible {
@@ -516,6 +661,13 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
 #cm-banner :focus:not(:focus-visible),
 #cm-prefs  :focus:not(:focus-visible) {
     outline: none !important;
+    box-shadow: none !important;
+}
+/* Links: outline alleen verbergen bij touch (niet bij keyboard tab) */
+#cm-banner a:focus:not(:focus-visible),
+#cm-prefs  a:focus:not(:focus-visible) {
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 /* ================================================================
@@ -529,6 +681,22 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
     border-radius: 12px;
     background: var(--cm-embed-bg, #000000) !important;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+/* Neutraliseer responsive video wrappers van WordPress, Elementor, Divi, etc.
+   Deze wrappers gebruiken padding-top: 56.25% voor aspect ratio.
+   Wanneer het iframe vervangen wordt door een placeholder, veroorzaakt die padding extra ruimte. */
+.wp-block-embed__wrapper:has(.cm-embed-placeholder),
+.wp-has-aspect-ratio:has(.cm-embed-placeholder),
+.elementor-video-wrapper:has(.cm-embed-placeholder),
+.et_pb_video_box:has(.cm-embed-placeholder),
+.fluid-width-video-wrapper:has(.cm-embed-placeholder),
+.responsive-embed:has(.cm-embed-placeholder),
+.embed-responsive:has(.cm-embed-placeholder),
+.video-container:has(.cm-embed-placeholder) {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    position: relative !important;
+    height: auto !important;
 }
 .cm-embed-ratio {
     position: relative;
@@ -625,20 +793,28 @@ button.cm-embed-accept-btn:hover,
 /* Responsive: kleiner op mobiel */
 @media (max-width: 600px) {
     .cm-embed-inner {
-        padding: 16px 14px;
+        padding: 14px 12px;
+    }
+    .cm-embed-placeholder .cm-embed-icon {
+        font-size: 1.4rem;
+        margin-bottom: 4px;
     }
     .cm-embed-placeholder .cm-embed-title {
-        font-size: 0.92rem;
+        font-size: 0.82rem;
     }
     .cm-embed-placeholder .cm-embed-body {
-        font-size: 0.78rem;
-        margin-bottom: 6px;
+        font-size: 0.72rem;
+        margin-bottom: 4px;
     }
     button.cm-embed-accept-btn,
     .cm-embed-placeholder .cm-embed-accept-btn {
-        font-size: 0.82rem;
-        padding: 9px 22px;
-        margin-top: 10px;
+        font-size: 0.78rem;
+        padding: 8px 18px;
+        margin-top: 6px;
+    }
+    .cm-embed-placeholder .cm-embed-prefs-link {
+        font-size: 0.7rem;
+        margin-top: 4px;
     }
 }
 
@@ -646,5 +822,48 @@ button.cm-embed-accept-btn:hover,
 @media (prefers-color-scheme: dark) {
     .cm-embed-placeholder {
         background: var(--cm-embed-bg, #000000) !important;
+    }
+}
+
+/* ================================================================
+   Touch devices — geen hover-effecten (voorkomt oplichten op mobile)
+================================================================ */
+@media (hover: none) and (pointer: coarse) {
+    #cm-banner .cm-btn:hover,
+    #cm-prefs .cm-btn:hover,
+    body #cm-banner .cm-btn:hover,
+    body #cm-prefs .cm-btn:hover {
+        transform: none !important;
+    }
+    .cm-btn-accept:hover,
+    body #cm-banner .cm-btn-accept:hover,
+    body #cm-prefs .cm-btn-accept:hover {
+        background: var(--cm-accept-bg, #111) !important;
+        color: var(--cm-accept-text, #fff) !important;
+        border-color: var(--cm-accept-border, transparent) !important;
+        transform: none !important;
+    }
+    .cm-btn-reject:hover,
+    body #cm-banner .cm-btn-reject:hover,
+    body #cm-prefs .cm-btn-reject:hover {
+        background: var(--cm-reject-bg, #111) !important;
+        color: var(--cm-reject-text, #fff) !important;
+        border-color: var(--cm-reject-border, transparent) !important;
+        transform: none !important;
+    }
+    .cm-allow-all:hover {
+        background: var(--cm-allowall-bg, #111) !important;
+        color: var(--cm-allowall-text, #fff) !important;
+        transform: none !important;
+    }
+    .cm-btn-ghost:hover {
+        border-color: var(--cm-prefs-border, #d5d0c8) !important;
+        color: var(--cm-prefs-text, #555) !important;
+        background: transparent !important;
+    }
+    .cm-btn-outline:hover {
+        background: transparent !important;
+        border-color: var(--cm-outline-border, #d5d0c8) !important;
+        color: var(--cm-outline-text, #555) !important;
     }
 }

@@ -53,36 +53,60 @@
     var prefsOpen = false;
 
     /* ---- SHOW / HIDE ---- */
+    function showOverlay() {
+        if (!overlay) return;
+        overlay.style.display = '';
+        overlay.style.opacity = '';
+        overlay.offsetHeight; // force reflow voor CSS transitie
+        overlay.classList.add('cm-active');
+    }
+
+    function hideAll() {
+        if (banner)  banner.classList.remove('cm-active');
+        if (prefsEl) prefsEl.classList.remove('cm-active');
+        if (overlay) {
+            overlay.classList.remove('cm-active');
+            overlay.style.opacity = '0';
+            setTimeout(function() {
+                overlay.style.display = 'none';
+                overlay.style.opacity = '';
+            }, 400);
+        }
+        if (SHOW_FLOAT && floatEl) floatEl.classList.add('cm-visible');
+    }
+
     function showBanner() {
         if (!overlay || !banner) return;
-        overlay.classList.add('cm-active');
+        showOverlay();
         banner.classList.add('cm-active');
         if (floatEl) floatEl.classList.remove('cm-visible');
         setTimeout(function(){
-            var btn = document.getElementById('cm-btn-accept');
-            if (btn) btn.focus();
+            // Zet focus direct op Akkoord — eerste element in gewenste tabvolgorde
+            var acceptBtn = document.getElementById('cm-btn-accept');
+            if (acceptBtn && acceptBtn.offsetParent !== null) {
+                acceptBtn.focus();
+            } else {
+                banner.focus();
+            }
         }, 500);
-    }
-
-    function hideBanner() {
-        if (!overlay || !banner) return;
-        overlay.classList.remove('cm-active');
-        banner.classList.remove('cm-active');
-        if (SHOW_FLOAT && floatEl) floatEl.classList.add('cm-visible');
     }
 
     function openPrefs() {
         prefsOpen = true;
+        showOverlay();
         if (prefsEl) prefsEl.classList.add('cm-active');
-        if (overlay) overlay.classList.add('cm-active');
         banner.classList.remove('cm-active');
-        // Load current state into toggles
         var consent = getConsent();
         if (consent && togAnalytics) togAnalytics.checked = !!consent.analytics;
         if (consent && togMarketing) togMarketing.checked = !!consent.marketing;
         setTimeout(function(){
-            var closeBtn = document.getElementById('cm-prefs-close');
-            if (closeBtn) closeBtn.focus();
+            // WCAG: focus op eerste focusbaar element in popup (sluitknop = logische start)
+            var focusable = Array.from(prefsEl.querySelectorAll(
+                'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(function(el){ return el.offsetParent !== null; });
+            if (focusable.length) {
+                focusable[0].focus();
+            }
         }, 400);
     }
 
@@ -93,48 +117,36 @@
         if (!consent || isExpired(consent)) {
             showBanner();
         } else {
-            if (overlay) overlay.classList.remove('cm-active');
+            hideAll();
         }
     }
 
     /* ---- CONSENT ACTIONS ---- */
     function acceptAll() {
         setConsent({ analytics: true, marketing: true, method: 'accept-all' });
-        hideBanner();
-        if (prefsEl) prefsEl.classList.remove('cm-active');
-        if (overlay) overlay.classList.remove('cm-active');
-        if (togAnalytics) togAnalytics.checked = true;
-        if (togMarketing) togMarketing.checked = true;
-        loadScripts(true, true);
-        pushDataLayer(true, true, 'accept-all');
         dispatchEvent('cm_consent_accepted', { analytics: true, marketing: true });
+        hideAll();
+        // Herlaad pagina zodat geblokkeerde scripts alsnog laden en overlay zeker weg is
+        setTimeout(function() { window.location.reload(); }, 300);
     }
 
     function rejectAll() {
         setConsent({ analytics: false, marketing: false, method: 'reject-all' });
-        hideBanner();
-        if (prefsEl) prefsEl.classList.remove('cm-active');
-        if (overlay) overlay.classList.remove('cm-active');
-        if (togAnalytics) togAnalytics.checked = false;
-        if (togMarketing) togMarketing.checked = false;
-        loadScripts(false, false);
-        pushDataLayer(false, false, 'reject-all');
         dispatchEvent('cm_consent_rejected', { analytics: false, marketing: false });
+        hideAll();
+        setTimeout(function() { window.location.reload(); }, 300);
     }
 
     function savePrefs() {
         var analytics = togAnalytics ? togAnalytics.checked : false;
         var marketing = togMarketing ? togMarketing.checked : false;
         setConsent({ analytics: analytics, marketing: marketing, method: 'custom' });
-        hideBanner();
-        if (prefsEl) prefsEl.classList.remove('cm-active');
-        if (overlay) overlay.classList.remove('cm-active');
-        loadScripts(analytics, marketing);
-        pushDataLayer(analytics, marketing, 'custom');
         dispatchEvent('cm_consent_saved', { analytics: analytics, marketing: marketing });
+        hideAll();
+        setTimeout(function() { window.location.reload(); }, 300);
     }
 
-    /* ---- CONDITIONAL SCRIPT LOADING ---- */
+        /* ---- CONDITIONAL SCRIPT LOADING ---- */
     function loadScripts(analytics, marketing) {
         // Dispatch events so theme/other plugins can hook in
         if (analytics) {
@@ -220,7 +232,7 @@
         if (btnAllowAll) btnAllowAll.addEventListener('click', acceptAll);
         if (btnRejectAll)btnRejectAll.addEventListener('click', rejectAll);
         if (btnSave)     btnSave.addEventListener('click', savePrefs);
-        if (btnFloat)    btnFloat.addEventListener('click', function(){ floatEl.classList.remove('cm-visible'); showBanner(); });
+        if (btnFloat)    btnFloat.addEventListener('click', function(){ btnFloat.blur(); floatEl.classList.remove('cm-visible'); showBanner(); });
 
         // Category expand/collapse
         var headers = document.querySelectorAll('.cm-cat-header');
@@ -234,6 +246,64 @@
         // Keyboard: Escape closes prefs
         document.addEventListener('keydown', function(e){
             if (e.key === 'Escape' && prefsOpen) closePrefs();
+        });
+
+        // Focus trap voor banner — volgorde: Akkoord → Weigeren → Cookievoorkeuren → links
+        if (banner) {
+            function getBannerFocusOrder() {
+                var accept  = document.getElementById('cm-btn-accept');
+                var reject  = document.getElementById('cm-btn-reject');
+                var prefs   = document.getElementById('cm-btn-prefs');
+                var links   = Array.from(banner.querySelectorAll('a[href]'))
+                                   .filter(function(el) { return el.offsetParent !== null; });
+                var list = [];
+                if (accept && accept.offsetParent !== null) list.push(accept);
+                if (reject && reject.offsetParent !== null) list.push(reject);
+                if (prefs  && prefs.offsetParent  !== null) list.push(prefs);
+                list = list.concat(links);
+                return list;
+            }
+
+            banner.addEventListener('keydown', function(e) {
+                if (e.key !== 'Tab') return;
+                e.preventDefault();
+                var focusable = getBannerFocusOrder();
+                if (!focusable.length) return;
+                var idx = focusable.indexOf(document.activeElement);
+                if (e.shiftKey) {
+                    focusable[idx <= 0 ? focusable.length - 1 : idx - 1].focus();
+                } else {
+                    focusable[idx === -1 || idx >= focusable.length - 1 ? 0 : idx + 1].focus();
+                }
+            });
+        }
+
+        // Focus trap voor prefs popup — Tab blijft binnen het popup
+        if (prefsEl) {
+            prefsEl.addEventListener('keydown', function(e) {
+                if (e.key !== 'Tab' || !prefsOpen) return;
+                var focusable = Array.from(prefsEl.querySelectorAll(
+                    'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                )).filter(function(el) { return el.offsetParent !== null; });
+                if (!focusable.length) return;
+                var first = focusable[0];
+                var last  = focusable[focusable.length - 1];
+                if (e.shiftKey) {
+                    if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+                } else {
+                    if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
+                }
+            });
+        }
+
+        // Enter/Space activeren categorie-headers (role=button) in prefs
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            var target = document.activeElement;
+            if (target && target.classList.contains('cm-cat-header')) {
+                e.preventDefault();
+                target.click();
+            }
         });
     }
 
@@ -259,5 +329,11 @@
     } else {
         init();
     }
+
+    // Touch: verwijder focus na tap zodat geen focus-ring zichtbaar is op mobile
+    document.addEventListener('touchend', function(e) {
+        var el = e.target && e.target.closest ? e.target.closest('.cm-btn, .cm-btn-ghost, .cm-btn-outline, .cm-allow-all') : null;
+        if (el) setTimeout(function() { el.blur(); }, 100);
+    }, { passive: true });
 
 })();
