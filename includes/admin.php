@@ -1371,6 +1371,49 @@ function cm_ajax_export_register() {
 }
 
 
+add_action( 'wp_ajax_cm_export_cookies_csv', 'cm_ajax_export_cookies_csv' );
+function cm_ajax_export_cookies_csv() {
+    check_ajax_referer( 'cm_save_settings', 'nonce' );
+    if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
+
+    $cookies   = cm_get_cookie_list();
+    $cat_labels = array(
+        'functional' => 'Functioneel',
+        'analytics'  => 'Analytisch',
+        'marketing'  => 'Marketing',
+    );
+    $grondslagen = array(
+        'functional' => 'Strikt noodzakelijk / Gerechtvaardigd belang',
+        'analytics'  => 'Toestemming',
+        'marketing'  => 'Toestemming',
+    );
+
+    $escape = function( $v ) { return '"' . str_replace( '"', '""', (string) $v ) . '"'; };
+
+    $rows   = array();
+    $rows[] = implode( ',', array_map( $escape, array(
+        'Cookie naam', 'Aanbieder', 'Categorie', 'Grondslag', 'Doel', 'Looptijd', 'Domein', 'Wildcard',
+    ) ) );
+
+    foreach ( $cookies as $ck ) {
+        $cat     = $ck['category'] ?? 'functional';
+        $rows[]  = implode( ',', array_map( $escape, array(
+            $ck['name']     ?? '',
+            $ck['provider'] ?? '',
+            $cat_labels[ $cat ] ?? $cat,
+            $grondslagen[ $cat ] ?? '',
+            $ck['purpose']  ?? '',
+            $ck['duration'] ?? '',
+            $ck['domain']   ?? '',
+            ! empty( $ck['wildcard'] ) ? 'Ja' : 'Nee',
+        ) ) );
+    }
+
+    $csv      = implode( "\r\n", $rows );
+    $filename = 'cookielijst-' . date( 'Y-m-d' ) . '.csv';
+    wp_send_json_success( array( 'csv' => $csv, 'filename' => $filename, 'count' => count( $cookies ) ) );
+}
+
 add_action( 'wp_ajax_cm_export_settings', 'cm_ajax_export_settings' );
 function cm_ajax_export_settings() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );
@@ -1918,6 +1961,7 @@ function cm_render_theme_fields( $theme, $s ) {
         <tr><th><label>Toggle kleur (aan)</label></th><td><?php $f('toggle_on'); ?></td></tr>
         <tr><th><label>Toggle kleur (uit)</label></th><td><?php $f('toggle_off'); ?></td></tr>
         <tr><th><label>"Altijd actief" badge achtergrond</label></th><td><?php $f('always_bg'); ?></td></tr>
+        <tr><th><label>"Altijd actief" badge tekstkleur</label></th><td><?php $f('always_on_color'); ?></td></tr>
         <tr><td colspan="2"><h4 class="cm-sub-head cm-btn-sub-head">Expand-icoon (+)</h4></td></tr>
         <tr><th><label>Achtergrond</label></th><td><?php $f('expand_bg'); ?><p class="description">Achtergrond van het + icoon bij categorieën.</p></td></tr>
         <tr><th><label>Icoon kleur</label></th><td><?php $f('expand_icon'); ?></td></tr>
@@ -1931,7 +1975,13 @@ function cm_render_theme_fields( $theme, $s ) {
         <tr><th><label>Cookie meta kleur</label></th><td><?php $f('cookie_meta'); ?></td></tr>
         <tr><th><label>Randkleur (universeel)</label></th><td><?php $f('cat_border'); ?><p class="description">Rand om categorieën, diensten en cookie-items.</p></td></tr>
         <tr><th><label>Achtergrond dienst</label></th><td><?php $f('service_bg'); ?></td></tr>
+        <tr><th><label>Servicenaam tekstkleur</label></th><td><?php $f('service_name'); ?></td></tr>
         <tr><th><label>Achtergrond cookie-rij</label></th><td><?php $f('cookie_item_bg'); ?></td></tr>
+        <tr><th><label>Lege cookielijst tekstkleur</label></th><td><?php $f('cookie_empty'); ?></td></tr>
+        <tr><td colspan="2"><h4 class="cm-sub-head cm-btn-sub-head">Badge "derde partij / buiten EU"</h4></td></tr>
+        <tr><th><label>Tekstkleur</label></th><td><?php $f('badge_text'); ?></td></tr>
+        <tr><th><label>Achtergrond</label></th><td><?php $f('badge_bg'); ?></td></tr>
+        <tr><th><label>Randkleur</label></th><td><?php $f('badge_border'); ?></td></tr>
         </tbody></table>
         </div>
     </div>
@@ -2841,8 +2891,12 @@ function cm_render_admin_page() {
                             </td>
                         </tr>
                         <tr>
-                            <th><label for="txt_embed_btn">Knoptekst</label></th>
+                            <th><label for="txt_embed_btn">Knoptekst (inhoud laden)</label></th>
                             <td><input type="text" name="txt_embed_btn" id="txt_embed_btn" value="<?php echo esc_attr( cm_get('txt_embed_btn') ); ?>" class="regular-text"></td>
+                        </tr>
+                        <tr>
+                            <th><label for="txt_embed_accept_btn">Knoptekst (cookies accepteren)</label></th>
+                            <td><input type="text" name="txt_embed_accept_btn" id="txt_embed_accept_btn" value="<?php echo esc_attr( cm_get('txt_embed_accept_btn') ); ?>" class="regular-text"></td>
                         </tr>
                         </tbody></table>
                     </div>
@@ -3091,6 +3145,7 @@ function cm_render_privacy_standalone_page() {
                     <tr><th><label>Straat + huisnummer</label></th><td><input type="text" class="regular-text cm-pv-field" name="pv_straat" value="<?php echo esc_attr($pvg('pv_straat')); ?>"></td></tr>
                     <tr><th><label>Postcode + plaats + land</label></th><td><input type="text" class="regular-text cm-pv-field" name="pv_postcode_plaats" value="<?php echo esc_attr($pvg('pv_postcode_plaats')); ?>" placeholder="1234 AB Amsterdam, Nederland"></td></tr>
                     <tr><th><label>KVK-nummer <span style="font-weight:400">(optioneel)</span></label></th><td><input type="text" class="regular-text cm-pv-field" name="pv_kvk" value="<?php echo esc_attr($pvg('pv_kvk')); ?>"></td></tr>
+                    <tr><th><label>Telefoonnummer <span style="font-weight:400">(optioneel)</span></label></th><td><input type="text" class="regular-text cm-pv-field" name="pv_telefoon" value="<?php echo esc_attr($pvg('pv_telefoon')); ?>"></td></tr>
                     <tr><th><label>E-mailadres</label></th><td><input type="email" class="regular-text cm-pv-field" name="pv_email" value="<?php echo esc_attr($pvg('pv_email')); ?>"></td></tr>
                     <tr><th><label>Versienummer</label></th><td><input type="text" style="width:80px" class="cm-pv-field" name="pv_versie" value="<?php echo esc_attr($pvg('pv_versie')); ?>" placeholder="1.0"></td></tr>
                     <tr><th><label>Datum bijgewerkt</label></th><td><input type="text" style="width:160px" class="cm-pv-field" name="pv_datum" value="<?php echo esc_attr($pvg('pv_datum')); ?>" placeholder="1 januari 2025"></td></tr>
@@ -3165,7 +3220,69 @@ function cm_render_privacy_standalone_page() {
                                 <p class="description">Optioneel: voeg eigen veldnamen toe, één per regel. Deze worden vermeld in de privacyverklaring.</p>
                         </td>
                     </tr>
+                    <tr>
+                        <th><label>Rechtsgrondslag contactformulier</label></th>
+                        <td>
+                            <?php
+                            $avg_grondslagen = array(
+                                'Toestemming (Art. 6 lid 1 sub a AVG)',
+                                'Uitvoering overeenkomst (Art. 6 lid 1 sub b AVG)',
+                                'Wettelijke verplichting (Art. 6 lid 1 sub c AVG)',
+                                'Vitaal belang (Art. 6 lid 1 sub d AVG)',
+                                'Publiekrechtelijke taak (Art. 6 lid 1 sub e AVG)',
+                                'Gerechtvaardigd belang (Art. 6 lid 1 sub f AVG)',
+                            );
+                            $cur_cfg = $pvg('pv_cf_grondslag');
+                            ?>
+                            <select class="regular-text cm-pv-field" name="pv_cf_grondslag">
+                                <?php foreach ( $avg_grondslagen as $g ) : ?>
+                                <option value="<?php echo esc_attr($g); ?>" <?php selected($cur_cfg, $g); ?>><?php echo esc_html($g); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description">Verplicht te vermelden (Art. 13 lid 1c AVG). Kies een van de 6 AVG-grondslagen.</p>
+                        </td>
+                    </tr>
                     </tbody></table>
+                </div>
+
+                <!-- 2.3 Nieuwsbrief -->
+                <div class="cm-group">
+                    <h3 class="cm-group-title">2.3 Nieuwsbrief / e-mailmarketing <span style="font-size:11px;font-weight:400;color:#787c82">(optioneel)</span></h3>
+                    <table class="form-table cm-form-table"><tbody>
+                    <tr>
+                        <th>Nieuwsbrief sectie tonen</th>
+                        <td>
+                            <label><input type="checkbox" class="cm-pv-cb" name="pv_nieuwsbrief_enabled" value="1" <?php checked($pvg('pv_nieuwsbrief_enabled'),'1'); ?> id="cm-nwsb-toggle"> Ja, wij versturen een nieuwsbrief of marketing-e-mails</label>
+                        </td>
+                    </tr>
+                    </tbody></table>
+                    <div id="cm-nwsb-fields" style="<?php echo $pvg('pv_nieuwsbrief_enabled') === '1' ? '' : 'display:none'; ?>">
+                        <table class="form-table cm-form-table"><tbody>
+                        <tr>
+                            <th><label>Rechtsgrondslag</label></th>
+                            <td>
+                                <?php $cur_nwsb = $pvg('pv_nieuwsbrief_grondslag'); ?>
+                            <select class="regular-text cm-pv-field" name="pv_nieuwsbrief_grondslag">
+                                <?php foreach ( $avg_grondslagen as $g ) : ?>
+                                <option value="<?php echo esc_attr($g); ?>" <?php selected($cur_nwsb, $g); ?>><?php echo esc_html($g); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><label>Afmeld-URL <span style="font-weight:400">(optioneel)</span></label></th>
+                            <td>
+                                <input type="url" class="regular-text cm-pv-field" name="pv_nieuwsbrief_afmelden" value="<?php echo esc_attr($pvg('pv_nieuwsbrief_afmelden')); ?>" placeholder="https://...">
+                                <p class="description">Laat leeg voor standaardtekst "via de afmeldlink onderaan elke e-mail".</p>
+                            </td>
+                        </tr>
+                        </tbody></table>
+                    </div>
+                    <script>
+                    document.getElementById('cm-nwsb-toggle').addEventListener('change', function() {
+                        document.getElementById('cm-nwsb-fields').style.display = this.checked ? '' : 'none';
+                    });
+                    </script>
                 </div>
 
                 <!-- 3. Doeleinden -->
@@ -3182,7 +3299,7 @@ function cm_render_privacy_standalone_page() {
                         <?php $doeleinden = json_decode($pvg('pv_doeleinden'), true) ?: array(); foreach ($doeleinden as $rij) : ?>
                         <tr>
                             <td style="border:1px solid #dcdcde;padding:4px 6px"><input type="text" class="widefat" style="border:0;box-shadow:none" placeholder="Doel" value="<?php echo esc_attr($rij['doel']??''); ?>"></td>
-                            <td style="border:1px solid #dcdcde;padding:4px 6px"><input type="text" class="widefat" style="border:0;box-shadow:none" placeholder="Grondslag" value="<?php echo esc_attr($rij['grondslag']??''); ?>"></td>
+                            <td style="border:1px solid #dcdcde;padding:4px 6px"><input type="text" class="widefat" style="border:0;box-shadow:none" placeholder="Grondslag" list="cm-avg-grondslagen-list" value="<?php echo esc_attr($rij['grondslag']??''); ?>"></td>
                             <td style="border:1px solid #dcdcde;padding:4px 6px"><input type="text" class="widefat" style="border:0;box-shadow:none" placeholder="Termijn" value="<?php echo esc_attr($rij['termijn']??''); ?>"></td>
                             <td style="border:1px solid #dcdcde;padding:4px 6px;text-align:center"><button type="button" class="button button-small cm-pv-del-row" style="color:#b32d2e">&#x2715;</button></td>
                         </tr>
@@ -3190,6 +3307,14 @@ function cm_render_privacy_standalone_page() {
                         </tbody>
                     </table>
                     <div class="cm-group-add-btn"><button type="button" class="button button-secondary" id="cm-pv-add-doel">+ Rij toevoegen</button></div>
+                    <datalist id="cm-avg-grondslagen-list">
+                        <option value="Toestemming (Art. 6 lid 1 sub a AVG)">
+                        <option value="Uitvoering overeenkomst (Art. 6 lid 1 sub b AVG)">
+                        <option value="Wettelijke verplichting (Art. 6 lid 1 sub c AVG)">
+                        <option value="Vitaal belang (Art. 6 lid 1 sub d AVG)">
+                        <option value="Publiekrechtelijke taak (Art. 6 lid 1 sub e AVG)">
+                        <option value="Gerechtvaardigd belang (Art. 6 lid 1 sub f AVG)">
+                    </datalist>
                 </div>
 
                 <!-- 4. Cookies -->
@@ -3263,6 +3388,8 @@ function cm_render_privacy_standalone_page() {
                     <table class="form-table cm-form-table"><tbody>
                     <tr><th><label>Contactformulier</label></th><td><input type="text" class="regular-text cm-pv-field" name="pv_bewaar_contact" value="<?php echo esc_attr($pvg('pv_bewaar_contact')); ?>" placeholder="3 jaar na laatste contact"></td></tr>
                     <tr><th><label>Serverlogbestanden</label></th><td><input type="text" class="regular-text cm-pv-field" name="pv_bewaar_logs" value="<?php echo esc_attr($pvg('pv_bewaar_logs')); ?>" placeholder="maximaal 6 maanden"></td></tr>
+                    <tr><th><label>Analytische gegevens</label></th><td><input type="text" class="regular-text cm-pv-field" name="pv_bewaar_analytics" value="<?php echo esc_attr($pvg('pv_bewaar_analytics')); ?>" placeholder="Zie sectie 4 (per cookie)"></td></tr>
+                    <tr><th><label>Nieuwsbriefabonnement <span style="font-weight:400">(optioneel)</span></label></th><td><input type="text" class="regular-text cm-pv-field" name="pv_bewaar_nieuwsbrief" value="<?php echo esc_attr($pvg('pv_bewaar_nieuwsbrief')); ?>" placeholder="Tot afmelding + 1 jaar"></td></tr>
                     </tbody></table>
                 </div>
 
@@ -3281,6 +3408,35 @@ function cm_render_privacy_standalone_page() {
                     <table class="form-table cm-form-table"><tbody>
                     <tr><th>Autoriteit Persoonsgegevens</th><td><label><input type="checkbox" class="cm-pv-cb" name="pv_ap_tonen" value="1" <?php checked($pvg('pv_ap_tonen'),'1'); ?>> Toon adres van de Autoriteit Persoonsgegevens</label></td></tr>
                     </tbody></table>
+                </div>
+
+                <!-- 12. Geautomatiseerde besluitvorming -->
+                <div class="cm-group">
+                    <h3 class="cm-group-title">12. Geautomatiseerde besluitvorming <span style="font-size:11px;font-weight:400;color:#787c82">(Art. 22 AVG — optioneel)</span></h3>
+                    <table class="form-table cm-form-table"><tbody>
+                    <tr>
+                        <th>Sectie tonen</th>
+                        <td>
+                            <label><input type="checkbox" class="cm-pv-cb" name="pv_profilering_enabled" value="1" <?php checked($pvg('pv_profilering_enabled'),'1'); ?> id="cm-prof-toggle"> Wij maken gebruik van geautomatiseerde besluitvorming of profilering</label>
+                            <p class="description">Verplicht te vermelden als u profilering of geautomatiseerde besluitvorming toepast (bijv. remarketingcampagnes via Google/Meta).</p>
+                        </td>
+                    </tr>
+                    </tbody></table>
+                    <div id="cm-prof-fields" style="<?php echo $pvg('pv_profilering_enabled') === '1' ? '' : 'display:none'; ?>">
+                        <table class="form-table cm-form-table"><tbody>
+                        <tr>
+                            <th><label>Aangepaste tekst <span style="font-weight:400">(optioneel)</span></label></th>
+                            <td>
+                                <textarea class="large-text cm-pv-field" name="pv_profilering_tekst" rows="4" placeholder="Laat leeg voor standaardtekst."><?php echo esc_textarea($pvg('pv_profilering_tekst')); ?></textarea>
+                            </td>
+                        </tr>
+                        </tbody></table>
+                    </div>
+                    <script>
+                    document.getElementById('cm-prof-toggle').addEventListener('change', function() {
+                        document.getElementById('cm-prof-fields').style.display = this.checked ? '' : 'none';
+                    });
+                    </script>
                 </div>
 
                 <!-- 11. Wijzigingen -->
@@ -4816,6 +4972,15 @@ function cm_render_exportimport_content() {
         </div>
     </div>
     <div class="cm-group">
+        <h3 class="cm-group-title">Cookielijst <span style="font-size:11px;font-weight:400;color:#787c82">&mdash; compliance rapportage</span></h3>
+        <div style="padding:16px 20px">
+            <p style="margin:0 0 6px">Download alle geconfigureerde cookies als CSV-bestand. Bevat naam, aanbieder, categorie, grondslag, doel, looptijd en domein.</p>
+            <p style="margin:0 0 14px">Geschikt voor intern compliance-dossier of als bijlage bij een AVG-audit.</p>
+            <button type="button" class="button button-primary" id="cm-export-cookies-btn">&#8659;&nbsp; Cookielijst downloaden (.csv)</button>
+            <span id="cm-export-cookies-status" style="margin-left:12px;font-size:13px"></span>
+        </div>
+    </div>
+    <div class="cm-group">
         <h3 class="cm-group-title">Import</h3>
         <div style="padding:16px 20px">
             <p style="margin:0 0 14px">Importeer een eerder ge&euml;xporteerd JSON-bestand. <strong>Let op:</strong> alle huidige instellingen worden overschreven.</p>
@@ -4924,7 +5089,15 @@ function cm_render_licentie_content() {
             <tr>
                 <th><label for="cm_license_key">Licentiesleutel</label></th>
                 <td>
-                    <input type="text" id="cm_license_key" value="<?php echo esc_attr( $lic['key'] ); ?>" class="regular-text" placeholder="CB-XXXXX-XXXXX-XXXXX-XXXXX" <?php echo $is_valid ? 'readonly' : ''; ?> style="font-family:monospace;letter-spacing:0.5px">
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        <input type="text" id="cm_license_key" value="<?php echo esc_attr( $lic['key'] ); ?>" class="regular-text" placeholder="CB-XXXXX-XXXXX-XXXXX-XXXXX" <?php echo $is_valid ? 'readonly id="cm_license_key" style="font-family:monospace;letter-spacing:0.5px;background:#f6f7f7"' : 'style="font-family:monospace;letter-spacing:0.5px"'; ?>>
+                        <?php if ( $is_valid ) : ?>
+                        <button type="button" class="button" id="cm-license-edit-toggle">Sleutel wijzigen</button>
+                        <?php endif; ?>
+                    </div>
+                    <?php if ( $is_valid ) : ?>
+                    <p class="description" id="cm-license-edit-hint" style="display:none;margin-top:6px;color:#b32d2e">Vul de nieuwe licentiesleutel in. De huidige licentie wordt eerst gedeactiveerd.</p>
+                    <?php endif; ?>
                 </td>
             </tr>
             <?php if ( $has_key ) : ?>
@@ -4948,10 +5121,11 @@ function cm_render_licentie_content() {
             <?php endif; ?>
             </tbody></table>
 
-            <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-                <?php if ( ! $is_valid ) : ?>
-                    <button type="button" class="button button-primary" id="cm-license-activate">Activeren</button>
-                <?php endif; ?>
+            <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <button type="button" class="button button-primary" id="cm-license-activate"<?php echo ( $is_valid && ! isset($_GET['cm_edit_lic']) ) ? ' style="display:none"' : ''; ?>>
+                    <?php echo $is_valid ? 'Nieuwe sleutel activeren' : 'Activeren'; ?>
+                </button>
+                <button type="button" class="button" id="cm-license-edit-cancel" style="display:none">Annuleren</button>
                 <?php if ( $has_key ) : ?>
                     <button type="button" class="button" id="cm-license-check">Status controleren</button>
                     <button type="button" class="button" id="cm-license-deactivate" style="color:#b32d2e">Deactiveren</button>

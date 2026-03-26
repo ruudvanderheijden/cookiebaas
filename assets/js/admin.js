@@ -1393,7 +1393,7 @@
         $('#cm-pv-doeleinden-body').append(
             '<tr>' +
             '<td style="border:1px solid #dcdcde;padding:4px 6px"><input type="text" class="widefat" style="border:0;box-shadow:none" placeholder="Doel"></td>' +
-            '<td style="border:1px solid #dcdcde;padding:4px 6px"><input type="text" class="widefat" style="border:0;box-shadow:none" placeholder="Grondslag"></td>' +
+            '<td style="border:1px solid #dcdcde;padding:4px 6px"><input type="text" class="widefat" style="border:0;box-shadow:none" placeholder="Grondslag" list="cm-avg-grondslagen-list"></td>' +
             '<td style="border:1px solid #dcdcde;padding:4px 6px"><input type="text" class="widefat" style="border:0;box-shadow:none" placeholder="Termijn"></td>' +
             '<td style="border:1px solid #dcdcde;padding:4px 6px;text-align:center"><button type="button" class="button button-small cm-pv-del-row" style="color:#b32d2e">&#x2715;</button></td>' +
             '</tr>'
@@ -1750,6 +1750,49 @@
     });
 
     /* ---- Licentie knoppen ---- */
+    // Licentie: sleutel wijzigen toggle
+    $(document).on('click', '#cm-license-edit-toggle', function() {
+        var $input = $('#cm_license_key');
+        $input.prop('readonly', false).css('background', '#fff').focus();
+        $(this).hide();
+        $('#cm-license-activate').show();
+        $('#cm-license-edit-cancel').show();
+        $('#cm-license-edit-hint').show();
+    });
+
+    $(document).on('click', '#cm-license-edit-cancel', function() {
+        var $input = $('#cm_license_key');
+        $input.prop('readonly', true).css('background', '#f6f7f7');
+        $('#cm-license-edit-toggle').show();
+        $('#cm-license-activate').hide();
+        $('#cm-license-edit-cancel').hide();
+        $('#cm-license-edit-hint').hide();
+    });
+
+    // Cookie lijst CSV export
+    $(document).on('click', '#cm-export-cookies-btn', function() {
+        var $btn = $(this).prop('disabled', true).text('Exporteren...');
+        var $status = $('#cm-export-cookies-status');
+        $.post(CM_DATA.ajax_url, { action: 'cm_export_cookies_csv', nonce: CM_DATA.nonce }, function(r) {
+            $btn.prop('disabled', false).text('↙ Cookielijst downloaden (.csv)');
+            if (r.success) {
+                var bom = '\uFEFF';
+                var blob = new Blob([bom + r.data.csv], { type: 'text/csv;charset=utf-8;' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url; a.download = r.data.filename;
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a); URL.revokeObjectURL(url);
+                $status.text(r.data.count + ' cookies geëxporteerd.').css('color', '#00a32a');
+            } else {
+                $status.text('Export mislukt.').css('color', '#b32d2e');
+            }
+        }).fail(function() {
+            $btn.prop('disabled', false).text('↙ Cookielijst downloaden (.csv)');
+            $status.text('Verbindingsfout.').css('color', '#b32d2e');
+        });
+    });
+
     $(document).on('click', '#cm-license-activate', function() {
         var key = $('#cm_license_key').val().trim();
         if (!key) { $('#cm-license-status').text('Vul een licentiesleutel in.').css('color','#b32d2e'); return; }

@@ -69,6 +69,14 @@ function cm_default_settings() {
         // Toggles & badges
         'color_toggle_on'           => '#0091ff',
         'color_always_bg'           => '#e8f4ff',
+        'color_always_on_color'     => '#0091ff',   // "Altijd actief" badge tekstkleur
+        // Derde-partij badge
+        'color_badge_text'          => '#0091ff',
+        'color_badge_bg'            => '#e8f4ff',
+        'color_badge_border'        => '#0091ff',
+        // Cookielijst overig
+        'color_service_name'        => '#333333',   // Servicenaam tekstkleur
+        'color_cookie_empty'        => '#bbbbbb',   // Lege cookielijst tekst
         // Expand-icoon
         'color_expand_bg'           => '#eaeaea',
         'color_expand_icon'         => '#111111',
@@ -184,6 +192,14 @@ function cm_default_settings() {
         'dm_close_icon'                => '#888888',
         'dm_toggle_on'                 => '#0091ff',
         'dm_always_bg'                 => '#0c2a45',
+        'dm_always_on_color'           => '#6eb8ff',   // "Altijd actief" badge tekstkleur
+        // Derde-partij badge (dark)
+        'dm_badge_text'                => '#ffd97a',
+        'dm_badge_bg'                  => '#3a2e00',
+        'dm_badge_border'              => '#6b5200',
+        // Cookielijst overig (dark)
+        'dm_service_name'              => '#d0d0d0',
+        'dm_cookie_empty'              => '#666666',
         'dm_expand_bg'                 => '#2a2a2a',
         'dm_expand_icon'               => '#aaaaaa',
         'dm_expand_open_bg'            => '#6eb8ff',
@@ -247,14 +263,16 @@ function cm_default_settings() {
         'embed_blocker_enabled'        => 1,    // 1 = actief, 0 = uit
         'embed_blocked_services'       => '',   // leeg = alle diensten blokkeren (standaard). Komma-gescheiden lijst om specifieke diensten te blokkeren.
         // Embed blocker teksten (NL)
-        'txt_embed_title'              => 'Accepteer de cookies om de video te bekijken',
+        'txt_embed_title'              => 'Accepteer om te bekijken',
         'txt_embed_body'               => 'Deze inhoud wordt gehost door <strong>{service}</strong> en kan cookies plaatsen. Klik hieronder om de inhoud te laden.',
         'txt_embed_btn'                => 'Inhoud laden',
+        'txt_embed_accept_btn'         => 'Accepteer cookies',
         'txt_embed_prefs'              => 'Of pas uw <a href="#" class="cm-embed-open-prefs">cookievoorkeuren</a> aan.',
         // Embed blocker teksten (EN)
         'txt_embed_title_en'           => 'External content blocked',
         'txt_embed_body_en'            => 'This content is hosted by <strong>{service}</strong> and may set cookies. Click below to load the content.',
         'txt_embed_btn_en'             => 'Load content',
+        'txt_embed_accept_btn_en'      => 'Accept cookies',
         'txt_embed_prefs_en'           => 'Or adjust your <a href="#" class="cm-embed-open-prefs">cookie preferences</a>.',
         // Embed blocker kleuren
         'color_embed_bg'               => '#111111',   // Achtergrond placeholder
@@ -853,6 +871,7 @@ function cm_default_privacy() {
         'pv_postcode_plaats'    => '',
         'pv_land'               => 'Nederland',
         'pv_kvk'                => '',
+        'pv_telefoon'           => '',
         'pv_email'              => '',
         'pv_versie'             => '1.0',
         'pv_datum'              => '',
@@ -877,6 +896,12 @@ function cm_default_privacy() {
         'pv_cf_adres'           => '0',
         'pv_cf_privacy'         => '0',
         'pv_cf_extra'           => '',
+        'pv_cf_grondslag'       => 'Gerechtvaardigd belang (Art. 6 lid 1 sub f AVG)',
+
+        // 2.3 Nieuwsbrief / e-mailmarketing
+        'pv_nieuwsbrief_enabled'   => '0',
+        'pv_nieuwsbrief_grondslag' => 'Toestemming (Art. 6 lid 1 sub a AVG)',
+        'pv_nieuwsbrief_afmelden'  => '',
 
         // 3. Doeleinden — bewerkbare tabel (JSON)
         'pv_doeleinden'         => json_encode( array(
@@ -909,6 +934,8 @@ function cm_default_privacy() {
         // 7. Bewaartermijnen — vrije aanvulling
         'pv_bewaar_contact'     => '3 jaar na laatste contact',
         'pv_bewaar_logs'        => 'maximaal 6 maanden',
+        'pv_bewaar_analytics'   => 'Zie sectie 4 (per cookie)',
+        'pv_bewaar_nieuwsbrief' => '',
 
         // 8. Rechten — contactemail en reactietermijn
         'pv_rechten_email'      => '',
@@ -919,5 +946,9 @@ function cm_default_privacy() {
 
         // 11. Wijzigingen — vrije aanvulling
         'pv_wijzigingen_extra'  => '',
+
+        // 12. Geautomatiseerde besluitvorming (Art. 22 AVG)
+        'pv_profilering_enabled' => '0',
+        'pv_profilering_tekst'   => '',
     );
 }

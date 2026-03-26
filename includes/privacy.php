@@ -31,6 +31,7 @@ function cm_render_privacy_page() {
         <?php if ( $has('pv_postcode_plaats') )  echo esc_html( $pv('pv_postcode_plaats') ) . '<br>'; ?>
         <?php if ( $has('pv_land') )             echo esc_html( $pv('pv_land') ) . '<br>'; ?>
         <?php if ( $has('pv_kvk') )              echo 'KVK: ' . esc_html( $pv('pv_kvk') ) . '<br>'; ?>
+        <?php if ( $has('pv_telefoon') )         echo 'Telefoon: ' . esc_html( $pv('pv_telefoon') ) . '<br>'; ?>
         <?php if ( $has('pv_email') )            echo 'E-mail: <a href="mailto:' . esc_attr( $pv('pv_email') ) . '">' . esc_html( $pv('pv_email') ) . '</a><br>'; ?>
     </div>
     <?php if ( $pv('pv_dpo_enabled') === '1' && $has('pv_dpo_naam') ) : ?>
@@ -66,7 +67,7 @@ function cm_render_privacy_page() {
     $cf_velden = array();
     if ( $pv('pv_cf_voornaam')     === '1' ) $cf_velden[] = 'Voornaam';
     if ( $pv('pv_cf_achternaam')   === '1' ) $cf_velden[] = 'Achternaam';
-    if ( $pv('pv_cf_bedrijfsnaam') === '1' ) $cf_velden[] = 'Bedrijfsnaam';
+    if ( $pv('pv_cf_bedrijf')      === '1' ) $cf_velden[] = 'Bedrijfsnaam';
     if ( $pv('pv_cf_adres')        === '1' ) $cf_velden[] = 'Adresgegevens';
     if ( $pv('pv_cf_email')        === '1' ) $cf_velden[] = 'E-mailadres';
     if ( $pv('pv_cf_website')      === '1' ) $cf_velden[] = 'Website (optioneel)';
@@ -90,9 +91,21 @@ function cm_render_privacy_page() {
         <li><?php echo esc_html( $veld ); ?></li>
         <?php endforeach; ?>
     </ul>
+    <?php if ( $has('pv_cf_grondslag') ) : ?>
+    <p><strong>Rechtsgrondslag:</strong> <?php echo esc_html( $pv('pv_cf_grondslag') ); ?></p>
+    <?php endif; ?>
     <?php endif; ?>
 
-    <h3>2.2 Automatisch verzamelde gegevens</h3>
+    <?php if ( $pv('pv_nieuwsbrief_enabled') === '1' ) : ?>
+    <h3>2.3 Nieuwsbrief</h3>
+    <p>Als u zich aanmeldt voor onze nieuwsbrief, verwerken wij uw e-mailadres voor het toesturen van onze nieuwsbrief en commerciële berichten.</p>
+    <?php if ( $has('pv_nieuwsbrief_grondslag') ) : ?>
+    <p><strong>Rechtsgrondslag:</strong> <?php echo esc_html( $pv('pv_nieuwsbrief_grondslag') ); ?></p>
+    <?php endif; ?>
+    <p>U kunt u op elk moment afmelden<?php if ( $has('pv_nieuwsbrief_afmelden') ) echo ' via <a href="' . esc_url( $pv('pv_nieuwsbrief_afmelden') ) . '">' . esc_html( $pv('pv_nieuwsbrief_afmelden') ) . '</a>'; else echo ' via de afmeldlink onderaan elke e-mail'; ?>.</p>
+    <?php endif; ?>
+
+    <h3><?php echo $pv('pv_nieuwsbrief_enabled') === '1' ? '2.4' : '2.2'; ?> Automatisch verzamelde gegevens</h3>
     <p>Bij uw bezoek aan onze website verzamelen wij automatisch bepaalde gegevens via cookies, vergelijkbare technologieën en serverlogbestanden:</p>
     <ul>
         <li>IP-adres</li>
@@ -192,6 +205,12 @@ function cm_render_privacy_page() {
         <?php if ( $has('pv_bewaar_logs') ) : ?>
         <li><strong>Serverlogbestanden:</strong> <?php echo esc_html( $pv('pv_bewaar_logs') ); ?></li>
         <?php endif; ?>
+        <?php if ( $has('pv_bewaar_analytics') ) : ?>
+        <li><strong>Analytische gegevens:</strong> <?php echo esc_html( $pv('pv_bewaar_analytics') ); ?></li>
+        <?php endif; ?>
+        <?php if ( $has('pv_bewaar_nieuwsbrief') ) : ?>
+        <li><strong>Nieuwsbriefabonnement:</strong> <?php echo esc_html( $pv('pv_bewaar_nieuwsbrief') ); ?></li>
+        <?php endif; ?>
         <li><strong>Cookies:</strong> zie de specifieke bewaartermijnen per cookie in sectie 4</li>
     </ul>
 
@@ -206,6 +225,7 @@ function cm_render_privacy_page() {
         <li><strong>Overdraagbaarheid:</strong> U kunt uw gegevens in een gestructureerd formaat ontvangen.</li>
         <li><strong>Bezwaar:</strong> U kunt bezwaar maken tegen verwerking op basis van gerechtvaardigd belang.</li>
         <li><strong>Intrekken toestemming:</strong> U kunt gegeven toestemming altijd intrekken.</li>
+        <li><strong>Klacht indienen:</strong> U heeft het recht een klacht in te dienen bij de Autoriteit Persoonsgegevens (autoriteitpersoonsgegevens.nl).</li>
     </ul>
     <?php
     $rechten_email  = $has('pv_rechten_email')  ? $pv('pv_rechten_email')  : $pv('pv_email');
@@ -238,9 +258,19 @@ function cm_render_privacy_page() {
     <p><?php echo nl2br( esc_html( $pv('pv_wijzigingen_extra') ) ); ?></p>
     <?php endif; ?>
 
-    <?php /* ── 12. Functionaris Gegevensbescherming (DPO) ─── */ ?>
+    <?php /* ── 12. Geautomatiseerde besluitvorming (Art. 22 AVG) ─── */ ?>
+    <?php if ( $pv('pv_profilering_enabled') === '1' ) : ?>
+    <h2>12. Geautomatiseerde besluitvorming en profilering</h2>
+    <?php if ( $has('pv_profilering_tekst') ) : ?>
+    <p><?php echo nl2br( esc_html( $pv('pv_profilering_tekst') ) ); ?></p>
+    <?php else : ?>
+    <p>Wij maken gebruik van geautomatiseerde besluitvorming en/of profilering in de zin van artikel 22 AVG. Dit houdt in dat uw persoonsgegevens worden verwerkt om uw interesses te analyseren en u relevante advertenties of content te tonen. Er worden geen besluiten genomen die uitsluitend op geautomatiseerde verwerking zijn gebaseerd en die rechtsgevolgen hebben voor u of u op vergelijkbare wijze wezenlijk treffen, zonder menselijke tussenkomst.</p>
+    <?php endif; ?>
+    <?php endif; ?>
+
+    <?php /* ── 13. Functionaris Gegevensbescherming (DPO) ─── */ ?>
     <?php if ( $pv('pv_dpo_enabled') === '1' && $has('pv_dpo_naam') ) : ?>
-    <h2>12. Functionaris Gegevensbescherming</h2>
+    <h2>13. Functionaris Gegevensbescherming</h2>
     <p>Wij hebben een Functionaris Gegevensbescherming (FG) aangesteld die toeziet op de naleving van privacywetgeving binnen onze organisatie. U kunt de FG bereiken via:</p>
     <p>
         <strong><?php echo esc_html( $pv('pv_dpo_naam') ); ?></strong><br>
@@ -281,9 +311,9 @@ function cm_render_privacy_page() {
 function cm_pv_cookie_tabel( $with_numbers = true ) {
     $all_cookies = cm_get_cookie_list();
     $cats = array(
-        'functional' => array( 'label' => $with_numbers ? '4.1 Functionele cookies'  : 'Functionele cookies',  'cookies' => array() ),
-        'analytics'  => array( 'label' => $with_numbers ? '4.2 Analytische cookies'  : 'Analytische cookies',  'cookies' => array() ),
-        'marketing'  => array( 'label' => $with_numbers ? '4.3 Marketing cookies'    : 'Marketing cookies',    'cookies' => array() ),
+        'functional' => array( 'label' => $with_numbers ? '4.1 Functionele cookies'  : 'Functionele cookies',  'grondslag' => 'Strikt noodzakelijk / Gerechtvaardigd belang (Art. 6 lid 1 sub f AVG)', 'cookies' => array() ),
+        'analytics'  => array( 'label' => $with_numbers ? '4.2 Analytische cookies'  : 'Analytische cookies',  'grondslag' => 'Toestemming (Art. 6 lid 1 sub a AVG)', 'cookies' => array() ),
+        'marketing'  => array( 'label' => $with_numbers ? '4.3 Marketing cookies'    : 'Marketing cookies',    'grondslag' => 'Toestemming (Art. 6 lid 1 sub a AVG)', 'cookies' => array() ),
     );
     foreach ( $all_cookies as $ck ) {
         $cat = isset( $ck['category'] ) ? $ck['category'] : 'functional';
@@ -294,6 +324,7 @@ function cm_pv_cookie_tabel( $with_numbers = true ) {
     foreach ( $cats as $cat_data ) {
         if ( empty( $cat_data['cookies'] ) ) continue;
         $out .= '<h3>' . esc_html( $cat_data['label'] ) . '</h3>';
+        $out .= '<p class="cm-pv-cookie-grondslag"><strong>Rechtsgrondslag:</strong> ' . esc_html( $cat_data['grondslag'] ) . '</p>';
         $out .= '<table class="cm-pv-table"><thead><tr>'
               . '<th>Cookie</th><th>Organisatie</th><th>Doel</th><th>Looptijd</th>'
               . '</tr></thead><tbody>';
@@ -346,7 +377,7 @@ function cm_ajax_save_privacy() {
         if ( in_array( $key, array('pv_doeleinden','pv_optout_links','pv_ontvangers'), true ) ) {
             // JSON-velden: komen als geëncodeerde string binnen
             $privacy[ $key ] = isset( $_POST[ $key ] ) ? sanitize_textarea_field( wp_unslash( $_POST[ $key ] ) ) : $default;
-        } elseif ( strpos( $key, 'pv_cf_' ) === 0 || in_array( $key, array('pv_gtm','pv_ap_tonen'), true ) ) {
+        } elseif ( strpos( $key, 'pv_cf_' ) === 0 || in_array( $key, array('pv_gtm','pv_ap_tonen','pv_nieuwsbrief_enabled','pv_profilering_enabled'), true ) ) {
             // Checkboxes: 1 of 0
             $privacy[ $key ] = isset( $_POST[ $key ] ) && $_POST[ $key ] === '1' ? '1' : '0';
         } else {

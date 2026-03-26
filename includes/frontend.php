@@ -63,8 +63,14 @@ function cm_output_inline_css() {
     echo '--cm-close-bg:'       . esc_attr( cm_get('color_close_bg') )           . ';';
     echo '--cm-close-hover-bg:' . esc_attr( cm_get('color_close_hover_bg') )     . ';';
     echo '--cm-close-icon:'     . esc_attr( cm_get('color_close_icon') )         . ';';
-    echo '--cm-toggle-on:'      . esc_attr( cm_get('color_toggle_on') )          . ';';
-    echo '--cm-always-bg:'      . esc_attr( cm_get('color_always_bg') )          . ';';
+    echo '--cm-toggle-on:'           . esc_attr( cm_get('color_toggle_on') )                  . ';';
+    echo '--cm-always-bg:'           . esc_attr( cm_get('color_always_bg') )                  . ';';
+    echo '--cm-always-on-color:'     . esc_attr( cm_get('color_always_on_color') ?: '#0091ff' ) . ';';
+    echo '--cm-badge-text:'          . esc_attr( cm_get('color_badge_text') ?: '#0091ff' )     . ';';
+    echo '--cm-badge-bg:'            . esc_attr( cm_get('color_badge_bg') ?: '#e8f4ff' )       . ';';
+    echo '--cm-badge-border:'        . esc_attr( cm_get('color_badge_border') ?: '#0091ff' )   . ';';
+    echo '--cm-service-name-color:'  . esc_attr( cm_get('color_service_name') ?: '#333333' )   . ';';
+    echo '--cm-cookie-empty-color:'  . esc_attr( cm_get('color_cookie_empty') ?: '#bbbbbb' )   . ';';
     // Zweefknop icoontje kleuren
     echo '--cm-float-icon-bg:'          . esc_attr( cm_get('color_float_icon_bg') ?: '#111111' )       . ';';
     echo '--cm-float-icon-color:'       . esc_attr( cm_get('color_float_icon_color') ?: '#ffffff' )    . ';';
@@ -171,8 +177,14 @@ function cm_output_inline_css() {
         echo '--cm-cat-detail-color:'      . esc_attr( $dm('dm_cat_detail','#a6a6a6') )                      . ';';
         echo '--cm-cookie-name-color:'     . esc_attr( $dm('dm_cookie_name','#acacac') )                     . ';';
         echo '--cm-cookie-meta-color:'     . esc_attr( $dm('dm_cookie_meta','#acacac') )                     . ';';
-        echo '--cm-toggle-off:'            . esc_attr( $dm('dm_toggle_off','#6d6d6d') )                      . ';';
-        echo '--cm-always-bg:'             . esc_attr( $dm('dm_always_bg','#202020') )                       . ';';
+        echo '--cm-toggle-off:'          . esc_attr( $dm('dm_toggle_off','#6d6d6d') )         . ';';
+        echo '--cm-always-bg:'           . esc_attr( $dm('dm_always_bg','#202020') )           . ';';
+        echo '--cm-always-on-color:'     . esc_attr( $dm('dm_always_on_color','#6eb8ff') )     . ';';
+        echo '--cm-badge-text:'          . esc_attr( $dm('dm_badge_text','#ffd97a') )          . ';';
+        echo '--cm-badge-bg:'            . esc_attr( $dm('dm_badge_bg','#3a2e00') )            . ';';
+        echo '--cm-badge-border:'        . esc_attr( $dm('dm_badge_border','#6b5200') )        . ';';
+        echo '--cm-service-name-color:'  . esc_attr( $dm('dm_service_name','#d0d0d0') )        . ';';
+        echo '--cm-cookie-empty-color:'  . esc_attr( $dm('dm_cookie_empty','#666666') )        . ';';
         echo '--cm-float-icon-bg:'         . esc_attr( $dm('dm_float_icon_bg','#f2f2f2') )                   . ';';
         echo '--cm-float-icon-color:'      . esc_attr( $dm('dm_float_icon_color','#111111') )                . ';';
         echo '--cm-float-icon-hover-bg:'   . esc_attr( $dm('dm_float_icon_hover_bg','#6eb8ff') )             . ';';
@@ -642,7 +654,7 @@ function cm_build_embed_placeholder( $original_tag, $src, $info ) {
     $html .= '<div class="cm-embed-icon">' . $icon . '</div>';
     $html .= '<div class="cm-embed-title">' . esc_html( $title_txt ) . '</div>';
     $html .= '<div class="cm-embed-body">' . wp_kses( $body_txt, array( 'strong' => array(), 'em' => array() ) ) . '</div>';
-    $html .= '<button type="button" class="cm-embed-accept-btn" data-cm-embed-cat="' . $cat . '">Accepteer en bekijk</button>';
+    $html .= '<button type="button" class="cm-embed-accept-btn" data-cm-embed-cat="' . $cat . '">' . esc_html( cm_t('txt_embed_accept_btn') ) . '</button>';
     $html .= '<div class="cm-embed-prefs-link"><a href="#" onclick="Cookiebaas.openPrefs();return false;">Cookievoorkeuren aanpassen</a></div>';
     $html .= '</div></div></div>';
     $html .= '<!--/cm-embed-placeholder-->';
@@ -1748,14 +1760,24 @@ function cm_render_frontend() {
             // Granulaire intrekking per dienst
             if (serviceConsent) {
                 var toDelete = [];
+                var serviceRevoked = false;
                 document.querySelectorAll('.cm-service-toggle').forEach(function(cb) {
                     var svcId = cb.getAttribute('data-service');
                     if (!serviceConsent[svcId]) {
                         var names = (cb.getAttribute('data-cookies') || '').split(',').filter(Boolean);
                         names.forEach(function(n) { if (toDelete.indexOf(n) === -1) toDelete.push(n); });
+                        // Was deze dienst eerder geaccepteerd? Dan is reload nodig om script te stoppen
+                        if (prev && prev.services && prev.services[svcId]) {
+                            serviceRevoked = true;
+                        }
                     }
                 });
                 if (toDelete.length) deleteCookiesByName(toDelete);
+                if (serviceRevoked) {
+                    try { sessionStorage.setItem('cm_revoke', JSON.stringify({ analytics: false, marketing: false })); } catch(e) {}
+                    setTimeout(function() { window.location.reload(); }, 150);
+                    return;
+                }
             }
 
             // SPOOR 1 — Google Consent Mode v2 update

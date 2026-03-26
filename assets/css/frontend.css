@@ -12,10 +12,16 @@
     background: rgba(0, 0, 0, var(--cm-overlay-alpha, 0.6));
     z-index: 2147483645 !important;
     opacity: 0;
-    transition: opacity 0.35s ease;
+    visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0s linear 0.35s;
     pointer-events: none;
 }
-#cm-overlay.cm-active { opacity: 1; pointer-events: all; }
+#cm-overlay.cm-active {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.35s ease, visibility 0s linear 0s;
+    pointer-events: all;
+}
 
 /* ---- BANNER ---- */
 #cm-banner {
@@ -441,7 +447,7 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
 .cm-toggle input:checked + .cm-toggle-track::after { transform: translateX(20px); }
 /* WCAG: zichtbare focus ring op toggle bij keyboard navigatie */
 .cm-toggle input:focus-visible + .cm-toggle-track { outline: 3px solid var(--cm-toggle-on, #0091ff); outline-offset: 2px; border-radius: 24px; }
-.cm-always-on { font-size: 0.73rem; font-weight: 700; color: var(--cm-toggle-on, #0091ff); background: var(--cm-always-bg, #e8f4ff); padding: 4px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+.cm-always-on { font-size: 0.73rem; font-weight: 700; color: var(--cm-always-on-color, #0091ff); background: var(--cm-always-bg, #e8f4ff); padding: 4px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
 
 /* Category detail */
 .cm-cat-detail { max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.2s ease; padding: 0 20px; }
@@ -462,9 +468,9 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
     align-items: center;
     font-size: 0.67rem;
     font-weight: 600;
-    color: #0091ff;
-    background: #e8f4ff;
-    border: 1px solid #0091ff;
+    color: var(--cm-badge-text, #0091ff);
+    background: var(--cm-badge-bg, #e8f4ff);
+    border: 1px solid var(--cm-badge-border, #0091ff);
     border-radius: 4px;
     padding: 1px 6px;
     margin-left: 7px;
@@ -472,17 +478,10 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
     white-space: nowrap;
     line-height: 1.6;
 }
-@media (prefers-color-scheme: dark) {
-    .cm-badge-thirdparty {
-        color: #ffd97a;
-        background: #3a2e00;
-        border-color: #6b5200;
-    }
-}
 
 /* Dienst-lijst (per provider gegroepeerd) */
 .cm-service-list { display: flex; flex-direction: column; gap: 8px; }
-.cm-service { background: #fafcff; border-radius: 8px; overflow: hidden; border: 1px solid var(--cm-cat-border, #e8e4de); }
+.cm-service { background: var(--cm-service-bg, #fafcff); border-radius: 8px; overflow: hidden; border: 1px solid var(--cm-cat-border, #e8e4de); }
 .cm-service-header { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; gap: 8px; cursor: pointer; user-select: none; }
 .cm-service-header::before {
     content: '+'; font-size: 0.75rem; font-weight: 700; color: var(--cm-expand-icon, #666);
@@ -493,7 +492,7 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
 .cm-service.cm-svc-open .cm-service-header::before {
     transform: rotate(45deg); background: var(--cm-expand-open-bg, #111); color: var(--cm-expand-open-icon, #fff);
 }
-.cm-service-name { font-size: 0.82rem; font-weight: 600; color: #333; flex: 1; }
+.cm-service-name { font-size: 0.82rem; font-weight: 600; color: var(--cm-service-name-color, #333); flex: 1; }
 .cm-service .cm-cookie-list { padding: 0 10px 0; gap: 4px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding-bottom 0.2s ease; }
 .cm-service.cm-svc-open .cm-cookie-list { max-height: 2000px; padding-bottom: 10px; }
 .cm-service .cm-cookie-item { background: var(--cm-cookie-item-bg, #ffffff); padding: 6px 10px; }
@@ -502,7 +501,7 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
 .cm-toggle--sm { transform: scale(0.78); transform-origin: right center; flex-shrink: 0; }
 .cm-cookie-provider { font-style: italic; }
 .cm-no-cookies { font-size: 0.82rem; color: var(--cm-body-color, #999); font-style: italic; margin: 4px 0 0; opacity: 0.7; }
-.cm-cookie-empty { font-size: 0.78rem; color: #bbb; font-style: italic; padding: 2px 0; }
+.cm-cookie-empty { font-size: 0.78rem; color: var(--cm-cookie-empty-color, #bbb); font-style: italic; padding: 2px 0; }
 
 /* Prefs footer — keuzes opslaan is ook zwart/blauw via cm-btn-accept */
 .cm-prefs-footer { padding: 20px 36px 28px; border-top: 1px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; flex-shrink: 0; }
@@ -656,6 +655,18 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
     outline: 3px solid var(--cm-toggle-on, #0091ff) !important;
     outline-offset: 2px !important;
     border-radius: 4px !important;
+}
+/* Op touch-apparaten geen focusring tonen — WCAG geldt alleen voor toetsenbordnavigatie */
+@media (hover: none) and (pointer: coarse) {
+    #cm-banner :focus-visible,
+    #cm-prefs :focus-visible,
+    #cm-float-btn:focus-visible,
+    .cm-cat-header:focus-visible,
+    .cm-btn:focus-visible,
+    .cm-toggle input:focus-visible + .cm-toggle-track {
+        outline: none !important;
+        box-shadow: none !important;
+    }
 }
 /* Verberg standaard outline alleen als :focus-visible beschikbaar is */
 #cm-banner :focus:not(:focus-visible),

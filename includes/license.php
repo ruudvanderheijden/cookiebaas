@@ -80,6 +80,20 @@ function cm_license_get_domain() {
    ================================================================ */
 function cm_license_activate( $key ) {
     $domain = cm_license_get_domain();
+
+    // Als er al een actieve licentie is met een andere sleutel: eerst deactiveren
+    $existing = cm_license_get();
+    if ( ! empty( $existing['key'] ) && $existing['key'] !== $key && $existing['status'] === 'active' ) {
+        cm_license_api_call( 'deactivate', array(
+            'license_key' => $existing['key'],
+            'domain'      => $domain,
+        ) );
+        $existing['status']       = '';
+        $existing['domain']       = '';
+        $existing['last_success'] = 0;
+        cm_license_save( $existing );
+    }
+
     $result = cm_license_api_call( 'activate', array(
         'license_key' => $key,
         'domain'      => $domain,
