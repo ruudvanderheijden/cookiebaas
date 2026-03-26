@@ -29,6 +29,18 @@ class CM_GitHub_Updater {
         add_filter( 'plugins_api',                           array( $this, 'plugin_info' ), 20, 3 );
         add_filter( 'upgrader_post_install',                 array( $this, 'after_install' ), 10, 3 );
         add_filter( 'http_request_args',                     array( $this, 'add_auth_to_download' ), 10, 2 );
+        add_action( 'delete_site_transient_update_plugins',  array( $this, 'clear_cache' ) );
+    }
+
+    /**
+     * Wis de GitHub release-cache zodat de volgende check vers ophaalt.
+     * Wordt aangeroepen wanneer WordPress zijn eigen update-transient wist
+     * (o.a. bij "Nu controleren op updates" in Dashboard → Updates).
+     */
+    public function clear_cache() {
+        $transient_key = 'cm_github_release_' . md5( $this->github_user . $this->github_repo );
+        delete_transient( $transient_key );
+        $this->github_response = null;
     }
 
     /**
