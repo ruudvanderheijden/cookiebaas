@@ -1,5 +1,11 @@
 # Changelog — Cookiebaas
 
+## [1.4.9] - 2026-03-31
+
+### Toegevoegd
+- **Google cookies direct laden**: nieuwe optie in Algemeen → Analytische cookies waarmee Google cookies (GA4/GTM/UA) al direct bij het openen van de website worden ingeladen, zonder te wachten op toestemming van de bezoeker. Bij inschakeling wordt `analytics_storage` in Google Consent Mode v2 standaard op `granted` gezet. De instelling geeft een duidelijke waarschuwing dat dit niet conform de AVG is (artikel 6).
+- Bij het inschakelen van "Google cookies direct laden" wordt "Standaard aangevinkt in het voorkeuren-venster" automatisch meeaangevinkt (zowel in de UI als bij opslaan server-side afgedwongen).
+
 ## [1.4.8] - 2026-03-26
 
 ### Toegevoegd

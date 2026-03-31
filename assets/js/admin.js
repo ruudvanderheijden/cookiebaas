@@ -1744,6 +1744,13 @@
         $('#cm-geo-outside-row').toggle($(this).val() === '1');
     });
 
+    /* ---- Google cookies direct laden: zet analytics_default automatisch aan ---- */
+    $(document).on('change', '#cm-google-load-default', function() {
+        if (this.checked) {
+            $('#cm-analytics-default').prop('checked', true);
+        }
+    });
+
     /* ---- Subdomain sharing: toon/verberg root-domein veld ---- */
     $(document).on('change', '#cm-subdomain-sharing-cb', function() {
         $('#cm-subdomain-root-row').toggle(this.checked);

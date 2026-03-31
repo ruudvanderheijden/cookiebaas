@@ -191,6 +191,11 @@ function cm_ajax_save_settings() {
         }
     }
 
+    // Als google_load_default aanstaat, moet analytics_default ook aanstaan
+    if ( ! empty( $settings['google_load_default'] ) ) {
+        $settings['analytics_default'] = 1;
+    }
+
     update_option( 'cm_settings', $settings );
 
     // Cron herplannen als retentie is gewijzigd
@@ -2441,8 +2446,20 @@ function cm_render_admin_page() {
                         <tr>
                             <th><label>Analytische cookies</label></th>
                             <td>
-                                <label><input type="checkbox" name="analytics_default" value="1" <?php checked($s['analytics_default'],1); ?>> Standaard aangevinkt in het voorkeuren-venster</label>
+                                <label><input type="checkbox" name="analytics_default" id="cm-analytics-default" value="1" <?php checked($s['analytics_default'],1); ?>> Standaard aangevinkt in het voorkeuren-venster</label>
                                 <p class="description">Marketing cookies staan altijd standaard uit (AVG-vereiste).</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><label>Google cookies direct laden</label></th>
+                            <td>
+                                <label><input type="checkbox" name="google_load_default" id="cm-google-load-default" value="1" <?php checked($s['google_load_default'],1); ?>> Laad Google cookies direct bij het openen van de website (zonder toestemming)</label>
+                                <div style="margin-top:8px;padding:10px 14px;background:#fcf0f1;border-left:4px solid #d63638;border-radius:0 4px 4px 0;font-size:12px;line-height:1.6;color:#3c434a">
+                                    <strong style="color:#d63638">&#9888; Let op: dit is niet toegestaan volgens de AVG.</strong><br>
+                                    De AVG (artikel 6) vereist dat cookies die niet strikt noodzakelijk zijn &mdash; waaronder Google Analytics en Google Tag Manager &mdash; pas worden geladen <em>nadat</em> de bezoeker uitdrukkelijk toestemming heeft gegeven. Door Google cookies direct te laden zonder toestemming riskeer je een boete van de Autoriteit Persoonsgegevens.<br>
+                                    <strong>Activeer deze optie alleen als je hiervoor een geldige juridische basis hebt of uitdrukkelijk afziet van AVG-compliance.</strong>
+                                </div>
+                                <p class="description" style="margin-top:6px">Als deze optie aanstaat, wordt &ldquo;Standaard aangevinkt in het voorkeuren-venster&rdquo; hierboven automatisch ingeschakeld.</p>
                             </td>
                         </tr>
                         </tbody></table>

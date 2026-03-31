@@ -85,8 +85,9 @@ function cm_default_settings() {
         // Stijl
         'radius_popup'              => 18,
         'radius_btn'                => 6,
-        'overlay_opacity'           => 19,
+        'overlay_opacity'           => 20,
         // Gedrag
+        'google_load_default'       => 0,
         'analytics_default'         => 0,
         'show_float_btn'            => 1,
         'expiry_months'             => 12,

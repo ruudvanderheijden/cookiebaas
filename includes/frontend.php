@@ -337,7 +337,8 @@ function cm_inject_google_consent_mode() {
     if ( isset( $_COOKIE[$cookie_name] ) ) {
         $consent = json_decode( stripslashes( urldecode( $_COOKIE[$cookie_name] ) ), true );
     }
-    $allow_analytics = ! empty( $consent['analytics'] );
+    $google_load_default = (bool) cm_get('google_load_default');
+    $allow_analytics = ! empty( $consent['analytics'] ) || $google_load_default;
     $allow_marketing = ! empty( $consent['marketing'] );
 
     $analytics_update = $allow_analytics ? 'granted' : 'denied';
@@ -348,7 +349,7 @@ function cm_inject_google_consent_mode() {
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('consent', 'default', {
-    'analytics_storage':  'denied',
+    'analytics_storage':  '<?php echo $google_load_default ? 'granted' : 'denied'; ?>',
     'ad_storage':         'denied',
     'ad_user_data':       'denied',
     'ad_personalization': 'denied',
@@ -1566,7 +1567,11 @@ function cm_render_frontend() {
 
         function showBanner() {
             setPageInert();
-            if (ov()) ov().classList.add('cm-active');
+            var _o = ov();
+            if (_o) {
+                void _o.offsetHeight; // force reflow zodat CSS-transitie start
+                _o.classList.add('cm-active');
+            }
             if (bn()) {
                 var b = bn();
                 b.classList.add('cm-active');
