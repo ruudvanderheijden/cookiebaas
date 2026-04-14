@@ -656,14 +656,20 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
     outline-offset: 2px !important;
     border-radius: 4px !important;
 }
-/* Op touch-apparaten geen focusring tonen — WCAG geldt alleen voor toetsenbordnavigatie */
+/* Op touch-apparaten geen focusring tonen — buttons gebruiken outline-flow stijl */
 @media (hover: none) and (pointer: coarse) {
     #cm-banner :focus-visible,
     #cm-prefs :focus-visible,
     #cm-float-btn:focus-visible,
     .cm-cat-header:focus-visible,
     .cm-btn:focus-visible,
-    .cm-toggle input:focus-visible + .cm-toggle-track {
+    .cm-toggle input:focus-visible + .cm-toggle-track,
+    #cm-banner .cm-btn:focus-visible,
+    #cm-prefs .cm-btn:focus-visible,
+    body #cm-banner .cm-btn:focus-visible,
+    body #cm-prefs .cm-btn:focus-visible,
+    .cm-prefs-close:focus-visible,
+    .cm-allow-all:focus-visible {
         outline: none !important;
         box-shadow: none !important;
     }

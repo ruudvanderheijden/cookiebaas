@@ -83,8 +83,10 @@ function cm_render_privacy_page() {
         }
     }
     ?>
-    <?php if ( ! empty( $cf_velden ) ) : ?>
     <h3>2.1 Contactformulier</h3>
+    <?php if ( empty( $cf_velden ) ) : ?>
+    <p>Geen contactformulieren op deze website.</p>
+    <?php else : ?>
     <p>Wanneer u ons contactformulier invult, verzamelen wij de volgende gegevens:</p>
     <ul>
         <?php foreach ( $cf_velden as $veld ) : ?>
@@ -377,7 +379,7 @@ function cm_ajax_save_privacy() {
         if ( in_array( $key, array('pv_doeleinden','pv_optout_links','pv_ontvangers'), true ) ) {
             // JSON-velden: komen als geëncodeerde string binnen
             $privacy[ $key ] = isset( $_POST[ $key ] ) ? sanitize_textarea_field( wp_unslash( $_POST[ $key ] ) ) : $default;
-        } elseif ( strpos( $key, 'pv_cf_' ) === 0 || in_array( $key, array('pv_gtm','pv_ap_tonen','pv_nieuwsbrief_enabled','pv_profilering_enabled'), true ) ) {
+        } elseif ( ( strpos( $key, 'pv_cf_' ) === 0 && ! in_array( $key, array( 'pv_cf_extra', 'pv_cf_grondslag' ), true ) ) || in_array( $key, array('pv_gtm','pv_ap_tonen','pv_nieuwsbrief_enabled','pv_profilering_enabled'), true ) ) {
             // Checkboxes: 1 of 0
             $privacy[ $key ] = isset( $_POST[ $key ] ) && $_POST[ $key ] === '1' ? '1' : '0';
         } else {
