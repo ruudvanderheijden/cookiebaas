@@ -1,5 +1,13 @@
 # Changelog — Cookiebaas
 
+## [1.5.0] - 2026-04-14
+
+### Opgelost
+- **Privacyverklaring — rechtsgrondslag contactformulier**: werd niet opgeslagen door een onjuiste behandeling als checkbox in de AJAX handler; toonde daardoor "Rechtsgrondslag: 0" op de frontend
+- **Privacyverklaring — eigen velden**: werden niet opgeslagen (zelfde oorzaak als rechtsgrondslag); toonde "0" op de frontend als er geen eigen velden ingevuld waren
+- **Privacyverklaring — sectie 2.1**: sectie verdween volledig als geen contactformulier-velden aangevinkt waren; toont nu altijd de h3-kop met de melding "Geen contactformulieren op deze website."
+- **Mobiel — focusring buttons**: hoge-specificiteit WCAG `:focus-visible` regels overschreven de `(hover: none)` media query waardoor de blauwe outline toch zichtbaar bleef op touch; opgelost door overeenkomende selectors toe te voegen binnen de media query
+
 ## [1.4.9] - 2026-03-31
 
 ### Toegevoegd
