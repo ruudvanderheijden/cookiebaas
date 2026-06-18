@@ -148,6 +148,7 @@
 
         /* ---- CONDITIONAL SCRIPT LOADING ---- */
     function loadScripts(analytics, marketing) {
+        restoreEmbeds(analytics, marketing);
         // Dispatch events so theme/other plugins can hook in
         if (analytics) {
             // GA4 — uncomment and add your own ID:
@@ -158,6 +159,34 @@
             // Facebook Pixel etc.
             document.dispatchEvent(new CustomEvent('cm_marketing_enabled'));
         }
+    }
+
+    function restoreEmbeds(analytics, marketing) {
+        // Herstel PHP-vervangen placeholders (cm_build_embed_placeholder)
+        document.querySelectorAll('.cm-embed-placeholder').forEach(function(el) {
+            var cat = el.getAttribute('data-cm-embed-cat');
+            if (cat === 'analytics' && !analytics) return;
+            if (cat === 'marketing' && !marketing) return;
+            var encoded = el.getAttribute('data-cm-embed-tag');
+            if (!encoded) return;
+            try {
+                var tmp = document.createElement('div');
+                tmp.innerHTML = atob(encoded);
+                var iframe = tmp.querySelector('iframe');
+                if (iframe && el.parentNode) el.parentNode.replaceChild(iframe, el);
+            } catch(e) {}
+        });
+        // Herstel JS-geblokkeerde iframes (blockIframe in inline script)
+        document.querySelectorAll('iframe[data-cm-embed-src]').forEach(function(iframe) {
+            var cat = iframe.getAttribute('data-cm-embed-cat');
+            if (cat === 'analytics' && !analytics) return;
+            if (cat === 'marketing' && !marketing) return;
+            var src = iframe.getAttribute('data-cm-embed-src');
+            if (src) {
+                iframe.setAttribute('src', src);
+                iframe.removeAttribute('data-cm-embed-src');
+            }
+        });
     }
 
     function loadScript(src) {
@@ -295,6 +324,20 @@
                 }
             });
         }
+
+        // Accepteer-knop op individuele embed placeholders
+        document.addEventListener('click', function(e) {
+            var btn = e.target && e.target.closest ? e.target.closest('.cm-embed-accept-btn') : null;
+            if (!btn) return;
+            var cat = btn.getAttribute('data-cm-embed-cat');
+            var existing = getConsent() || {};
+            var analytics = !!existing.analytics || cat === 'analytics';
+            var marketing = !!existing.marketing || cat === 'marketing';
+            setConsent({ analytics: analytics, marketing: marketing, method: 'embed-accept' });
+            pushDataLayer(analytics, marketing, 'embed-accept');
+            restoreEmbeds(analytics, marketing);
+            hideAll();
+        });
 
         // Enter/Space activeren categorie-headers (role=button) in prefs
         document.addEventListener('keydown', function(e) {

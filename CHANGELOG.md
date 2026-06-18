@@ -1,5 +1,11 @@
 # Changelog — Cookiebaas
 
+## [1.5.1] - 2026-06-18
+
+### Opgelost
+- **Embed placeholder — video niet zichtbaar na consent**: na het accepteren van cookies via de cookiebanner werden YouTube-video's (en andere embed-placeholders) niet automatisch ingeladen; een pagina-refresh was nodig. De placeholders worden nu direct vervangen door de echte iframe zodra consent gegeven wordt.
+- **Embed placeholder — "Accepteer"-knop op video**: de accepteerknop op individuele embed-placeholders deed niets; klikken hierop slaat nu consent op voor de bijbehorende categorie en laadt de embed direct in.
+
 ## [1.5.0] - 2026-04-14
 
 ### Opgelost
