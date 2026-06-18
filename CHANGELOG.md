@@ -1,5 +1,10 @@
 # Changelog — Cookiebaas
 
+## [1.5.2] - 2026-06-18
+
+### Opgelost
+- **Embed placeholder — video verschijnt niet direct na "Accepteer cookies"**: `restoreEmbeds` werd alleen aangeroepen bij terugkerende bezoekers, niet bij eerste acceptatie via de banner. Nu worden embeds direct hersteld in `acceptAll` en `savePrefs` vóór de pagina-refresh.
+
 ## [1.5.1] - 2026-06-18
 
 ### Opgelost

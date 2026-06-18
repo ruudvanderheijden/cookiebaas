@@ -125,6 +125,7 @@
     function acceptAll() {
         setConsent({ analytics: true, marketing: true, method: 'accept-all' });
         dispatchEvent('cm_consent_accepted', { analytics: true, marketing: true });
+        restoreEmbeds(true, true);
         hideAll();
         // Herlaad pagina zodat geblokkeerde scripts alsnog laden en overlay zeker weg is
         setTimeout(function() { window.location.reload(); }, 300);
@@ -142,6 +143,7 @@
         var marketing = togMarketing ? togMarketing.checked : false;
         setConsent({ analytics: analytics, marketing: marketing, method: 'custom' });
         dispatchEvent('cm_consent_saved', { analytics: analytics, marketing: marketing });
+        restoreEmbeds(analytics, marketing);
         hideAll();
         setTimeout(function() { window.location.reload(); }, 300);
     }
