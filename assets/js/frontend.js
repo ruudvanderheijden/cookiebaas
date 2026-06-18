@@ -354,9 +354,12 @@
         }
 
         // Accepteer-knop op individuele embed placeholders
+        // capture:true zodat WPBakery/Salient stopPropagation() ons niet blokkeert
         document.addEventListener('click', function(e) {
             var btn = e.target && e.target.closest ? e.target.closest('.cm-embed-accept-btn') : null;
             if (!btn) return;
+            e.stopPropagation();
+            e.preventDefault();
             var cat = btn.getAttribute('data-cm-embed-cat');
             var existing = getConsent() || {};
             var analytics = !!existing.analytics || cat === 'analytics';
@@ -365,7 +368,7 @@
             pushDataLayer(analytics, marketing, 'embed-accept');
             restoreEmbeds(analytics, marketing);
             hideAll();
-        });
+        }, true);
 
         // Enter/Space activeren categorie-headers (role=button) in prefs
         document.addEventListener('keydown', function(e) {

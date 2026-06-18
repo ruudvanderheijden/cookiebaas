@@ -1,5 +1,11 @@
 # Changelog — Cookiebaas
 
+## [1.5.4] - 2026-06-18
+
+### Opgelost
+- **Embed accept-knop — consent niet opgeslagen**: de "Accepteer cookies"-knop op de embed placeholder sloeg geen consent op in WPBakery/Salient omdat WPBakery een eigen click-handler heeft die `stopPropagation()` aanroept. De event listener gebruikt nu `capture: true` zodat deze altijd als eerste vuurt.
+- **WPBakery/Salient — video onzichtbaar na consent**: de CSS-reset voor responsive video-wrappers dekte de WPBakery-specifieke klassen niet af (`wpb_video_wrapper`, `wpb_wrapper`, `vc_video-bg-container`, `nectar-video-wrap`). Toegevoegd.
+
 ## [1.5.3] - 2026-06-18
 
 ### Opgelost

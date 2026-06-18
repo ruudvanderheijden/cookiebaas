@@ -709,7 +709,11 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
 .fluid-width-video-wrapper:has(.cm-embed-placeholder),
 .responsive-embed:has(.cm-embed-placeholder),
 .embed-responsive:has(.cm-embed-placeholder),
-.video-container:has(.cm-embed-placeholder) {
+.video-container:has(.cm-embed-placeholder),
+.wpb_video_wrapper:has(.cm-embed-placeholder),
+.wpb_wrapper:has(.cm-embed-placeholder),
+.vc_video-bg-container:has(.cm-embed-placeholder),
+.nectar-video-wrap:has(.cm-embed-placeholder) {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
     position: relative !important;
