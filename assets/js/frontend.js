@@ -188,6 +188,14 @@
             try {
                 var html = atob(encoded);
                 if (!html) return;
+                // Log parent-keten voor debugging
+                var p = parent, chain = [];
+                for (var i = 0; i < 6 && p && p.tagName; i++) {
+                    chain.push(p.tagName.toLowerCase() + (p.className ? '.' + String(p.className).trim().split(/\s+/).join('.') : ''));
+                    p = p.parentNode;
+                }
+                console.log('[Cookiebaas] embed restore | parent-keten:', chain.join(' < '));
+                console.log('[Cookiebaas] embed restore | decoded tag:', html.substring(0, 120));
                 // insertAdjacentHTML voegt de iframe direct in het live document in,
                 // zodat de browser hem meteen laadt (vs. verplaatsen vanuit detached DOM).
                 el.insertAdjacentHTML('afterend', html);
