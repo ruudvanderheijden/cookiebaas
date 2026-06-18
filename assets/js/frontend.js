@@ -122,18 +122,27 @@
     }
 
     /* ---- CONSENT ACTIONS ---- */
+    function needsReload() {
+        return !!document.querySelector('script[data-cm-type]');
+    }
+
     function acceptAll() {
         setConsent({ analytics: true, marketing: true, method: 'accept-all' });
         dispatchEvent('cm_consent_accepted', { analytics: true, marketing: true });
+        pushDataLayer(true, true, 'accept-all');
         restoreEmbeds(true, true);
         hideAll();
-        // Herlaad pagina zodat geblokkeerde scripts alsnog laden en overlay zeker weg is
-        setTimeout(function() { window.location.reload(); }, 300);
+        // Herlaad pagina alleen als er geblokkeerde scripts zijn die opnieuw moeten laden.
+        // Zijn er alleen embeds, dan is de pagina al bijgewerkt door restoreEmbeds.
+        if (needsReload()) {
+            setTimeout(function() { window.location.reload(); }, 300);
+        }
     }
 
     function rejectAll() {
         setConsent({ analytics: false, marketing: false, method: 'reject-all' });
         dispatchEvent('cm_consent_rejected', { analytics: false, marketing: false });
+        pushDataLayer(false, false, 'reject-all');
         hideAll();
         setTimeout(function() { window.location.reload(); }, 300);
     }
@@ -143,9 +152,12 @@
         var marketing = togMarketing ? togMarketing.checked : false;
         setConsent({ analytics: analytics, marketing: marketing, method: 'custom' });
         dispatchEvent('cm_consent_saved', { analytics: analytics, marketing: marketing });
+        pushDataLayer(analytics, marketing, 'custom');
         restoreEmbeds(analytics, marketing);
         hideAll();
-        setTimeout(function() { window.location.reload(); }, 300);
+        if (needsReload()) {
+            setTimeout(function() { window.location.reload(); }, 300);
+        }
     }
 
         /* ---- CONDITIONAL SCRIPT LOADING ---- */
@@ -171,12 +183,18 @@
             if (cat === 'marketing' && !marketing) return;
             var encoded = el.getAttribute('data-cm-embed-tag');
             if (!encoded) return;
+            var parent = el.parentNode;
+            if (!parent) return;
             try {
-                var tmp = document.createElement('div');
-                tmp.innerHTML = atob(encoded);
-                var iframe = tmp.querySelector('iframe');
-                if (iframe && el.parentNode) el.parentNode.replaceChild(iframe, el);
-            } catch(e) {}
+                var html = atob(encoded);
+                if (!html) return;
+                // insertAdjacentHTML voegt de iframe direct in het live document in,
+                // zodat de browser hem meteen laadt (vs. verplaatsen vanuit detached DOM).
+                el.insertAdjacentHTML('afterend', html);
+                parent.removeChild(el);
+            } catch(e) {
+                console.warn('[Cookiebaas] embed restore mislukt:', e, encoded && encoded.substring(0, 50));
+            }
         });
         // Herstel JS-geblokkeerde iframes (blockIframe in inline script)
         document.querySelectorAll('iframe[data-cm-embed-src]').forEach(function(iframe) {

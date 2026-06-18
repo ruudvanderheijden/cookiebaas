@@ -1,5 +1,12 @@
 # Changelog — Cookiebaas
 
+## [1.5.3] - 2026-06-18
+
+### Opgelost
+- **Embed placeholder — video verschijnt nog steeds niet**: twee root-causes gevonden en opgelost:
+  1. `restoreEmbeds` gebruikte `createElement` + `innerHTML` + `replaceChild` (iframe aangemaakt in een detached DOM-node). Browsers laden zo'n iframe soms niet. Vervangen door `insertAdjacentHTML` die de iframe direct in het live document injecteeert.
+  2. `acceptAll` herlaadde altijd de pagina na 300ms. Hierdoor verdween de net-ingevoegde iframe vóór de video kon laden. De pagina herlaadt nu alleen nog als er geblokkeerde `<script>`-elementen op de pagina staan die opnieuw moeten worden uitgevoerd. Zijn er alleen embeds, dan is `restoreEmbeds` voldoende en is een reload overbodig.
+
 ## [1.5.2] - 2026-06-18
 
 ### Opgelost
