@@ -1,5 +1,18 @@
 # Changelog — Cookiebaas
 
+## [1.6.0] - 2026-07-05
+
+### Gewijzigd
+- **Licentie fail-open**: bij een ongeldige of verlopen licentie werd de banner niet getoond, maar bleef de script/embed-blocker wél actief. Bezoekers konden daardoor nooit consent geven en scripts en video's bleven permanent geblokkeerd — de site brak geruisloos. Nu trekt de plugin zich bij een ongeldige licentie volledig terug: geen banner, geen blocking, geen GA4/GTM-injectie (tracking zonder consent-mogelijkheid zou een AVG-schending zijn). De admin-melding beschrijft dit gedrag.
+
+### Beveiliging
+- **Rate limiting consent log per IP**: de publieke log-endpoint limiteerde op 5 logs per 10 minuten per `session_id`, maar die komt uit de request zelf en was dus te omzeilen (onbeperkt database-inserts mogelijk). Toegevoegd: maximaal 20 logs per 10 minuten per geanonimiseerde IP-hash via transients.
+- **SSL-verificatie auto-scan**: `sslverify => false` verwijderd bij het ophalen van de eigen homepage tijdens de cookie-scan.
+- **Escaping**: drie border-kleuren in de inline CSS worden nu met `esc_attr()` ge-escaped; het custom zweefknop-SVG-icoon wordt gesanitized via een `wp_kses`-whitelist (de eerdere regex-check liet event-handler attributen zoals `onload` door).
+
+### Verwijderd
+- Ongebruikte `LOG_NONCE` variabele uit de frontend-script (werd aangemaakt maar nooit meegestuurd of gecontroleerd).
+
 ## [1.5.5] - 2026-07-05
 
 ### Opgelost

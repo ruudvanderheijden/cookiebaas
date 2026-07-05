@@ -246,11 +246,11 @@ add_action( 'admin_notices', 'cm_license_admin_notice' );
 function cm_license_admin_notice() {
     $lic = cm_license_get();
     if ( empty( $lic['key'] ) ) {
-        echo '<div class="notice notice-warning"><p><strong>Cookiebaas:</strong> Geen licentie geactiveerd. De cookiebanner wordt niet getoond. <a href="' . admin_url('admin.php?page=cookiemelding-beheer#tab=licentie') . '" onclick="var t=jQuery(\'.cm-nav-tabs .nav-tab[data-tab=licentie]\');if(t.length){t.click();window.scrollTo(0,0);return false;}">Licentie activeren &rarr;</a></p></div>';
+        echo '<div class="notice notice-warning"><p><strong>Cookiebaas:</strong> Geen licentie geactiveerd. De cookiebanner wordt niet getoond en er worden geen cookies of embeds geblokkeerd. <a href="' . admin_url('admin.php?page=cookiemelding-beheer#tab=licentie') . '" onclick="var t=jQuery(\'.cm-nav-tabs .nav-tab[data-tab=licentie]\');if(t.length){t.click();window.scrollTo(0,0);return false;}">Licentie activeren &rarr;</a></p></div>';
         return;
     }
     if ( ! cm_license_is_valid() ) {
         $reason = $lic['status'] === 'expired' ? 'verlopen' : 'ongeldig';
-        echo '<div class="notice notice-error"><p><strong>Cookiebaas:</strong> Uw licentie is ' . esc_html($reason) . '. De cookiebanner wordt niet getoond. <a href="' . admin_url('admin.php?page=cookiemelding-beheer#tab=licentie') . '" onclick="var t=jQuery(\'.cm-nav-tabs .nav-tab[data-tab=licentie]\');if(t.length){t.click();window.scrollTo(0,0);return false;}">Licentie beheren &rarr;</a></p></div>';
+        echo '<div class="notice notice-error"><p><strong>Cookiebaas:</strong> Uw licentie is ' . esc_html($reason) . '. De cookiebanner wordt niet getoond en er worden geen cookies of embeds geblokkeerd. <a href="' . admin_url('admin.php?page=cookiemelding-beheer#tab=licentie') . '" onclick="var t=jQuery(\'.cm-nav-tabs .nav-tab[data-tab=licentie]\');if(t.length){t.click();window.scrollTo(0,0);return false;}">Licentie beheren &rarr;</a></p></div>';
     }
 }

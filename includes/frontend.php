@@ -7,6 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 add_action( 'wp_head', 'cm_output_inline_css', 1 );
 function cm_output_inline_css() {
     if ( is_admin() ) return;
+    if ( ! cm_license_is_valid() ) return; // geen banner = geen CSS nodig
     $s  = cm_get_settings();
     $op = intval( cm_get('overlay_opacity') ) / 100;
     $rp = intval( cm_get('radius_popup') )   . 'px';
@@ -29,12 +30,12 @@ function cm_output_inline_css() {
     echo '--cm-accept-text:'    . esc_attr( cm_get('color_accept_text') )        . ';';
     echo '--cm-accept-hover-bg:'. esc_attr( cm_get('color_accept_hover_bg') )    . ';';
     echo '--cm-accept-hover-text:' . esc_attr( cm_get('color_accept_hover_text') ) . ';';
-    echo '--cm-accept-border:'  . $ab . ';';
+    echo '--cm-accept-border:'  . esc_attr( $ab ) . ';';
     echo '--cm-reject-text:'    . esc_attr( cm_get('color_reject_text') )        . ';';
     echo '--cm-reject-hover-text:' . esc_attr( cm_get('color_reject_hover_text') ) . ';';
     echo '--cm-reject-bg:'      . esc_attr( cm_get('color_reject_bg') ?: '#111111' )   . ';';
     echo '--cm-reject-hover-bg:'. esc_attr( cm_get('color_reject_hover_bg') ?: '#0091ff' ) . ';';
-    echo '--cm-reject-border:'  . $rb_border . ';';
+    echo '--cm-reject-border:'  . esc_attr( $rb_border ) . ';';
     echo '--cm-prefs-border:'   . esc_attr( cm_get('color_prefs_border') )       . ';';
     echo '--cm-prefs-text:'     . esc_attr( cm_get('color_prefs_text') )         . ';';
     echo '--cm-prefs-hover-border:' . esc_attr( cm_get('color_prefs_hover_border') ) . ';';
@@ -43,7 +44,7 @@ function cm_output_inline_css() {
     echo '--cm-allowall-text:'  . esc_attr( cm_get('color_allowall_text') )      . ';';
     echo '--cm-allowall-hover-bg:'  . esc_attr( cm_get('color_allowall_hover_bg') )  . ';';
     echo '--cm-allowall-hover-text:'. esc_attr( cm_get('color_allowall_hover_text') ) . ';';
-    echo '--cm-allowall-border:'. $alb . ';';
+    echo '--cm-allowall-border:'. esc_attr( $alb ) . ';';
     // Alles afwijzen button (outline stijl)
     echo '--cm-outline-border:'      . esc_attr( cm_get('color_outline_border') ?: '#d5d0c8' )      . ';';
     echo '--cm-outline-text:'        . esc_attr( cm_get('color_outline_text') ?: '#38342e' )         . ';';
@@ -326,6 +327,9 @@ function cm_requires_consent_banner() {
 add_action( 'wp_head', 'cm_inject_google_consent_mode', -1000 );
 function cm_inject_google_consent_mode() {
     if ( is_admin() ) return;
+    // Fail-open: zonder banner kan geen consent gegeven worden, dus ook
+    // geen GA4/GTM laden (zou tracking zonder toestemming betekenen).
+    if ( ! cm_license_is_valid() ) return;
 
     $ga4_id = trim( cm_get('ga4_measurement_id') );
     $gtm_id = trim( cm_get('gtm_container_id') );
@@ -471,6 +475,10 @@ function cm_init_cookie_blocker() {
     if ( is_admin() ) return;
     if ( defined('DOING_AJAX') && DOING_AJAX ) return;
     if ( defined('REST_REQUEST') && REST_REQUEST ) return;
+    // Fail-open: zonder geldige licentie wordt de banner niet gerenderd,
+    // dus mag er ook niets geblokkeerd worden — anders kan de bezoeker
+    // nooit consent geven en blijven scripts/embeds permanent dood.
+    if ( ! cm_license_is_valid() ) return;
 
     $consent     = null;
     $cookie_name = 'cc_cm_consent';
@@ -672,6 +680,7 @@ function cm_build_embed_placeholder( $original_tag, $src, $info ) {
 add_action( 'wp_head', 'cm_output_script_blocker', -999 );
 function cm_output_script_blocker() {
     if ( is_admin() ) return;
+    if ( ! cm_license_is_valid() ) return; // fail-open, zie cm_init_cookie_blocker
     // Altijd renderen — ook zonder patronen (voor Consent Mode update)
     $pA = cm_get_all_patterns('analytics');
     $pM = cm_get_all_patterns('marketing');
@@ -1198,10 +1207,26 @@ function cm_render_frontend() {
             $float_size_class = cm_get('float_icon_size') === 'small' ? ' cm-float-small' : '';
             $custom_svg = cm_get('float_icon_custom_svg');
             $default_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" width="32" height="32" aria-hidden="true"><path d="M164.49,163.51a12,12,0,1,1-17,0A12,12,0,0,1,164.49,163.51Zm-81-8a12,12,0,1,0,17,0A12,12,0,0,0,83.51,155.51Zm9-39a12,12,0,1,0-17,0A12,12,0,0,0,92.49,116.49Zm48-1a12,12,0,1,0,0,17A12,12,0,0,0,140.49,115.51ZM232,128A104,104,0,1,1,128,24a8,8,0,0,1,8,8,40,40,0,0,0,40,40,8,8,0,0,1,8,8,40,40,0,0,0,40,40A8,8,0,0,1,232,128Zm-16.31,7.39A56.13,56.13,0,0,1,168.5,87.5a56.13,56.13,0,0,1-47.89-47.19,88,88,0,1,0,95.08,95.08Z"></path></svg>';
-            // Sanitize custom SVG: alleen <svg> tags toestaan
+            // Sanitize custom SVG: whitelist van veilige tags/attributen
+            // (regex-match alleen is onvoldoende — laat bijv. onload= door)
+            $svg_allowed = array(
+                'svg'      => array( 'xmlns' => true, 'viewbox' => true, 'width' => true, 'height' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true, 'aria-hidden' => true, 'class' => true ),
+                'path'     => array( 'd' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true, 'stroke-linecap' => true, 'stroke-linejoin' => true, 'fill-rule' => true, 'clip-rule' => true ),
+                'circle'   => array( 'cx' => true, 'cy' => true, 'r' => true, 'fill' => true, 'stroke' => true ),
+                'ellipse'  => array( 'cx' => true, 'cy' => true, 'rx' => true, 'ry' => true, 'fill' => true ),
+                'rect'     => array( 'x' => true, 'y' => true, 'width' => true, 'height' => true, 'rx' => true, 'ry' => true, 'fill' => true ),
+                'line'     => array( 'x1' => true, 'y1' => true, 'x2' => true, 'y2' => true, 'stroke' => true ),
+                'polyline' => array( 'points' => true, 'fill' => true, 'stroke' => true ),
+                'polygon'  => array( 'points' => true, 'fill' => true, 'stroke' => true ),
+                'g'        => array( 'fill' => true, 'stroke' => true, 'transform' => true ),
+            );
             $icon_svg = $default_svg;
             if ( $custom_svg && preg_match( '/<svg\b[^>]*>.*<\/svg>/is', $custom_svg, $m ) ) {
-                $icon_svg = $m[0];
+                $clean = wp_kses( $m[0], $svg_allowed );
+                // Alleen gebruiken als er na sanitizing nog een geldige svg overblijft
+                if ( stripos( $clean, '<svg' ) !== false ) {
+                    $icon_svg = $clean;
+                }
             }
         ?>
         <button type="button" id="cm-float-btn" class="cm-float-icon<?php echo esc_attr($float_size_class); ?>" aria-label="<?php echo esc_attr( cm_t('txt_float_label') ); ?>">
@@ -1221,7 +1246,6 @@ function cm_render_frontend() {
         var EXPIRY_MONTHS     = <?php echo intval( cm_get('expiry_months') ); ?>;
         var SHOW_FLOAT        = <?php echo cm_get('show_float_btn') ? 'true' : 'false'; ?>;
         var AJAX_URL          = '<?php echo esc_js( site_url("/wp-admin/admin-ajax.php") ); ?>';
-        var LOG_NONCE         = '<?php echo wp_create_nonce("cm_log_consent"); ?>';
         var ANALYTICS_DEFAULT = <?php echo cm_get('analytics_default') ? 'true' : 'false'; ?>;
         var RESPECT_DNT       = <?php echo cm_get('respect_dnt') ? 'true' : 'false'; ?>;
         var RESPECT_GPC       = <?php echo cm_get('respect_gpc') ? 'true' : 'false'; ?>;

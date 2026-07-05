@@ -1544,6 +1544,18 @@ function cm_ajax_log_consent() {
     $ip_raw  = trim(explode(',', $ip_raw)[0]);
     $ip_hash = hash('sha256', $ip_raw . wp_salt('auth'));
 
+    // Rate limit per IP-hash: max 20 logs per 10 min. De sessie-limiet hieronder
+    // is te omzeilen (session_id komt uit de request body); deze limiet niet.
+    // Geen nonce-check: page caching serveert verouderde nonces waardoor
+    // legitieme consents niet meer gelogd zouden worden.
+    $rl_key   = 'cm_rl_' . substr( $ip_hash, 0, 32 );
+    $rl_count = (int) get_transient( $rl_key );
+    if ( $rl_count >= 20 ) {
+        wp_send_json_success( array( 'skipped' => 'ip_rate_limit' ) );
+        return;
+    }
+    set_transient( $rl_key, $rl_count + 1, 10 * MINUTE_IN_SECONDS );
+
     // Rate limit: max 5 logs per sessie per 10 min (niet voor pageload)
     if ( $session_id && $method !== 'pageload' ) {
         $recent = $wpdb->get_var( $wpdb->prepare(
