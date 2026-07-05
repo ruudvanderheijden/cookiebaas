@@ -62,7 +62,7 @@ This is a traditional WordPress plugin with no build system:
 ```
 Base: /wp-json/cookiebaas/v1/
 GET  /consent/{consent_id}   — fetch single consent record
-POST /consent                — log new consent
+POST /consent                — fetch consent record (consent_id in JSON body; does NOT log new consents — logging happens via admin-ajax `cm_log_consent`)
 GET  /status                 — plugin status
 Auth: X-Cookiebaas-Key header (or WordPress Application Password)
 ```

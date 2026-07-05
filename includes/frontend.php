@@ -205,15 +205,22 @@ function cm_output_inline_css() {
         echo '}</style>' . "\n";
     }
 
-    // Externe CSS — inline geladen en geminificeerd voor snelheid
+    // Externe CSS — inline geladen en geminificeerd voor snelheid.
+    // Geminificeerd resultaat wordt gecached in een transient (gekeyed op
+    // filemtime) zodat de minificatie niet op elke pageload draait.
     $css_file = CM_PLUGIN_DIR . 'assets/css/frontend.css';
     if ( file_exists( $css_file ) ) {
-        $css = file_get_contents( $css_file );
-        // Minificeer: verwijder comments, dubbele spaties, regeleindes
-        $css = preg_replace( '!/\*.*?\*/!s', '', $css );       // comments
-        $css = preg_replace( '/\s+/', ' ', $css );              // whitespace
-        $css = str_replace( array(' { ', ' } ', '{ ', ' }', '; ', ': ', ', '), array('{', '}', '{', '}', ';', ':', ','), $css );
-        $css = trim( $css );
+        $cache_key = 'cm_frontend_css_' . CM_VERSION . '_' . (int) filemtime( $css_file );
+        $css = get_transient( $cache_key );
+        if ( $css === false ) {
+            $css = file_get_contents( $css_file );
+            // Minificeer: verwijder comments, dubbele spaties, regeleindes
+            $css = preg_replace( '!/\*.*?\*/!s', '', $css );       // comments
+            $css = preg_replace( '/\s+/', ' ', $css );              // whitespace
+            $css = str_replace( array(' { ', ' } ', '{ ', ' }', '; ', ': ', ', '), array('{', '}', '{', '}', ';', ':', ','), $css );
+            $css = trim( $css );
+            set_transient( $cache_key, $css, WEEK_IN_SECONDS );
+        }
         echo '<style id="cm-frontend-css">' . $css . '</style>' . "\n";
         do_action('cm_frontend_css_loaded');
     }

@@ -1,5 +1,15 @@
 # Changelog — Cookiebaas
 
+## [1.6.1] - 2026-07-05
+
+### Prestaties
+- **CSS-minificatie gecached**: het minificeren van `frontend.css` draaide op elke pageload; het resultaat wordt nu gecached in een transient (gekeyed op bestandsdatum, automatisch ververst bij updates)
+- **Tabelcreatie alleen bij upgrade**: `dbDelta` + `INFORMATION_SCHEMA`-query draaiden op elke pageload via `plugins_loaded`; nu alleen nog bij een versie-wissel
+
+### Opgelost
+- **Uninstall completer**: verwijdert nu ook de auto-scan opties (`cm_auto_scan_*`), alle plugin-transients (GitHub release cache, CSS cache, rate limits) en de auto-scan- en licentie-cron-events (voorheen alleen de retentie-cron)
+- **Updater heractiveert niet meer onvoorwaardelijk**: `activate_plugin()` na een update wordt alleen nog aangeroepen als de plugin vóór de update actief was
+
 ## [1.6.0] - 2026-07-05
 
 ### Gewijzigd

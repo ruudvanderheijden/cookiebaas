@@ -234,6 +234,12 @@ class CM_GitHub_Updater {
 
         global $wp_filesystem;
 
+        // Alleen heractiveren als de plugin vóór de update actief was
+        if ( ! function_exists( 'is_plugin_active' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        $was_active = is_plugin_active( $this->slug );
+
         $plugin_dir  = WP_PLUGIN_DIR . '/' . dirname( $this->slug );
         $install_dir = $result['destination'];
 
@@ -242,7 +248,9 @@ class CM_GitHub_Updater {
             $result['destination'] = $plugin_dir;
         }
 
-        activate_plugin( $this->slug );
+        if ( $was_active ) {
+            activate_plugin( $this->slug );
+        }
 
         return $result;
     }
