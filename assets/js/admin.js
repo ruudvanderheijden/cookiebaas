@@ -1981,10 +1981,11 @@
 
             // Status mapping met zijstreep-kleuren
             var statusMap = {
-                'accept-all': { label: 'Akkoord',     bg: '#d1f0da', color: '#00561b', stripe: '#00a32a' },
-                'reject-all': { label: 'Geweigerd',   bg: '#fcebeb', color: '#d63638', stripe: '#d63638' },
-                'custom':     { label: 'Aangepast',    bg: '#dce9f8', color: '#0a4480', stripe: '#2271b1' },
-                'pageload':   { label: 'Terugkerend',  bg: '#f6f7f7', color: '#787c82', stripe: '#c3c4c7' }
+                'accept-all':   { label: 'Akkoord',     bg: '#d1f0da', color: '#00561b', stripe: '#00a32a' },
+                'reject-all':   { label: 'Geweigerd',   bg: '#fcebeb', color: '#d63638', stripe: '#d63638' },
+                'custom':       { label: 'Aangepast',    bg: '#dce9f8', color: '#0a4480', stripe: '#2271b1' },
+                'pageload':     { label: 'Terugkerend',  bg: '#f6f7f7', color: '#787c82', stripe: '#c3c4c7' },
+                'embed-accept': { label: 'Akkoord (embed)', bg: '#d1f0da', color: '#00561b', stripe: '#00a32a' }
             };
 
             var $tbody = $('#cm-log-rows');
@@ -2098,7 +2099,7 @@
     });
 
     // ---- Bewijs van consent popup ----
-    var statusLabels = { 'accept-all':'Geaccepteerd','reject-all':'Geweigerd','custom':'Aangepast','pageload':'Terugkerend' };
+    var statusLabels = { 'accept-all':'Geaccepteerd','reject-all':'Geweigerd','custom':'Aangepast','pageload':'Terugkerend','embed-accept':'Geaccepteerd via embed' };
     $(document).on('click', '.cm-proof-btn', function() {
         var cid       = $(this).data('id');
         var date      = $(this).data('date');

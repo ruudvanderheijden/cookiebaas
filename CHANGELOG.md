@@ -1,5 +1,15 @@
 # Changelog — Cookiebaas
 
+## [1.5.5] - 2026-07-05
+
+### Opgelost
+- **Embed "Accepteer cookies"-knop sloeg geen consent op**: de knop op de embed-placeholder verving alleen de placeholder door het iframe, zonder consent op te slaan of te loggen. Na een pagina-refresh was de embed daardoor weer geblokkeerd. De knop geeft nu consent voor de bijbehorende categorie (analytics/marketing): consent wordt opgeslagen in de cookie, gelogd in de consent log (nieuwe methode `embed-accept`), doorgegeven aan Google Consent Mode, en alle geblokkeerde embeds én scripts van die categorie worden direct vrijgegeven.
+- **Embed herstel betrouwbaarder**: iframes worden nu via `insertAdjacentHTML` direct in het live document ingevoegd in plaats van verplaatst vanuit een losse DOM-node (laadde in sommige browsers niet), met fallback naar een nieuw iframe op basis van de opgeslagen bron-URL.
+- **Embed-knoppen werken nu ook in thema's die clicks onderscheppen** (WPBakery/Salient): de event listener draait in de capture-fase zodat `stopPropagation()` van het thema de plugin niet meer blokkeert.
+
+### Verwijderd
+- **`assets/js/frontend.js` verwijderd**: dit bestand werd nergens geladen (alle frontend-JS zit inline in `cm_render_frontend()`), maar bevatte een verouderde duplicaat-implementatie met afwijkende cookie-structuur. De fixes uit v1.5.1–v1.5.4 die per abuis in dit dode bestand terechtkwamen, zitten nu op de juiste plek in de inline script.
+
 ## [1.5.4] - 2026-06-18
 
 ### Opgelost

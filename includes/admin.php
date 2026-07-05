@@ -1556,7 +1556,7 @@ function cm_ajax_log_consent() {
         }
     }
 
-    $method_clean = in_array( $method, array('accept-all','reject-all','custom','pageload'), true ) ? $method : 'custom';
+    $method_clean = in_array( $method, array('accept-all','reject-all','custom','pageload','embed-accept'), true ) ? $method : 'custom';
 
     // Genereer uniek Consent ID (UUID v4 formaat)
     $consent_id = sprintf( '%08x-%04x-4%03x-%04x-%012x',
@@ -1654,7 +1654,7 @@ function cm_ajax_get_log() {
 
     $stats = $wpdb->get_row(
         "SELECT
-            SUM(CASE WHEN method = 'accept-all' THEN 1 ELSE 0 END) as accept_all,
+            SUM(CASE WHEN method IN ('accept-all','embed-accept') THEN 1 ELSE 0 END) as accept_all,
             SUM(CASE WHEN method = 'reject-all' THEN 1 ELSE 0 END) as reject_all,
             SUM(CASE WHEN method = 'custom'     THEN 1 ELSE 0 END) as custom
          FROM `{$table}`
@@ -1712,9 +1712,10 @@ function cm_ajax_export_log_csv() {
     fputcsv( $out, array( 'Consent ID', 'Consent Status', 'Analytisch', 'Marketing', 'Pagina', 'Plugin versie', 'Datum/Tijd' ) );
 
     $status_map = array(
-        'accept-all' => 'Geaccepteerd',
-        'reject-all' => 'Geweigerd',
-        'custom'     => 'Aangepast',
+        'accept-all'   => 'Geaccepteerd',
+        'reject-all'   => 'Geweigerd',
+        'custom'       => 'Aangepast',
+        'embed-accept' => 'Geaccepteerd via embed',
     );
 
     foreach ( $rows as $row ) {
@@ -1749,7 +1750,7 @@ function cm_ajax_get_consent_proof() {
 
     if ( ! $row ) { wp_send_json_error( array('msg'=>'Niet gevonden') ); return; }
 
-    $status_map = array( 'accept-all'=>'Geaccepteerd', 'reject-all'=>'Geweigerd', 'custom'=>'Aangepast' );
+    $status_map = array( 'accept-all'=>'Geaccepteerd', 'reject-all'=>'Geweigerd', 'custom'=>'Aangepast', 'embed-accept'=>'Geaccepteerd via embed' );
     wp_send_json_success( array(
         'consent_id'     => $row['consent_id'],
         'status'         => $status_map[ $row['method'] ] ?? $row['method'],

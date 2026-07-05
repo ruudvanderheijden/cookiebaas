@@ -1341,30 +1341,36 @@ function cm_render_frontend() {
             // 1. Placeholders (gemaakt door PHP output buffer)
             document.querySelectorAll('.cm-embed-placeholder[data-cm-embed-cat="' + type + '"]').forEach(function(ph) {
                 var encodedTag = ph.getAttribute('data-cm-embed-tag');
+                var restored = false;
                 if (encodedTag) {
                     try {
                         var originalHtml = atob(encodedTag);
-                        var wrapper = document.createElement('div');
-                        wrapper.innerHTML = originalHtml;
-                        var iframe = wrapper.firstElementChild;
-                        if (iframe) {
+                        // insertAdjacentHTML plaatst het iframe direct in het live
+                        // document — een iframe verplaatsen vanuit een detached node
+                        // laadt in sommige browsers niet.
+                        ph.insertAdjacentHTML('afterend', originalHtml);
+                        var iframe = ph.nextElementSibling;
+                        if (iframe && iframe.tagName === 'IFRAME') {
                             makeResponsive(iframe);
-                            ph.parentNode.replaceChild(iframe, ph);
+                            restored = true;
                         }
-                    } catch(e) {
-                        // Fallback: maak nieuw iframe van data-cm-embed-src
-                        var src = ph.getAttribute('data-cm-embed-src');
-                        if (src) {
-                            var nf = document.createElement('iframe');
-                            nf.src = src;
-                            nf.setAttribute('allowfullscreen', '');
-                            nf.style.width = '100%';
-                            nf.style.border = 'none';
-                            nf.style.aspectRatio = '16/9';
-                            ph.parentNode.replaceChild(nf, ph);
-                        }
+                    } catch(e) {}
+                }
+                if (!restored) {
+                    // Fallback: maak nieuw iframe van data-cm-embed-src
+                    var src = ph.getAttribute('data-cm-embed-src');
+                    if (src) {
+                        var nf = document.createElement('iframe');
+                        nf.src = src;
+                        nf.setAttribute('allowfullscreen', '');
+                        nf.style.width = '100%';
+                        nf.style.border = 'none';
+                        nf.style.aspectRatio = '16/9';
+                        ph.parentNode.insertBefore(nf, ph.nextSibling);
+                        restored = true;
                     }
                 }
+                if (restored && ph.parentNode) ph.parentNode.removeChild(ph);
             });
             // 2. Dynamisch geblokkeerde iframes (via JS MutationObserver)
             document.querySelectorAll('iframe[data-cm-embed-cat="' + type + '"]').forEach(function(iframe) {
@@ -1379,33 +1385,17 @@ function cm_render_frontend() {
             });
         }
 
-        /* ---- Enkele embed accepteren (per placeholder) ---- */
-        function acceptSingleEmbed(placeholder) {
-            var encodedTag = placeholder.getAttribute('data-cm-embed-tag');
-            if (encodedTag) {
-                try {
-                    var originalHtml = atob(encodedTag);
-                    var wrapper = document.createElement('div');
-                    wrapper.innerHTML = originalHtml;
-                    var iframe = wrapper.firstElementChild;
-                    if (iframe) {
-                        makeResponsive(iframe);
-                        placeholder.parentNode.replaceChild(iframe, placeholder);
-                        return;
-                    }
-                } catch(e) {}
-            }
-            // Fallback
-            var src = placeholder.getAttribute('data-cm-embed-src');
-            if (src) {
-                var nf = document.createElement('iframe');
-                nf.src = src;
-                nf.setAttribute('allowfullscreen', '');
-                nf.style.width = '100%';
-                nf.style.border = 'none';
-                nf.style.aspectRatio = '16/9';
-                placeholder.parentNode.replaceChild(nf, placeholder);
-            }
+        /* ---- Embed accepteren via placeholder-knop ----
+           De knop geeft consent voor de hele categorie (analytics/marketing):
+           consent wordt opgeslagen én gelogd, daarna herstelt applyConsent
+           alle geblokkeerde embeds en scripts van die categorie. Zonder
+           opgeslagen consent zou de embed na een refresh weer geblokkeerd zijn. */
+        function acceptEmbedCategory(placeholder) {
+            var cat = placeholder.getAttribute('data-cm-embed-cat');
+            var c = getConsent();
+            var analytics = (c && !!c.analytics) || cat === 'analytics';
+            var marketing = (c && !!c.marketing) || cat === 'marketing';
+            applyConsent(analytics, marketing, 'embed-accept', null);
         }
 
         /* ---- Consent cookie ---- */
@@ -2066,8 +2056,9 @@ function cm_render_frontend() {
                 var btn = e.target.closest('.cm-embed-accept-btn');
                 if (btn) {
                     e.preventDefault();
+                    e.stopPropagation();
                     var ph = btn.closest('.cm-embed-placeholder');
-                    if (ph) acceptSingleEmbed(ph);
+                    if (ph) acceptEmbedCategory(ph);
                     return;
                 }
                 // "Cookievoorkeuren" link in placeholder — opent prefs modal
@@ -2077,7 +2068,7 @@ function cm_render_frontend() {
                     openPrefs();
                     return;
                 }
-            });
+            }, true); // capture: vóór thema-handlers (WPBakery/Salient stopPropagation)
         }
 
         function init() {
