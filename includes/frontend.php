@@ -352,6 +352,14 @@ function cm_inject_google_consent_mode() {
     $allow_analytics = ! empty( $consent['analytics'] ) || $google_load_default;
     $allow_marketing = ! empty( $consent['marketing'] );
 
+    // Consent Mode v2 "advanced": laad de Google-tag altijd, óók zonder consent.
+    // De consent-defaults staan op denied, dus de tag plaatst geen cookies en
+    // tags in GTM vuren niet — Google ontvangt alleen cookieloze pings voor
+    // modellering van bezoekersaantallen. Na consent vuurt alles via de
+    // gtag('consent','update') die de plugin al stuurt.
+    $cm_advanced = (bool) cm_get('google_consent_mode_advanced');
+    $load_google = $allow_analytics || $cm_advanced;
+
     $analytics_update = $allow_analytics ? 'granted' : 'denied';
     $marketing_update = $allow_marketing ? 'granted' : 'denied';
     ?>
@@ -384,9 +392,9 @@ gtag('consent', 'update', {
     // Bij geen consent: type="text/plain" + data-cm-type="analytics"
     // Bij consent:      normale script tags
     if ( $ga4_id && preg_match('/^G-[A-Z0-9]+$/i', $ga4_id) ) :
-        if ( $allow_analytics ) : ?>
-<script async src="https://www.googletagmanager.com/gtag/js?id=<?php echo esc_attr($ga4_id); ?>"></script>
-<script>gtag('js', new Date()); gtag('config', '<?php echo esc_js($ga4_id); ?>');</script>
+        if ( $load_google ) : ?>
+<script async data-cm-allow="1" src="https://www.googletagmanager.com/gtag/js?id=<?php echo esc_attr($ga4_id); ?>"></script>
+<script data-cm-allow="1">gtag('js', new Date()); gtag('config', '<?php echo esc_js($ga4_id); ?>');</script>
         <?php else : ?>
 <script type="text/plain" data-cm-type="analytics" data-cm-blocked-src="https://www.googletagmanager.com/gtag/js?id=<?php echo esc_attr($ga4_id); ?>" async></script>
 <script type="text/plain" data-cm-type="analytics">gtag('js', new Date()); gtag('config', '<?php echo esc_js($ga4_id); ?>');</script>
@@ -395,8 +403,8 @@ gtag('consent', 'update', {
 
     // GTM self-loader
     if ( $gtm_id && preg_match('/^GTM-[A-Z0-9]+$/i', $gtm_id) ) :
-        if ( $allow_analytics ) : ?>
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','<?php echo esc_js($gtm_id); ?>');</script>
+        if ( $load_google ) : ?>
+<script data-cm-allow="1">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.setAttribute('data-cm-allow','1');j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','<?php echo esc_js($gtm_id); ?>');</script>
         <?php else : ?>
 <script type="text/plain" data-cm-type="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','<?php echo esc_js($gtm_id); ?>');</script>
         <?php endif;
@@ -569,6 +577,7 @@ function cm_filter_buffer( $html ) {
         function( $matches ) use ( $pA, $pM, $allow_analytics, $allow_marketing ) {
             $tag = $matches[0];
             if ( stripos( $tag, 'data-cm-type=' ) !== false ) return $tag;
+            if ( stripos( $tag, 'data-cm-allow' ) !== false ) return $tag; // door plugin bewust geladen (Consent Mode advanced)
             $type = cm_script_tag_blocked( $tag, $pA, $pM, $allow_analytics, $allow_marketing );
             if ( ! $type ) return $tag;
             $tag = preg_replace( '/\btype\s*=\s*["\'][^"\']*["\']/i', '', $tag );
@@ -583,6 +592,7 @@ function cm_filter_buffer( $html ) {
         function( $matches ) use ( $pA, $pM, $allow_analytics, $allow_marketing ) {
             $b = $matches[0];
             if ( stripos( $b, 'data-cm-type=' ) !== false ) return $b;
+            if ( stripos( $b, 'data-cm-allow' ) !== false ) return $b; // door plugin bewust geladen (Consent Mode advanced)
             if ( preg_match( '/\bsrc\s*=/i', $b ) ) return $b; // externe scripts al afgehandeld
             $type = cm_inline_script_blocked( $b, $pA, $pM, $allow_analytics, $allow_marketing );
             if ( ! $type ) return $b;
@@ -720,6 +730,7 @@ function cm_output_script_blocker() {
     function shouldSkip(txt){for(var i=0;i<skipWords.length;i++){if(txt.indexOf(skipWords[i])!==-1)return true;}return false;}
     function blockNode(s){
         if(s.getAttribute('data-cm-type'))return;
+        if(s.getAttribute('data-cm-allow'))return; /* door plugin bewust geladen (Consent Mode advanced) */
         var src=s.getAttribute('src')||'',txt=s.textContent||'';
         if(shouldSkip(txt))return;
         var t=getType(src,txt);

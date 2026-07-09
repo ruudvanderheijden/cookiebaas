@@ -95,6 +95,10 @@ function cm_default_settings() {
         'ga4_measurement_id'        => '',
         'gtm_container_id'          => '',
         'ua_tracking_id'            => '',
+        // Consent Mode v2 "advanced": laad GTM/GA4 altijd (met denied defaults,
+        // geen cookies) zodat Google via cookieloze pings bezoekers kan modelleren.
+        // Tags vuren pas na consent update. 0 = "basic" (tag geblokkeerd tot consent).
+        'google_consent_mode_advanced' => 1,
         // Script blocking — optionele extra patronen (ingebouwde kennisbank werkt automatisch)
         'block_analytics_patterns'  => '',
         'block_marketing_patterns'  => '',

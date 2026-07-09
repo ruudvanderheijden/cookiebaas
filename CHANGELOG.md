@@ -1,5 +1,14 @@
 # Changelog — Cookiebaas
 
+## [1.7.0] - 2026-07-09
+
+### Toegevoegd
+- **Google Consent Mode v2 "advanced"** (nieuwe optie, standaard aan): de Google-tag (GTM-container of GA4) wordt altijd direct ingeladen, óók vóór consent of na weigering — maar met alle consent-signalen op `denied`. De tag plaatst dan geen cookies en tags in GTM vuren niet; Google ontvangt alleen cookieloze pings waarmee het via modellering bezoekersaantallen en conversies kan inschatten. Zodra de bezoeker toestemming geeft stuurt de plugin de bestaande `gtag('consent','update')` en vuren de tags alsnog, zonder pagina-herlaad. Uitvinken = het oude "basic" gedrag (tag volledig geblokkeerd tot consent). Instelbaar bij de Google-integratie velden.
+- Nieuw `data-cm-allow` attribuut: scripts die de plugin bewust laadt worden overgeslagen door zowel de PHP output-buffer blocker als de JS MutationObserver-blocker (voorheen zouden die de eigen GTM-injectie weer blokkeren).
+
+### Opmerking
+- Universal Analytics (verouderd) blijft op basic-gedrag — UA ondersteunt geen Consent Mode en zou direct cookies plaatsen.
+
 ## [1.6.1] - 2026-07-05
 
 ### Prestaties

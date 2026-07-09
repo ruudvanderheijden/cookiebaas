@@ -2754,6 +2754,13 @@ function cm_render_admin_page() {
                                 <p class="description">Begint met <code>UA-</code>. Google heeft Universal Analytics per 1 juli 2023 stopgezet. Gebruik bij voorkeur GA4. Deze optie is beschikbaar voor websites die nog UA-code draaien.</p>
                             </td>
                         </tr>
+                        <tr>
+                            <th><label for="google_consent_mode_advanced">Consent Mode: advanced</label></th>
+                            <td>
+                                <label><input type="checkbox" id="google_consent_mode_advanced" name="google_consent_mode_advanced" value="1" <?php checked( cm_get('google_consent_mode_advanced'), 1 ); ?>> Laad de Google-tag (GTM/GA4) altijd in, ook vóór toestemming — tags vuren pas ná consent</label>
+                                <p class="description">Google Consent Mode v2 <strong>advanced</strong>: de tag/container laadt direct met alle consent-signalen op <code>denied</code>. Er worden géén cookies geplaatst en tags in GTM vuren niet, maar Google ontvangt cookieloze pings waarmee het via modellering bezoekersaantallen en conversies kan inschatten. Uitgevinkt = <strong>basic</strong>: de tag wordt volledig geblokkeerd tot toestemming. Geldt niet voor Universal Analytics (verouderd, ondersteunt geen Consent Mode).</p>
+                            </td>
+                        </tr>
                         </tbody></table>
                     </div>
 
@@ -4224,6 +4231,13 @@ function cm_render_tracking_page() {
                     <td>
                         <input type="text" id="gtm_container_id" name="gtm_container_id" value="<?php echo esc_attr( cm_get('gtm_container_id') ); ?>" class="regular-text" placeholder="GTM-XXXXXXX">
                         <p class="description">Begint met <code>GTM-</code>. Te vinden in Google Tag Manager → Workspace. Verwijder na het invullen de bestaande snippets uit uw code of uit andere plugins indien deze al vermeld staan.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="google_consent_mode_advanced">Consent Mode: advanced</label></th>
+                    <td>
+                        <label><input type="checkbox" id="google_consent_mode_advanced" name="google_consent_mode_advanced" value="1" <?php checked( cm_get('google_consent_mode_advanced'), 1 ); ?>> Laad de Google-tag (GTM/GA4) altijd in, ook vóór toestemming — tags vuren pas ná consent</label>
+                        <p class="description">Google Consent Mode v2 <strong>advanced</strong>: de tag/container laadt direct met alle consent-signalen op <code>denied</code>. Er worden géén cookies geplaatst en tags in GTM vuren niet, maar Google ontvangt cookieloze pings waarmee het via modellering bezoekersaantallen en conversies kan inschatten. Uitgevinkt = <strong>basic</strong>: de tag wordt volledig geblokkeerd tot toestemming.</p>
                     </td>
                 </tr>
                 </tbody></table>
