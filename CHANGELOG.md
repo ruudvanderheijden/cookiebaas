@@ -1,5 +1,19 @@
 # Changelog — Cookiebaas
 
+## [1.7.5] - 2026-07-13
+
+### Opgelost — live preview Vormgeving
+- **Zeven preview-stijlen negeerden de instelling**: de admin-CSS gebruikte hardcoded kleuren of de verkeerde variabele terwijl de preview-JS de juiste waarde al doorzette. Werken nu direct: categorie-beschrijving, detailtekst, cookienaam, cookie-meta, toggle-kleur (uit), categorie-hover en de tekstkleur van de "Altijd actief"-badge (die pakte de toggle-kleur).
+- **Radiogroepen lazen altijd de eerste optie**: de preview-helper `get()` las bij radio's de waarde van het eerste element in plaats van het aangevinkte — o.a. bannerpositie en zweefknop-instellingen kwamen daardoor verkeerd binnen.
+- **Radio's, checkboxes en selects verversten de preview niet**: alleen tekst-, kleur- en slider-velden waren gekoppeld. Nu triggert elke wijziging de preview.
+
+### Toegevoegd — live preview Vormgeving
+- **Zweefknop-preview**: nieuw preview-blok dat stijl (icoon/tekstknop), grootte, positie (links/rechts), eigen SVG-icoon én alle kleuren incl. hover live toont; verdwijnt als de zweefknop uitstaat.
+- **Embed placeholder-preview**: nieuw preview-blok met titel, tekst, knop (incl. hover) en alle embed-kleuren.
+- **Dienst-rij, derde-partij-badge en lege-categorie-regel** in het voorkeuren-venster, zodat ook servicenaam-, badge- en "geen cookies"-kleuren zichtbaar zijn.
+- **Linkkleur zichtbaar**: banner- en voorkeurentekst behouden nu `a`/`strong`/`em` in de preview (voorheen werd alle opmaak gestript).
+- **Bannerpositie en -breedtes werken door**: linksonder/gecentreerd/rechtsonder/midden en de bijbehorende breedte-instellingen zijn nu zichtbaar in de preview, net als de optie "cookie-details tonen".
+
 ## [1.7.4] - 2026-07-13
 
 ### Toegevoegd

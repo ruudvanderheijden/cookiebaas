@@ -99,6 +99,10 @@
     /* ---- TEXT INPUTS → preview ---- */
     $(document).on('input', 'input[type="text"], textarea', function(){ applyPreview(); });
 
+    /* ---- RADIO'S, CHECKBOXES & SELECTS → preview ---- */
+    // (banner_position, float-stijl/positie/grootte, icoontype, prefs_cookie_detail, e.a.)
+    $(document).on('change', 'input[type="radio"], input[type="checkbox"], select', function(){ applyPreview(); });
+
     /* ---- PREVIEW: categorie uitklap + toggle ---- */
     $(document).on('click', '.cm-prev-cat-toggle', function(e) {
         // Niet uitklappen als men op de toggle-label klikt
@@ -114,6 +118,7 @@
     function get(name) {
         var $el = $('[name="' + name + '"]');
         if (!$el.length) return '';
+        if ($el.is(':radio')) return $el.filter(':checked').val() || '';
         if ($el.is(':checkbox')) return $el.is(':checked') ? 1 : 0;
         if ($el.is('input[type="range"]')) return parseInt($el.val());
         return $el.val() || '';
@@ -139,6 +144,28 @@
     function stripTags(html) {
         var d = document.createElement('div'); d.innerHTML = html; return d.textContent || d.innerText || '';
     }
+
+    // Behoud alleen a/strong/em (zonder attributen) zodat o.a. de linkkleur
+    // zichtbaar is in de preview — zelfde subset als de frontend toestaat
+    function htmlLite(html) {
+        var allowed = { A: 1, STRONG: 1, EM: 1 };
+        var src = document.createElement('div'); src.innerHTML = html || '';
+        function walk(node, out) {
+            Array.prototype.slice.call(node.childNodes).forEach(function(ch) {
+                if (ch.nodeType === 3) { out.appendChild(document.createTextNode(ch.nodeValue)); }
+                else if (ch.nodeType === 1) {
+                    if (allowed[ch.tagName]) {
+                        var el = document.createElement(ch.tagName);
+                        walk(ch, el); out.appendChild(el);
+                    } else { walk(ch, out); }
+                }
+            });
+        }
+        var out = document.createElement('div'); walk(src, out); return out.innerHTML;
+    }
+
+    // Standaard zweefknop-icoon (identiek aan frontend.php)
+    var CM_FLOAT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor" width="32" height="32" aria-hidden="true"><path d="M164.49,163.51a12,12,0,1,1-17,0A12,12,0,0,1,164.49,163.51Zm-81-8a12,12,0,1,0,17,0A12,12,0,0,0,83.51,155.51Zm9-39a12,12,0,1,0-17,0A12,12,0,0,0,92.49,116.49Zm48-1a12,12,0,1,0,0,17A12,12,0,0,0,140.49,115.51ZM232,128A104,104,0,1,1,128,24a8,8,0,0,1,8,8,40,40,0,0,0,40,40,8,8,0,0,1,8,8,40,40,0,0,0,40,40A8,8,0,0,1,232,128Zm-16.31,7.39A56.13,56.13,0,0,1,168.5,87.5a56.13,56.13,0,0,1-47.89-47.19,88,88,0,1,0,95.08,95.08Z"></path></svg>';
 
     /* ---- LIVE PREVIEW — schaling ---- */
     function scalePreview() {
@@ -259,14 +286,41 @@
             '--cm-cat-detail-color': gc('cat_detail') || (isDark ? '#a6a6a6' : '#666666'),
             '--cm-cookie-name-color': gc('cookie_name') || (isDark ? '#acacac' : '#333333'),
             '--cm-cookie-meta-color': gc('cookie_meta') || (isDark ? '#acacac' : '#4e4e4e'),
-            '--cm-toggle-off': gc('toggle_off') || (isDark ? '#6d6d6d' : '#dddddd')
+            '--cm-toggle-off': gc('toggle_off') || (isDark ? '#6d6d6d' : '#dddddd'),
+            '--cm-always-on-color': gc('always_on_color') || (isDark ? '#6eb8ff' : '#0091ff'),
+            '--cm-link-color': gc('link') || (isDark ? '#6eb8ff' : '#0091ff'),
+            '--cm-service-name-color': gc('service_name') || (isDark ? '#e0e0e0' : '#333333'),
+            '--cm-cookie-empty-color': gc('cookie_empty') || (isDark ? '#777777' : '#bbbbbb'),
+            '--cm-badge-text': gc('badge_text') || (isDark ? '#ffd97a' : '#0091ff'),
+            '--cm-badge-bg': gc('badge_bg') || (isDark ? '#3a2e00' : '#e8f4ff'),
+            '--cm-badge-border': gc('badge_border') || (isDark ? '#7a6420' : '#0091ff'),
+            '--cm-embed-bg': gc('embed_bg') || '#000000',
+            '--cm-embed-title': gc('embed_title') || '#ffffff',
+            '--cm-embed-body': gc('embed_body') || '#ffffff',
+            '--cm-embed-btn-bg': gc('embed_btn_bg') || '#ffffff',
+            '--cm-embed-btn-text': gc('embed_btn_text') || '#000000',
+            '--cm-embed-btn-hover-bg': gc('embed_btn_hover_bg') || '#0091ff',
+            '--cm-embed-btn-hover-text': gc('embed_btn_hover_text') || '#ffffff',
+            '--cm-float-icon-bg': gc('float_icon_bg') || (isDark ? '#f2f2f2' : '#111111'),
+            '--cm-float-icon-color': gc('float_icon_color') || (isDark ? '#111111' : '#ffffff'),
+            '--cm-float-icon-hover-bg': gc('float_icon_hover_bg') || (isDark ? '#6eb8ff' : '#0091ff'),
+            '--cm-float-icon-hover-color': gc('float_icon_hover_color') || (isDark ? '#111111' : '#ffffff'),
+            '--cm-float-text-bg': gc('float_text_bg') || (isDark ? '#1a1a1a' : '#ffffff'),
+            '--cm-float-text-color': gc('float_text_color') || (isDark ? '#cccccc' : '#444444'),
+            '--cm-float-text-border': gc('float_text_border') || (isDark ? '#3a3a3a' : '#e0dbd3'),
+            '--cm-float-text-hover-bg': gc('float_text_hover_bg') || (isDark ? '#2a2a2a' : '#f6f7f7'),
+            '--cm-float-text-hover-color': gc('float_text_hover_color') || (isDark ? '#f2f2f2' : '#111111')
         };
 
         var $bvp = $('#cm-prev-banner-vp');
         var $pvp = $('#cm-prev-prefs-vp');
+        var $fvp = $('#cm-prev-float-vp');
+        var $evp = $('#cm-prev-embed-vp');
         $.each(vars, function(k, v) {
             if ($bvp.length) $bvp[0].style.setProperty(k, v);
             if ($pvp.length) $pvp[0].style.setProperty(k, v);
+            if ($fvp.length) $fvp[0].style.setProperty(k, v);
+            if ($evp.length) $evp[0].style.setProperty(k, v);
         });
 
         // Overlay
@@ -274,12 +328,12 @@
 
         // Teksten
         $('#prev-title').text(getT('txt_banner_title'));
-        $('#prev-text').text(stripTags(getT('txt_banner_body')));
+        $('#prev-text').html(htmlLite(getT('txt_banner_body')));
         $('#prev-btn-prefs').text(getT('txt_btn_prefs'));
         $('#prev-btn-reject').text(getT('txt_btn_reject'));
         $('#prev-btn-accept').text(getT('txt_btn_accept'));
         $('#prev-prefs-title').text(getT('txt_prefs_title'));
-        $('#prev-prefs-text').text(stripTags(getT('txt_prefs_body')));
+        $('#prev-prefs-text').html(htmlLite(getT('txt_prefs_body')));
         $('#prev-allowall').text(getT('txt_btn_allowall'));
         $('#prev-btn-rejectall').text(getT('txt_btn_rejectall'));
         $('#prev-btn-save').text(getT('txt_btn_save'));
@@ -299,6 +353,62 @@
         $('#prev-always-badge').text(isEn ? 'Always active' : 'Altijd actief');
         $('#prev-cookie-purpose').text(isEn ? 'Stores your cookie preferences so you are not asked again on every visit.' : 'Slaat uw cookievoorkeuren op zodat u niet bij elk bezoek opnieuw gevraagd wordt.');
         $('#prev-cookie-duration').text((isEn ? 'Duration' : 'Looptijd') + ': ' + (isEn ? '12 months' : '12 maanden'));
+        $('#prev-badge').text(isEn ? 'Third party — US' : 'Derde partij — VS');
+        $('#prev-cookie-empty').text(isEn ? 'No cookies found in this category.' : 'Geen cookies gevonden in deze categorie.');
+
+        // Bannerpositie (bottom-left / bottom-center / bottom-right / center)
+        var bpos = get('banner_position') || 'bottom-center';
+        var $anchor = $('.cm-prev-banner-anchor');
+        if ($anchor.length) {
+            $anchor.css('justify-content', bpos === 'bottom-left' ? 'flex-start' : (bpos === 'bottom-right' ? 'flex-end' : 'center'));
+            $anchor.css(bpos === 'center'
+                ? { top: 0, 'align-items': 'center', 'padding-top': '28px' }
+                : { top: '', 'align-items': '', 'padding-top': '' });
+            // Breedte per positie (zelfde instellingen als frontend)
+            var bw = bpos === 'center' ? (get('banner_width_center') || 620)
+                   : (bpos === 'bottom-center' ? (get('banner_width_bottom_center') || 760)
+                   : (get('banner_width_compact') || 420));
+            $('#prev-box').css('max-width', parseInt(bw) + 'px');
+        }
+
+        // Cookie-details in voorkeuren tonen/verbergen
+        var showDetail = get('prefs_cookie_detail') == 1;
+        $('#prev-cookie-list, #prev-cookie-empty').toggle(showDetail);
+
+        // Zweefknop preview
+        var $fvpBlock = $('#cm-prev-float-vp');
+        if ($fvpBlock.length) {
+            var showFloat = get('show_float_btn') == 1;
+            $fvpBlock.toggle(showFloat).prev('.cm-prev-sublabel').toggle(showFloat);
+            if (showFloat) {
+                var $fb = $('#prev-float-btn');
+                if ((get('float_btn_style') || 'icon') === 'icon') {
+                    $fb.attr('class', 'cm-float-icon' + (get('float_icon_size') === 'small' ? ' cm-float-small' : ''));
+                    var svg = CM_FLOAT_SVG;
+                    if (get('cm_icon_type') === 'custom') {
+                        var cs = $('[name="float_icon_custom_svg"]').val() || '';
+                        var m = cs.match(/<svg[\s\S]*<\/svg>/i);
+                        if (m) {
+                            // Mini-sanitize voor de preview (frontend gebruikt wp_kses)
+                            svg = m[0].replace(/<script[\s\S]*?<\/script>/gi, '')
+                                      .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+                        }
+                    }
+                    $fb.html(svg);
+                } else {
+                    $fb.attr('class', '');
+                    $fb.text(getT('txt_float_label') || 'Cookie-instellingen');
+                }
+                $('#prev-float-anchor').attr('data-float-pos', get('float_position') || 'left');
+            }
+        }
+
+        // Embed placeholder preview
+        if ($('#cm-prev-embed-vp').length) {
+            $('#prev-embed-title').text(getT('txt_embed_title'));
+            $('#prev-embed-body').html(htmlLite((getT('txt_embed_body') || '').replace('{service}', 'YouTube')));
+            $('#prev-embed-btn').text(getT('txt_embed_accept_btn'));
+        }
 
 
         // Hover CSS injectie

@@ -3115,7 +3115,10 @@ function cm_render_admin_page() {
                                         </div>
                                         <div class="cm-cat-detail">
                                             <p id="prev-cat1-long"></p>
-                                            <div class="cm-cookie-list">
+                                            <div class="cm-cookie-list" id="prev-cookie-list">
+                                                <div class="cm-service-row">
+                                                    <span class="cm-service-name">Google Analytics <span class="cm-badge-thirdparty" id="prev-badge">Derde partij &mdash; VS</span></span>
+                                                </div>
                                                 <div class="cm-cookie-item">
                                                     <div class="cm-cookie-name">cm_consent</div>
                                                     <div class="cm-cookie-meta">
@@ -3141,6 +3144,7 @@ function cm_render_admin_page() {
                                         </div>
                                         <div class="cm-cat-detail">
                                             <p id="prev-cat2-long"></p>
+                                            <p class="cm-cookie-empty" id="prev-cookie-empty">Geen cookies gevonden in deze categorie.</p>
                                         </div>
                                     </div>
                                     <!-- Marketing -->
@@ -3165,6 +3169,28 @@ function cm_render_admin_page() {
                             <div class="cm-prefs-footer">
                                 <button type="button" class="cm-btn cm-btn-outline" id="prev-btn-rejectall"></button>
                                 <button type="button" class="cm-btn cm-btn-accept" id="prev-btn-save"></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="cm-prev-sublabel" style="margin-top:20px;">Zweefknop</p>
+                <div class="cm-prev-viewport cm-prev-viewport--float" id="cm-prev-float-vp">
+                    <div class="cm-prev-fake-site"></div>
+                    <div class="cm-prev-float-anchor" id="prev-float-anchor">
+                        <button type="button" id="prev-float-btn"></button>
+                    </div>
+                </div>
+
+                <p class="cm-prev-sublabel" style="margin-top:20px;">Embed placeholder</p>
+                <div class="cm-prev-viewport" id="cm-prev-embed-vp">
+                    <div class="cm-embed-placeholder">
+                        <div class="cm-embed-ratio" style="aspect-ratio:16/9">
+                            <div class="cm-embed-inner">
+                                <div class="cm-embed-title" id="prev-embed-title"></div>
+                                <div class="cm-embed-body" id="prev-embed-body"></div>
+                                <button type="button" class="cm-embed-accept-btn" id="prev-embed-btn"></button>
+                                <div class="cm-embed-prefs-link"><a href="#" onclick="return false">Cookievoorkeuren aanpassen</a></div>
                             </div>
                         </div>
                     </div>
