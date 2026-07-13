@@ -1,6 +1,15 @@
 # Changelog — Cookiebaas
 
-## [1.7.1] - 2026-07-13
+## [1.7.2] - 2026-07-13
+
+### Gewijzigd
+- **Cookieloze pings mogen weer doorkomen in Consent Mode advanced** (herziening van 1.7.1, die nooit gereleased is): de Google-tag laadt altijd — ook vóór een keuze en na een weigering — met alle consent-signalen op `denied`. Google-tags plaatsen dan geen cookies en versturen geen volledige metingen, maar wél cookieloze pings (`gcs=G100`) zodat bezoekersaantallen en conversies via modellering geschat kunnen worden. `wait_for_update` staat weer op 500 ms en de banner stuurt ook bij een weigering de `gtag('consent','update')`.
+
+### Behouden uit 1.7.1
+- **Weigering wint altijd van "Google cookies direct laden"** (`google_load_default`): na een expliciete weigering werd de consent-update onterecht op `granted` gezet en bleef GA met cookies laden. Die optie geldt nu alleen zolang er geen keuze is gemaakt.
+- Aangescherpte admin-uitleg, incl. de kanttekening dat niet-Google tags binnen GTM (bijv. Meta Pixel) geen Consent Mode kennen — geef die in GTM zelf een consent-vereiste ("Require additional consent for tag to fire").
+
+## [1.7.1] - 2026-07-13 _(niet gereleased, herzien in 1.7.2)_
 
 ### Opgelost
 - **GA vuurde vóór consent in Consent Mode advanced**: de consent-default gebruikte `wait_for_update: 500` — na 500 ms gingen Google-tags (ook GA4 binnen GTM) alsnog cookieloze pings versturen naar google-analytics.com. Zolang er geen keuze is gemaakt staat `wait_for_update` nu op 24 uur: de tag/container laadt wél (advanced), maar álle hits — inclusief cookieloze pings — worden vastgehouden tot de bezoeker kiest. Na acceptatie vuren de tags direct zonder herlaad.
