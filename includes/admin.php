@@ -2757,8 +2757,8 @@ function cm_render_admin_page() {
                         <tr>
                             <th><label for="google_consent_mode_advanced">Consent Mode: advanced</label></th>
                             <td>
-                                <label><input type="checkbox" id="google_consent_mode_advanced" name="google_consent_mode_advanced" value="1" <?php checked( cm_get('google_consent_mode_advanced'), 1 ); ?>> Laad de Google-tag (GTM/GA4) altijd in, ook vóór toestemming — tags vuren pas ná consent</label>
-                                <p class="description">Google Consent Mode v2 <strong>advanced</strong>: de tag/container laadt direct met alle consent-signalen op <code>denied</code>. Er worden géén cookies geplaatst en tags in GTM vuren niet, maar Google ontvangt cookieloze pings waarmee het via modellering bezoekersaantallen en conversies kan inschatten. Uitgevinkt = <strong>basic</strong>: de tag wordt volledig geblokkeerd tot toestemming. Geldt niet voor Universal Analytics (verouderd, ondersteunt geen Consent Mode).</p>
+                                <label><input type="checkbox" id="google_consent_mode_advanced" name="google_consent_mode_advanced" value="1" <?php checked( cm_get('google_consent_mode_advanced'), 1 ); ?>> Laad de Google-tag (GTM/GA4) alvast in vóór de keuze — tags versturen pas iets ná consent</label>
+                                <p class="description">Google Consent Mode v2 <strong>advanced</strong>: de tag/container laadt direct met alle consent-signalen op <code>denied</code>. Google-tags (ook binnen GTM) houden álle hits vast — inclusief cookieloze pings — totdat de bezoeker een keuze maakt. Na acceptatie vuren ze direct zonder herlaad; na weigering wordt de Google-tag op volgende pagina's niet meer geladen. Uitgevinkt = <strong>basic</strong>: de tag wordt volledig geblokkeerd tot toestemming. Let op: niet-Google tags in GTM (bijv. Meta Pixel) kennen geen Consent Mode — geef die in GTM zelf een consent-vereiste (zie hieronder). Geldt niet voor Universal Analytics (verouderd, ondersteunt geen Consent Mode).</p>
                             </td>
                         </tr>
                         </tbody></table>
@@ -4236,8 +4236,8 @@ function cm_render_tracking_page() {
                 <tr>
                     <th><label for="google_consent_mode_advanced">Consent Mode: advanced</label></th>
                     <td>
-                        <label><input type="checkbox" id="google_consent_mode_advanced" name="google_consent_mode_advanced" value="1" <?php checked( cm_get('google_consent_mode_advanced'), 1 ); ?>> Laad de Google-tag (GTM/GA4) altijd in, ook vóór toestemming — tags vuren pas ná consent</label>
-                        <p class="description">Google Consent Mode v2 <strong>advanced</strong>: de tag/container laadt direct met alle consent-signalen op <code>denied</code>. Er worden géén cookies geplaatst en tags in GTM vuren niet, maar Google ontvangt cookieloze pings waarmee het via modellering bezoekersaantallen en conversies kan inschatten. Uitgevinkt = <strong>basic</strong>: de tag wordt volledig geblokkeerd tot toestemming.</p>
+                        <label><input type="checkbox" id="google_consent_mode_advanced" name="google_consent_mode_advanced" value="1" <?php checked( cm_get('google_consent_mode_advanced'), 1 ); ?>> Laad de Google-tag (GTM/GA4) alvast in vóór de keuze — tags versturen pas iets ná consent</label>
+                        <p class="description">Google Consent Mode v2 <strong>advanced</strong>: de tag/container laadt direct met alle consent-signalen op <code>denied</code>. Google-tags (ook binnen GTM) houden álle hits vast — inclusief cookieloze pings — totdat de bezoeker een keuze maakt. Na acceptatie vuren ze direct zonder herlaad; na weigering wordt de Google-tag op volgende pagina's niet meer geladen. Uitgevinkt = <strong>basic</strong>: de tag wordt volledig geblokkeerd tot toestemming. Let op: niet-Google tags in GTM (bijv. Meta Pixel) kennen geen Consent Mode — geef die in GTM zelf een consent-vereiste (zie hieronder).</p>
                     </td>
                 </tr>
                 </tbody></table>

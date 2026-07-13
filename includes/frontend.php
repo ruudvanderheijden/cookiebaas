@@ -348,17 +348,27 @@ function cm_inject_google_consent_mode() {
     if ( isset( $_COOKIE[$cookie_name] ) ) {
         $consent = json_decode( stripslashes( urldecode( $_COOKIE[$cookie_name] ) ), true );
     }
-    $google_load_default = (bool) cm_get('google_load_default');
-    $allow_analytics = ! empty( $consent['analytics'] ) || $google_load_default;
+    $has_decision = is_array( $consent );
+
+    // google_load_default ("Google cookies direct laden") geldt alleen zolang
+    // er nog geen keuze is gemaakt — een expliciete weigering wint altijd.
+    $google_load_default       = (bool) cm_get('google_load_default');
+    $analytics_default_granted = $google_load_default && ! $has_decision;
+    $allow_analytics = ! empty( $consent['analytics'] ) || $analytics_default_granted;
     $allow_marketing = ! empty( $consent['marketing'] );
 
-    // Consent Mode v2 "advanced": laad de Google-tag altijd, óók zonder consent.
-    // De consent-defaults staan op denied, dus de tag plaatst geen cookies en
-    // tags in GTM vuren niet — Google ontvangt alleen cookieloze pings voor
-    // modellering van bezoekersaantallen. Na consent vuurt alles via de
-    // gtag('consent','update') die de plugin al stuurt.
+    // Consent Mode v2 "advanced": laad de Google-tag alvast vóórdat er een
+    // keuze is gemaakt. De consent-defaults staan op denied en wait_for_update
+    // staat dan zeer hoog, waardoor tags (ook binnen GTM) niets versturen —
+    // zelfs geen cookieloze pings — tot de bezoeker kiest. Na een expliciete
+    // weigering wordt de Google-tag niet meer geladen.
     $cm_advanced = (bool) cm_get('google_consent_mode_advanced');
-    $load_google = $allow_analytics || $cm_advanced;
+    $load_google = $allow_analytics || ( $cm_advanced && ! $has_decision );
+
+    // Zonder keuze houden Google-tags alle hits vast tot de gtag consent
+    // update van de banner komt (24 uur ≈ oneindig binnen één paginaweergave).
+    // Bij een bestaande keuze of bewust direct laden volstaat de korte buffer.
+    $wait_ms = ( ! $has_decision && ! $analytics_default_granted ) ? 86400000 : 500;
 
     $analytics_update = $allow_analytics ? 'granted' : 'denied';
     $marketing_update = $allow_marketing ? 'granted' : 'denied';
@@ -368,13 +378,13 @@ function cm_inject_google_consent_mode() {
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('consent', 'default', {
-    'analytics_storage':  '<?php echo $google_load_default ? 'granted' : 'denied'; ?>',
+    'analytics_storage':  '<?php echo $analytics_default_granted ? 'granted' : 'denied'; ?>',
     'ad_storage':         'denied',
     'ad_user_data':       'denied',
     'ad_personalization': 'denied',
     'functionality_storage': 'granted',
     'security_storage':      'granted',
-    'wait_for_update':    500
+    'wait_for_update':    <?php echo (int) $wait_ms; ?>
 });
 gtag('set', 'ads_data_redaction', true);
 gtag('set', 'url_passthrough', true);
@@ -1818,7 +1828,12 @@ function cm_render_frontend() {
             }
 
             // SPOOR 1 — Google Consent Mode v2 update
-            if (typeof gtag === 'function') {
+            // Bij een volledige weigering géén update sturen: de Google-tags
+            // blijven dan in hun wait_for_update-wachtstand en versturen ook
+            // geen cookieloze pings. Alleen als Google bewust direct geladen
+            // is (google_load_default) is de denied-update nodig om te stoppen.
+            var cmForceUpdate = <?php echo cm_get('google_load_default') ? 'true' : 'false'; ?>;
+            if (typeof gtag === 'function' && (analytics || marketing || cmForceUpdate)) {
                 gtag('consent', 'update', {
                     'analytics_storage':  analytics ? 'granted' : 'denied',
                     'ad_storage':         marketing ? 'granted' : 'denied',
