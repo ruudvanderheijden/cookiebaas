@@ -2,6 +2,12 @@
 
 ## [1.7.2] - 2026-07-13
 
+### Toegevoegd
+- **Omgevingsdetectie in de cookiescan**: cookies die de anonieme crawl principieel niet kán zien worden nu op basis van de serveromgeving toegevoegd:
+  - `wordpress_test_cookie` (functioneel) — wordt alleen op de inlogpagina gezet en de scan crawlt uitsluitend gepubliceerde content; elke WordPress-site heeft hem.
+  - `_lscache_vary` (functioneel) — LiteSpeed zet deze alleen als de cache-variant afwijkt (bijv. ingelogd), dus nooit richting een anonieme scan-request. Wordt toegevoegd zodra de LiteSpeed Cache-plugin actief is of de `x-litespeed-cache` header in de responses zit.
+- **Google-cookies op het google.com-domein** (`NID`, `__Secure-ENID`, `__Secure-BUCKET`) toegevoegd aan de kennisbank, de YouTube-embed-detectie en de service-mapping: deze third-party cookies plaatst Google zelf zodra ingesloten content (YouTube e.d.) laadt en zijn per definitie onzichtbaar voor een server-side scan van de eigen site.
+
 ### Gewijzigd
 - **Cookieloze pings mogen weer doorkomen in Consent Mode advanced** (herziening van 1.7.1, die nooit gereleased is): de Google-tag laadt altijd — ook vóór een keuze en na een weigering — met alle consent-signalen op `denied`. Google-tags plaatsen dan geen cookies en versturen geen volledige metingen, maar wél cookieloze pings (`gcs=G100`) zodat bezoekersaantallen en conversies via modellering geschat kunnen worden. `wait_for_update` staat weer op 500 ms en de banner stuurt ook bij een weigering de `gtag('consent','update')`.
 

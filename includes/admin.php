@@ -443,6 +443,7 @@ function cm_ajax_scan_batch() {
     $http_cookies   = array();
     $script_cookies = array();
     $pages_scanned  = 0;
+    $litespeed_seen = false;
 
     foreach ( $urls as $url ) {
         $response = wp_remote_get( $url, array(
@@ -461,6 +462,7 @@ function cm_ajax_scan_batch() {
 
         $headers = wp_remote_retrieve_headers( $response );
         $body    = wp_remote_retrieve_body( $response );
+        if ( isset( $headers['x-litespeed-cache'] ) ) $litespeed_seen = true;
 
         // Verwijder Cookiebaas eigen scripts, herstel geblokkeerde third-party scripts
         $body = preg_replace_callback(
@@ -572,6 +574,21 @@ function cm_ajax_scan_batch() {
         }
     }
 
+    // Omgevingscookies: aantoonbaar aanwezig op deze installatie maar
+    // onzichtbaar voor de anonieme crawl (zie cm_server_env_cookies)
+    foreach ( cm_server_env_cookies( $litespeed_seen ) as $env_name => $env ) {
+        if ( isset($http_cookies[$env_name]) || isset($script_cookies[$env_name]) ) continue;
+        $http_cookies[$env_name] = array(
+            'name'        => $env_name,
+            'type'        => $env[0],
+            'provider'    => $env[1],
+            'duration'    => $env[2],
+            'description' => $env[3],
+            'privacy_url' => '',
+            'how'         => 'server',
+        );
+    }
+
     // Merge
     $all = array_values($http_cookies);
     foreach ( $script_cookies as $entry ) {
@@ -631,8 +648,31 @@ function cm_fallback_cookies() {
         'UserMatchHistory'      => array('marketing','LinkedIn','30 dagen','LinkedIn Ads ID-synchronisatie.'),
         '_tt_enable_cookie'     => array('marketing','TikTok','13 maanden','TikTok tracking-pixel.'),
         '_ttp'                  => array('marketing','TikTok','13 maanden','TikTok Pixel bezoeker-ID.'),
+        // Google-cookies op het google.com-domein die meekomen met ingesloten
+        // YouTube-content — provider 'YouTube' zodat de embed-detectie ze meeneemt
+        'NID'                   => array('marketing','YouTube','6 maanden','Google-cookie (google.com-domein) met voorkeuren en advertentie-instellingen; wordt geplaatst zodra ingesloten Google-content laadt.'),
+        '__Secure-ENID'         => array('marketing','YouTube','13 maanden','Beveiligde Google-cookie (google.com-domein) die voorkeuren en eerdere keuzes van de bezoeker onthoudt; komt mee met ingesloten Google-content.'),
+        '__Secure-BUCKET'       => array('marketing','YouTube','Onbepaald','Google-cookie (google.com-domein) gerelateerd aan het afspelen en streamen van ingesloten video\'s.'),
     );
     return $cache;
+}
+
+/**
+ * Cookies die de scan niet via Set-Cookie kan zien maar die op deze
+ * installatie aantoonbaar voorkomen (omgevingsdetectie).
+ * - wordpress_test_cookie: wordt alleen op de inlogpagina gezet en de scan
+ *   crawlt uitsluitend gepubliceerde content — elke WordPress-site heeft hem.
+ * - _lscache_vary: LiteSpeed zet deze alleen als de cache-variant afwijkt
+ *   (bijv. ingelogd), dus nooit richting een anonieme scan-request.
+ */
+function cm_server_env_cookies( $litespeed_seen = false ) {
+    $cookies = array(
+        'wordpress_test_cookie' => array('functional','WordPress','Sessie','Controleert of cookies werken in de browser van de bezoeker. Wordt gezet op de inlogpagina.'),
+    );
+    if ( $litespeed_seen || defined('LSCWP_V') || class_exists('\LiteSpeed\Core') ) {
+        $cookies['_lscache_vary'] = array('functional','LiteSpeed Cache','Sessie','Bepaalt welke cache-variant LiteSpeed toont (bijv. ingelogd of uitgelogd). Bevat geen persoonsgegevens.');
+    }
+    return $cookies;
 }
 
 /**
@@ -717,6 +757,9 @@ function cm_script_signatures() {
         'youtube.com/embed'                => array(
             array('VISITOR_INFO1_LIVE', 'marketing', 'YouTube bandbreedte-schatting', '6 maanden'),
             array('YSC',               'marketing', 'YouTube sessie',              'Sessie'),
+            array('NID',               'marketing', 'Google voorkeuren/advertenties (google.com)', '6 maanden'),
+            array('__Secure-ENID',     'marketing', 'Google voorkeuren, beveiligd (google.com)',   '13 maanden'),
+            array('__Secure-BUCKET',   'marketing', 'Google video-streaming (google.com)',         'Onbepaald'),
         ),
     );
     return $cache;
@@ -761,6 +804,9 @@ function cm_ajax_run_scan() {
         'VISITOR_INFO1_LIVE'         => array('marketing', 'YouTube',            '6 maanden', 'Schat de bandbreedte in om de videokwaliteit op YouTube aan te passen.'),
         'yt-remote-device-id'        => array('marketing', 'YouTube',            'Permanent', 'Slaat videovoorkeuren op voor ingesloten YouTube-video\'s.'),
         'yt-remote-connected-devices'=> array('marketing', 'YouTube',            'Permanent', 'Slaat videovoorkeuren op voor ingesloten YouTube-video\'s.'),
+        'NID'                        => array('marketing', 'YouTube',            '6 maanden', 'Google-cookie (google.com-domein) met voorkeuren en advertentie-instellingen; wordt geplaatst zodra ingesloten Google-content laadt.'),
+        '__Secure-ENID'              => array('marketing', 'YouTube',            '13 maanden','Beveiligde Google-cookie (google.com-domein) die voorkeuren en eerdere keuzes van de bezoeker onthoudt; komt mee met ingesloten Google-content.'),
+        '__Secure-BUCKET'            => array('marketing', 'YouTube',            'Onbepaald', 'Google-cookie (google.com-domein) gerelateerd aan het afspelen en streamen van ingesloten video\'s.'),
     );
 
     // Script-signatures voor bekende diensten (als fallback én aanvulling)
@@ -930,6 +976,9 @@ function cm_ajax_run_scan() {
         'youtube.com/embed'                => array(
             array('VISITOR_INFO1_LIVE', 'marketing', 'YouTube bandbreedte-schatting', '6 maanden'),
             array('YSC',               'marketing', 'YouTube sessie',              'Sessie'),
+            array('NID',               'marketing', 'Google voorkeuren/advertenties (google.com)', '6 maanden'),
+            array('__Secure-ENID',     'marketing', 'Google voorkeuren, beveiligd (google.com)',   '13 maanden'),
+            array('__Secure-BUCKET',   'marketing', 'Google video-streaming (google.com)',         'Onbepaald'),
         ),
         'youtube-nocookie.com'             => array(
             array('VISITOR_INFO1_LIVE', 'analytics', 'YouTube (privacy-modus)',  '6 maanden'),
@@ -1031,6 +1080,7 @@ function cm_ajax_run_scan() {
     $http_cookies  = array(); // naam => entry  (echte Set-Cookie headers)
     $script_cookies= array(); // naam => entry  (afgeleid uit scripts)
     $pages_scanned = 0;
+    $litespeed_seen= false;
 
     foreach ( $urls_to_scan as $url ) {
         $response = wp_remote_get( $url, array(
@@ -1055,6 +1105,7 @@ function cm_ajax_run_scan() {
 
         $headers = wp_remote_retrieve_headers( $response );
         $body    = wp_remote_retrieve_body( $response );
+        if ( isset( $headers['x-litespeed-cache'] ) ) $litespeed_seen = true;
 
         // --- Verwijder Cookiebaas plugin-eigen scripts uit de body vóór de scan ---
         // Belangrijk: we matchen per individueel script-blok om te voorkomen dat
@@ -1238,6 +1289,21 @@ function cm_ajax_run_scan() {
                 }
             }
         }
+    }
+
+    // Omgevingscookies: aantoonbaar aanwezig op deze installatie maar
+    // onzichtbaar voor de anonieme crawl (zie cm_server_env_cookies)
+    foreach ( cm_server_env_cookies( $litespeed_seen ) as $env_name => $env ) {
+        if ( isset($http_cookies[$env_name]) || isset($script_cookies[$env_name]) ) continue;
+        $http_cookies[$env_name] = array(
+            'name'        => $env_name,
+            'type'        => $env[0],
+            'provider'    => $env[1],
+            'duration'    => $env[2],
+            'description' => $env[3],
+            'privacy_url' => '',
+            'how'         => 'server',
+        );
     }
 
     /* ----------------------------------------------------------------

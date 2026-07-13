@@ -385,6 +385,10 @@ function cm_service_for_cookie( $name ) {
             'VISITOR_INFO1_LIVE' => array('service' => 'YouTube',       'group' => 'youtube',          'third_party' => true, 'country' => 'VS'),
             'yt-remote-'   => array('service' => 'YouTube',             'group' => 'youtube',          'third_party' => true, 'country' => 'VS'),
             'yt-player-'   => array('service' => 'YouTube',             'group' => 'youtube',          'third_party' => true, 'country' => 'VS'),
+            // Google-cookies (google.com-domein) die meekomen met ingesloten content
+            'NID'          => array('service' => 'YouTube',             'group' => 'youtube',          'third_party' => true, 'country' => 'VS'),
+            '__Secure-ENID' => array('service' => 'YouTube',            'group' => 'youtube',          'third_party' => true, 'country' => 'VS'),
+            '__Secure-BUCKET' => array('service' => 'YouTube',          'group' => 'youtube',          'third_party' => true, 'country' => 'VS'),
             // ── Intercom ──────────────────────────────────────────────────
             'intercom-'    => array('service' => 'Intercom',            'group' => 'intercom',         'third_party' => true, 'country' => 'VS'),
             // ── HubSpot ───────────────────────────────────────────────────
@@ -728,6 +732,8 @@ function cm_nl_descriptions() {
         'CONSENT'                      => 'Slaat de toestemmingsstatus van de gebruiker op voor cookies van Google-diensten.',
         'SOCS'                         => 'Slaat de toestemmingsstatus van de gebruiker op voor Google-domeinen.',
         'AEC'                          => 'Zorgt ervoor dat verzoeken tijdens een browsersessie door de juiste gebruiker worden gedaan om fraude te voorkomen.',
+        '__Secure-ENID'                => 'Beveiligde variant van de Google NID-cookie: onthoudt voorkeuren en eerdere keuzes van de bezoeker op het google.com-domein.',
+        '__Secure-BUCKET'              => 'Google-cookie op het google.com-domein, gerelateerd aan het afspelen en streamen van ingesloten video\'s.',
         // ── Google / YouTube ──────────────────────────────────────────
         'VISITOR_INFO1_LIVE'           => 'Schat de bandbreedte van de gebruiker in om de videokwaliteit op YouTube aan te passen.',
         'YSC'                          => 'Registreert een unieke ID om statistieken bij te houden over welke YouTube-video\'s zijn bekeken.',
@@ -822,6 +828,7 @@ function cm_nl_descriptions() {
         'wp_lang'                      => 'Slaat de taalkeuze op van de ingelogde WordPress-gebruiker.',
         'comment_author_'              => 'Slaat de naam op van de bezoeker die een reactie heeft achtergelaten.',
         'comment_author_email_'        => 'Slaat het e-mailadres op van de bezoeker die een reactie heeft achtergelaten.',
+        '_lscache_vary'                => 'Bepaalt welke cache-variant LiteSpeed Cache aan de bezoeker toont (bijvoorbeeld ingelogd of uitgelogd). Bevat geen persoonsgegevens.',
         // ── WooCommerce ───────────────────────────────────────────────
         'woocommerce_cart_hash'        => 'Helpt WooCommerce om te bepalen wanneer de inhoud van de winkelwagen is gewijzigd.',
         'woocommerce_items_in_cart'    => 'Helpt WooCommerce om bij te houden of de winkelwagen artikelen bevat.',
