@@ -370,7 +370,7 @@ function cm_inject_google_consent_mode() {
     $marketing_update = $allow_marketing ? 'granted' : 'denied';
     ?>
 <!-- Cookiebaas Consent Mode v2 -->
-<script>
+<script data-no-defer="1" nowprocket>
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('consent', 'default', {
@@ -399,8 +399,8 @@ gtag('consent', 'update', {
     // Bij consent:      normale script tags
     if ( $ga4_id && preg_match('/^G-[A-Z0-9]+$/i', $ga4_id) ) :
         if ( $load_google ) : ?>
-<script async data-cm-allow="1" src="https://www.googletagmanager.com/gtag/js?id=<?php echo esc_attr($ga4_id); ?>"></script>
-<script data-cm-allow="1">gtag('js', new Date()); gtag('config', '<?php echo esc_js($ga4_id); ?>');</script>
+<script async data-cm-allow="1" data-no-defer="1" nowprocket src="https://www.googletagmanager.com/gtag/js?id=<?php echo esc_attr($ga4_id); ?>"></script>
+<script data-cm-allow="1" data-no-defer="1" nowprocket>gtag('js', new Date()); gtag('config', '<?php echo esc_js($ga4_id); ?>');</script>
         <?php else : ?>
 <script type="text/plain" data-cm-type="analytics" data-cm-blocked-src="https://www.googletagmanager.com/gtag/js?id=<?php echo esc_attr($ga4_id); ?>" async></script>
 <script type="text/plain" data-cm-type="analytics">gtag('js', new Date()); gtag('config', '<?php echo esc_js($ga4_id); ?>');</script>
@@ -410,7 +410,7 @@ gtag('consent', 'update', {
     // GTM self-loader
     if ( $gtm_id && preg_match('/^GTM-[A-Z0-9]+$/i', $gtm_id) ) :
         if ( $load_google ) : ?>
-<script data-cm-allow="1">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.setAttribute('data-cm-allow','1');j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','<?php echo esc_js($gtm_id); ?>');</script>
+<script data-cm-allow="1" data-no-defer="1" nowprocket>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.setAttribute('data-cm-allow','1');j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','<?php echo esc_js($gtm_id); ?>');</script>
         <?php else : ?>
 <script type="text/plain" data-cm-type="analytics">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','<?php echo esc_js($gtm_id); ?>');</script>
         <?php endif;
@@ -419,8 +419,8 @@ gtag('consent', 'update', {
     // UA (Universal Analytics) self-loader — verouderd maar nog ondersteund
     if ( $ua_id && preg_match('/^UA-[0-9]+-[0-9]+$/i', $ua_id) ) :
         if ( $allow_analytics ) : ?>
-<script async src="https://www.google-analytics.com/analytics.js"></script>
-<script>window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;ga('create','<?php echo esc_js($ua_id); ?>','auto');ga('send','pageview');</script>
+<script async data-no-defer="1" nowprocket src="https://www.google-analytics.com/analytics.js"></script>
+<script data-no-defer="1" nowprocket>window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;ga('create','<?php echo esc_js($ua_id); ?>','auto');ga('send','pageview');</script>
         <?php else : ?>
 <script type="text/plain" data-cm-type="analytics" data-cm-blocked-src="https://www.google-analytics.com/analytics.js" async></script>
 <script type="text/plain" data-cm-type="analytics">window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;ga('create','<?php echo esc_js($ua_id); ?>','auto');ga('send','pageview');</script>
@@ -708,7 +708,7 @@ function cm_output_script_blocker() {
     $pA = cm_get_all_patterns('analytics');
     $pM = cm_get_all_patterns('marketing');
     ?>
-<script id="cm-blocker">(function(){
+<script id="cm-blocker" data-no-defer="1" nowprocket>(function(){
     /* --- Consent lezen --- */
     function getConsent(){var n='cc_cm_consent=',c=document.cookie.split(';');for(var i=0;i<c.length;i++){var x=c[i].trim();if(x.indexOf(n)===0){try{return JSON.parse(decodeURIComponent(x.slice(n.length)));}catch(e){}}}return null;}
     var consent=getConsent(),allowA=!!(consent&&consent.analytics),allowM=!!(consent&&consent.marketing);
@@ -881,7 +881,7 @@ function cm_render_frontend() {
             if ( $outside === 'accept' ) {
                 // Automatisch consent geven via JS
                 $cd = cm_get('subdomain_sharing') && cm_get('subdomain_root_domain') ? '; domain=' . esc_js( cm_get('subdomain_root_domain') ) : '';
-                echo '<script>(function(){if(!document.cookie.includes("cc_cm_consent=")){var exp=new Date(Date.now()+365*24*3600*1000).toUTCString();var c="cc_cm_consent="+encodeURIComponent(JSON.stringify({v:"2.0",sv:"1",analytics:true,marketing:true,method:"geo-auto",exp:exp}))+"; expires="+exp+"; path=/; SameSite=Lax";if(location.protocol==="https:")c+="; Secure";c+="' . $cd . '";document.cookie=c;}})();</script>' . "\n";
+                echo '<script data-no-defer="1" nowprocket>(function(){if(!document.cookie.includes("cc_cm_consent=")){var exp=new Date(Date.now()+365*24*3600*1000).toUTCString();var c="cc_cm_consent="+encodeURIComponent(JSON.stringify({v:"2.0",sv:"1",analytics:true,marketing:true,method:"geo-auto",exp:exp}))+"; expires="+exp+"; path=/; SameSite=Lax";if(location.protocol==="https:")c+="; Secure";c+="' . $cd . '";document.cookie=c;}})();</script>' . "\n";
             }
             // Beide opties: geen banner renderen
             return;
@@ -1262,7 +1262,7 @@ function cm_render_frontend() {
     </div>
     <?php endif; ?>
 
-    <script>
+    <script data-no-defer="1" nowprocket>
     (function () {
         'use strict';
 
@@ -2222,7 +2222,7 @@ function cm_render_voorkeuren_shortcode( $atts ) {
     /* Overlay verbergen als prefs in page-mode staan */
     #cm-overlay.cm-page-mode-active { display: none !important; }
     </style>
-    <script>
+    <script data-no-defer="1" nowprocket>
     (function(){
         function initPagePrefs() {
             var prefs = document.getElementById('cm-prefs');

@@ -1,5 +1,10 @@
 # Changelog — Cookiebaas
 
+## [1.7.3] - 2026-07-13
+
+### Opgelost
+- **Kritieke scripts beschermd tegen "Delay JS" van cache-plugins**: LiteSpeed Cache (optie "Load JS Deferred: Delayed") herschreef álle inline scripts naar `type="litespeed/javascript"` en voerde ze pas uit bij de eerste gebruikersinteractie (scroll/muisbeweging). Daardoor werden de cookiebanner, het consent-default script, de scriptblocker én de GTM/GA4-loader uitgesteld — GTM leek niet te laden en de banner verscheen pas na interactie. Alle kritieke Cookiebaas-scripts dragen nu `data-no-defer="1"` (LiteSpeed) en `nowprocket` (WP Rocket "Delay JavaScript execution"), waardoor cache-plugins ze met rust laten. Geconstateerd en geverifieerd op een productiesite met LiteSpeed.
+
 ## [1.7.2] - 2026-07-13
 
 ### Toegevoegd
