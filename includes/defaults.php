@@ -625,7 +625,8 @@ function cm_lookup_cookie( $name ) {
             $row['description'] = $nl_desc[ $name ];
         } else {
             foreach ( $nl_desc as $pat => $desc ) {
-                if ( substr( $pat, -1 ) === '_' && strpos( $name, $pat ) === 0 ) {
+                $last = substr( $pat, -1 );
+                if ( ( $last === '_' || $last === '-' ) && strpos( $name, $pat ) === 0 ) {
                     $row['description'] = $desc;
                     break;
                 }
@@ -821,10 +822,11 @@ function cm_nl_descriptions() {
         'crisp-client%2Fsession%2F'    => 'Wordt door Crisp gebruikt om de chatsessie van de bezoeker bij te houden.',
         // ── WordPress / eigen website ─────────────────────────────────
         'PHPSESSID'                    => 'Bewaart de sessie-informatie van de bezoeker op de server. Verdwijnt zodra de browser wordt gesloten.',
-        'wordpress_logged_in'          => 'Wordt door WordPress gebruikt om de inlogstatus van de gebruiker bij te houden.',
-        'wordpress_sec'                => 'Beveiligingscookie van WordPress voor de beheerdersomgeving.',
+        'wordpress_logged_in_'         => 'Wordt door WordPress gebruikt om de inlogstatus van de gebruiker bij te houden.',
+        'wordpress_sec_'               => 'Beveiligingscookie van WordPress voor de beheerdersomgeving.',
         'wordpress_test_cookie'        => 'Controleert of cookies werken in de browser van de bezoeker.',
         'wp-settings-'                 => 'Slaat persoonlijke instellingen op van de ingelogde WordPress-gebruiker.',
+        'wp-postpass_'                 => 'Onthoudt het wachtwoord voor wachtwoordbeveiligde berichten.',
         'wp_lang'                      => 'Slaat de taalkeuze op van de ingelogde WordPress-gebruiker.',
         'comment_author_'              => 'Slaat de naam op van de bezoeker die een reactie heeft achtergelaten.',
         'comment_author_email_'        => 'Slaat het e-mailadres op van de bezoeker die een reactie heeft achtergelaten.',
@@ -832,7 +834,8 @@ function cm_nl_descriptions() {
         // ── WooCommerce ───────────────────────────────────────────────
         'woocommerce_cart_hash'        => 'Helpt WooCommerce om te bepalen wanneer de inhoud van de winkelwagen is gewijzigd.',
         'woocommerce_items_in_cart'    => 'Helpt WooCommerce om bij te houden of de winkelwagen artikelen bevat.',
-        'woocommerce_session_'         => 'Bevat een unieke code voor elke bezoeker die wordt gebruikt om de winkelwagengegevens op te slaan.',
+        'wp_woocommerce_session_'      => 'Bevat een unieke code voor elke bezoeker die wordt gebruikt om de winkelwagengegevens op te slaan.',
+        'sbjs_'                        => 'WooCommerce Order Attribution (sourcebuster): registreert de herkomst van de bezoeker voor bestellingstoeschrijving.',
         'wc_cart_created'              => 'Slaat het tijdstip op waarop de winkelwagen is aangemaakt.',
         // ── Cookiemelding plugin ──────────────────────────────────────
         'cc_cm_consent'                => 'Slaat de cookievoorkeur van de bezoeker op zodat de cookiemelding niet bij elk bezoek opnieuw hoeft te worden getoond.',

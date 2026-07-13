@@ -391,6 +391,18 @@ gtag('consent', 'update', {
     'ad_user_data':       '<?php echo esc_js( $marketing_update ); ?>',
     'ad_personalization': '<?php echo esc_js( $marketing_update ); ?>'
 });
+window.dataLayer.push({
+    'event':              'cm_consent_update',
+    'cm_analytics':       <?php echo $allow_analytics ? 'true' : 'false'; ?>,
+    'cm_marketing':       <?php echo $allow_marketing ? 'true' : 'false'; ?>,
+    'cm_method':          '<?php echo esc_js( isset( $consent['method'] ) ? $consent['method'] : 'stored' ); ?>',
+    'analytics_storage':  '<?php echo esc_js( $analytics_update ); ?>',
+    'ad_storage':         '<?php echo esc_js( $marketing_update ); ?>',
+    'ad_user_data':       '<?php echo esc_js( $marketing_update ); ?>',
+    'ad_personalization': '<?php echo esc_js( $marketing_update ); ?>'
+});
+window.uetq = window.uetq || [];
+window.uetq.push('consent', 'update', { 'ad_storage': '<?php echo esc_js( $marketing_update ); ?>' });
 <?php endif; ?>
 </script>
 <?php
@@ -1834,6 +1846,22 @@ function cm_render_frontend() {
                     'ad_personalization': marketing ? 'granted' : 'denied'
                 });
             }
+            // dataLayer-event voor GTM-triggers — formaat exact zoals
+            // gedocumenteerd in de admin ("Niet-Google tags via GTM")
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                'event':              'cm_consent_update',
+                'cm_analytics':       !!analytics,
+                'cm_marketing':       !!marketing,
+                'cm_method':          method,
+                'analytics_storage':  analytics ? 'granted' : 'denied',
+                'ad_storage':         marketing ? 'granted' : 'denied',
+                'ad_user_data':       marketing ? 'granted' : 'denied',
+                'ad_personalization': marketing ? 'granted' : 'denied'
+            });
+            // Microsoft UET (Bing Ads) consent update
+            window.uetq = window.uetq || [];
+            window.uetq.push('consent', 'update', { 'ad_storage': marketing ? 'granted' : 'denied' });
 
             // SPOOR 2 — Overige geblokkeerde scripts
             var hasBlocked = document.querySelectorAll('script[data-cm-type]').length > 0;

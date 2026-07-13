@@ -1,5 +1,16 @@
 # Changelog — Cookiebaas
 
+## [1.7.4] - 2026-07-13
+
+### Toegevoegd
+- **`cm_consent_update` dataLayer-event**: bij elke consentkeuze én bij elke paginalaad met bestaande consent pusht de plugin nu een event naar de GTM dataLayer met `cm_analytics`/`cm_marketing` (boolean), `cm_method` en de vier consent-signalen — exact het formaat dat de admin-handleiding "Niet-Google tags via GTM" al documenteerde maar dat nog niet bestond. Hiermee werken de beschreven GTM-triggers ("vuur Meta Pixel pas na marketing-consent") nu daadwerkelijk.
+- **Microsoft UET consent update**: `window.uetq.push('consent','update',...)` bij elke keuze en bij paginalaad met bestaande consent — ook dit stond al in de handleiding maar ontbrak in de code.
+- **Omgevingsdetectie cookiescan uitgebreid**: `wordpress_logged_in_` en `wordpress_sec_` worden altijd vermeld; `comment_author_` bij open reacties; `wp-postpass_` zodra er wachtwoordbeveiligde berichten zijn; bij WooCommerce de winkelwagen-cookies plus de **Order Attribution-cookies** (`sbjs_current`, `sbjs_first`, `sbjs_session` e.a., categorie analytics) die WooCommerce sinds 8.5 standaard bij álle bezoekers zet.
+
+### Opgelost
+- **Prefix-matcher herkende geen patronen eindigend op `-`**: `wp-settings-` matchte daardoor nooit een echte `wp-settings-3` cookie (nu via gedeelde `cm_cookie_prefix_match()`, ook voor de NL-beschrijvingen).
+- **Dode kennisbank-entries gerepareerd**: `wordpress_logged_in` en `wordpress_sec` zonder afsluitende underscore matchten nooit een echte cookie; de WooCommerce-sessiecookie heette in twee lijsten `woocommerce_session_` terwijl de echte naam `wp_woocommerce_session_` is.
+
 ## [1.7.3] - 2026-07-13
 
 ### Opgelost

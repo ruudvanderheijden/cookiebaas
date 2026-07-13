@@ -409,7 +409,7 @@ function cm_ajax_scan_batch() {
             $fallback_cat = $fallback_cookies[ $cookie_name ][0];
         } else {
             foreach ( $fallback_cookies as $pat => $f ) {
-                if ( substr($pat,-1) === '_' && strpos($cookie_name, $pat) === 0 ) {
+                if ( cm_cookie_prefix_match( $cookie_name, $pat ) ) {
                     $fallback_cat = $f[0];
                     break;
                 }
@@ -432,7 +432,7 @@ function cm_ajax_scan_batch() {
             return array( 'category' => $f[0], 'provider' => $f[1], 'duration' => $f[2], 'description' => $f[3], 'privacy_url' => '' );
         }
         foreach ( $fallback_cookies as $pat => $f ) {
-            if ( substr($pat,-1) === '_' && strpos($cookie_name, $pat) === 0 ) {
+            if ( cm_cookie_prefix_match( $cookie_name, $pat ) ) {
                 return array( 'category' => $f[0], 'provider' => $f[1], 'duration' => $f[2], 'description' => $f[3], 'privacy_url' => '' );
             }
         }
@@ -609,6 +609,16 @@ function cm_ajax_scan_batch() {
 }
 
 /**
+ * Prefix-match voor cookiepatronen: sleutels die eindigen op _ of -
+ * zijn prefixes (bijv. wordpress_logged_in_ matcht wordpress_logged_in_abc123,
+ * wp-settings- matcht wp-settings-3).
+ */
+function cm_cookie_prefix_match( $cookie_name, $pattern ) {
+    $last = substr( $pattern, -1 );
+    return ( $last === '_' || $last === '-' ) && strpos( $cookie_name, $pattern ) === 0;
+}
+
+/**
  * Geeft de fallback cookie kennisbank terug (herbruikbaar).
  */
 function cm_fallback_cookies() {
@@ -618,7 +628,13 @@ function cm_fallback_cookies() {
         'cc_cm_consent'         => array('functional','Cookiemelding','12 maanden','Slaat uw cookievoorkeuren op.'),
         'PHPSESSID'             => array('functional','Deze website','Sessie','PHP sessiecookie.'),
         'wordpress_logged_in_'  => array('functional','WordPress','Sessie','WordPress login sessie.'),
+        'wordpress_sec_'        => array('functional','WordPress','Sessie','WordPress beveiligingscookie voor ingelogde gebruikers.'),
+        'wordpress_test_cookie' => array('functional','WordPress','Sessie','Test of cookies werken in de browser. Wordt gezet op de inlogpagina.'),
         'wp-settings-'          => array('functional','WordPress','1 jaar','WordPress admin-instellingen.'),
+        'wp-postpass_'          => array('functional','WordPress','10 dagen','Onthoudt het wachtwoord voor wachtwoordbeveiligde berichten.'),
+        'wp_lang'               => array('functional','WordPress','Sessie','Voorkeurstaal op de inlogpagina.'),
+        'comment_author_'       => array('functional','WordPress','1 jaar','Onthoudt naam, e-mailadres en website van bezoekers die een reactie achterlaten.'),
+        'sbjs_'                 => array('analytics','WooCommerce','Sessie/1 jaar','WooCommerce Order Attribution (sourcebuster): registreert de herkomst van de bezoeker (bron, campagne) voor bestellingstoeschrijving.'),
         'woocommerce_cart_hash' => array('functional','WooCommerce','Sessie','Winkelwagen hash.'),
         'woocommerce_items_in_cart' => array('functional','WooCommerce','Sessie','Items in winkelwagen.'),
         'wp_woocommerce_session_' => array('functional','WooCommerce','2 dagen','WooCommerce sessie.'),
@@ -659,19 +675,47 @@ function cm_fallback_cookies() {
 
 /**
  * Cookies die de scan niet via Set-Cookie kan zien maar die op deze
- * installatie aantoonbaar voorkomen (omgevingsdetectie).
- * - wordpress_test_cookie: wordt alleen op de inlogpagina gezet en de scan
- *   crawlt uitsluitend gepubliceerde content — elke WordPress-site heeft hem.
- * - _lscache_vary: LiteSpeed zet deze alleen als de cache-variant afwijkt
- *   (bijv. ingelogd), dus nooit richting een anonieme scan-request.
+ * installatie aantoonbaar voorkomen (omgevingsdetectie). De anonieme crawl
+ * ziet ze nooit omdat ze alleen gezet worden bij inloggen, reageren,
+ * winkelwagen-acties of specifieke cache-varianten.
  */
 function cm_server_env_cookies( $litespeed_seen = false ) {
     $cookies = array(
+        // Elke WordPress-site: inlogpagina + ingelogde gebruikers
         'wordpress_test_cookie' => array('functional','WordPress','Sessie','Controleert of cookies werken in de browser van de bezoeker. Wordt gezet op de inlogpagina.'),
+        'wordpress_logged_in_'  => array('functional','WordPress','Sessie','Houdt de inlogstatus bij van ingelogde gebruikers.'),
+        'wordpress_sec_'        => array('functional','WordPress','Sessie','Beveiligingscookie voor ingelogde gebruikers.'),
     );
+
     if ( $litespeed_seen || defined('LSCWP_V') || class_exists('\LiteSpeed\Core') ) {
         $cookies['_lscache_vary'] = array('functional','LiteSpeed Cache','Sessie','Bepaalt welke cache-variant LiteSpeed toont (bijv. ingelogd of uitgelogd). Bevat geen persoonsgegevens.');
     }
+
+    // Reacties open → cookies voor terugkerende reageerders
+    if ( function_exists('get_default_comment_status') && get_default_comment_status() === 'open' ) {
+        $cookies['comment_author_'] = array('functional','WordPress','1 jaar','Onthoudt naam, e-mailadres en website van bezoekers die een reactie achterlaten.');
+    }
+
+    // Wachtwoordbeveiligde berichten aanwezig
+    global $wpdb;
+    if ( isset( $wpdb->posts ) && $wpdb->get_var( "SELECT ID FROM {$wpdb->posts} WHERE post_password <> '' AND post_status = 'publish' LIMIT 1" ) ) {
+        $cookies['wp-postpass_'] = array('functional','WordPress','10 dagen','Onthoudt het wachtwoord voor wachtwoordbeveiligde berichten.');
+    }
+
+    // WooCommerce: winkelwagen-cookies + Order Attribution (sbjs_*)
+    if ( class_exists('WooCommerce') ) {
+        $cookies['woocommerce_cart_hash']     = array('functional','WooCommerce','Sessie','Bijhouden van de winkelwagen (hash).');
+        $cookies['woocommerce_items_in_cart'] = array('functional','WooCommerce','Sessie','Bijhouden of er items in de winkelwagen liggen.');
+        $cookies['wp_woocommerce_session_']   = array('functional','WooCommerce','2 dagen','Sessie-identifier voor WooCommerce winkelwagen.');
+        // Order Attribution staat sinds WooCommerce 8.5 standaard aan
+        if ( get_option('woocommerce_feature_order_attribution_enabled', 'yes') !== 'no' ) {
+            $attr_desc = 'WooCommerce Order Attribution (sourcebuster): registreert de herkomst van de bezoeker (bron, campagne) voor bestellingstoeschrijving.';
+            foreach ( array('sbjs_current' => '6 maanden', 'sbjs_current_add' => '6 maanden', 'sbjs_first' => '6 maanden', 'sbjs_first_add' => '6 maanden', 'sbjs_udata' => '6 maanden', 'sbjs_session' => '30 min', 'sbjs_migrations' => '6 maanden') as $sbjs_name => $sbjs_dur ) {
+                $cookies[ $sbjs_name ] = array('analytics','WooCommerce', $sbjs_dur, $attr_desc);
+            }
+        }
+    }
+
     return $cookies;
 }
 
@@ -784,14 +828,17 @@ function cm_ajax_run_scan() {
     // Fallback kennisbank voor eigen/WordPress cookies (altijd aanwezig)
     $fallback_cookies = array(
         'PHPSESSID'             => array('functional', 'Deze website',           'Sessie',    'Sessie op de server om de bezoeker te herkennen.'),
-        'wordpress_logged_in'   => array('functional', 'WordPress',              'Sessie',    'WordPress inlogstatus van de gebruiker.'),
-        'wordpress_sec'         => array('functional', 'WordPress',              'Sessie',    'WordPress beveiligingscookie.'),
+        'wordpress_logged_in_'  => array('functional', 'WordPress',              'Sessie',    'WordPress inlogstatus van de gebruiker.'),
+        'wordpress_sec_'        => array('functional', 'WordPress',              'Sessie',    'WordPress beveiligingscookie.'),
         'wordpress_test_cookie' => array('functional', 'WordPress',              'Sessie',    'Test of cookies werken in de browser.'),
         'wp-settings-'          => array('functional', 'WordPress',              '1 jaar',    'Slaat WordPress-gebruikersinstellingen op.'),
+        'wp-postpass_'          => array('functional', 'WordPress',              '10 dagen',  'Onthoudt het wachtwoord voor wachtwoordbeveiligde berichten.'),
         'wp_lang'               => array('functional', 'WordPress',              'Sessie',    'Voorkeurstaal van de WordPress-gebruiker.'),
+        'comment_author_'       => array('functional', 'WordPress',              '1 jaar',    'Onthoudt naam, e-mailadres en website van bezoekers die een reactie achterlaten.'),
         'woocommerce_cart_hash' => array('functional', 'WooCommerce',            'Sessie',    'Bijhouden van de winkelwagen (hash).'),
         'woocommerce_items_in_cart' => array('functional', 'WooCommerce',        'Sessie',    'Bijhouden of er items in de winkelwagen liggen.'),
-        'woocommerce_session_'  => array('functional', 'WooCommerce',            '2 dagen',   'Sessie-identifier voor WooCommerce winkelwagen.'),
+        'wp_woocommerce_session_' => array('functional', 'WooCommerce',          '2 dagen',   'Sessie-identifier voor WooCommerce winkelwagen.'),
+        'sbjs_'                 => array('analytics', 'WooCommerce',             'Sessie/1 jaar', 'WooCommerce Order Attribution (sourcebuster): registreert de herkomst van de bezoeker voor bestellingstoeschrijving.'),
         'wc_cart_created'       => array('functional', 'WooCommerce',            'Sessie',    'Tijdstip waarop de winkelwagen is aangemaakt.'),
         'cc_cm_consent'         => array('functional', 'Cookiemelding Plugin',   intval(cm_get('expiry_months')).' mnd', 'Sla de cookievoorkeur van de bezoeker op.'),
         'cf_clearance'          => array('functional', 'Cloudflare',             '1 jaar',    'Cloudflare verificatiecookie na beveiligingscontrole.'),
@@ -1012,7 +1059,7 @@ function cm_ajax_run_scan() {
             $fallback_cat = $fallback_cookies[ $cookie_name ][0];
         } else {
             foreach ( $fallback_cookies as $pat => $f ) {
-                if ( substr($pat,-1) === '_' && strpos($cookie_name, $pat) === 0 ) {
+                if ( cm_cookie_prefix_match( $cookie_name, $pat ) ) {
                     $fallback_cat = $f[0];
                     break;
                 }
@@ -1038,9 +1085,9 @@ function cm_ajax_run_scan() {
             $f = $fallback_cookies[ $cookie_name ];
             return array( 'category' => $f[0], 'provider' => $f[1], 'duration' => $f[2], 'description' => $f[3], 'privacy_url' => '' );
         }
-        // 3. Fallback: prefix match (eindigend op _)
+        // 3. Fallback: prefix match (eindigend op _ of -)
         foreach ( $fallback_cookies as $pat => $f ) {
-            if ( substr($pat,-1) === '_' && strpos($cookie_name, $pat) === 0 ) {
+            if ( cm_cookie_prefix_match( $cookie_name, $pat ) ) {
                 return array( 'category' => $f[0], 'provider' => $f[1], 'duration' => $f[2], 'description' => $f[3], 'privacy_url' => '' );
             }
         }
