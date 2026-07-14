@@ -1,5 +1,19 @@
 # Changelog — Cookiebaas
 
+## [1.8.0] - 2026-07-14
+
+_Hoofdstuk 6 van 6 uit de code-audit: opschonen. Geen functionele wijzigingen voor de bezoeker._
+
+### Opgelost
+- **Instellingen-cache gaf oude waarden terug.** `cm_get()` cachete de instellingen in een PHP-`static` die `cm_get_flush()` principieel niet kon legen — de functie was een lege huls en werd nergens aangeroepen. Werd binnen één request eerst opgeslagen en daarna gelezen, dan kreeg je de wáárden van vóór het opslaan. De cache zit nu in `$GLOBALS` en wordt automatisch geleegd via de WordPress-hooks `update_option_cm_settings` / `add_option_cm_settings` / `delete_option_cm_settings`, zodat een toekomstige `update_option()` er nooit meer omheen kan.
+
+### Verwijderd — 1.348 regels dode code
+- **Vijf admin-pagina's die nergens meer geregistreerd stonden**: `cm_render_compliance_page`, `cm_render_exportimport_page`, `cm_render_tracking_page`, `cm_render_help_page` en `cm_render_reset_page` — restanten van de samenvoeging van 9 naar 5 pagina's in v1.3.0. Zij waren de bron van de copy-paste-duplicatie: het Google-instellingenblok stond hierdoor twee keer in de code en moest bij elke wijziging dubbel bijgewerkt worden.
+- **`cm_ajax_run_scan` (577 regels)**: een dode duplicaat van de batch-scanner, mét een eigen tweede kopie van de cookie-kennisbank en de script-signatures. De scan-UI gebruikt `cm_scan_urls` + `cm_scan_batch`, de automatische scan gebruikt `cm_perform_background_scan`.
+- **`cm_ajax_get_consent_proof`**: onbereikbaar (nonce-gated zonder enige aanroeper); de REST-endpoint `GET /cookiebaas/v1/consent/{id}` biedt dezelfde gegevens.
+
+`includes/admin.php` gaat van 5.415 naar 4.068 regels. Alle behouden functies zijn byte-identiek gebleven; er is geen enkele functionaliteit verwijderd die nog bereikbaar was.
+
 ## [1.7.9] - 2026-07-14
 
 ### Gewijzigd

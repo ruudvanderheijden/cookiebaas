@@ -561,18 +561,20 @@ function cm_get_cookie_list() {
 }
 
 function cm_get( $key ) {
-    static $merged = null;
-    if ( $merged === null ) {
-        $merged = cm_get_settings();
-    }
+    $merged = cm_get_settings();
     return isset( $merged[ $key ] ) ? $merged[ $key ] : '';
 }
 
 /**
  * Geeft de volledige instellingen-array terug waarbij lege DB-waarden
  * terugvallen op de default (zodat een reset altijd de juiste kleuren toont).
+ * Het resultaat wordt binnen één request gecached; cm_get_flush() leegt die
+ * cache na het opslaan van instellingen.
  */
 function cm_get_settings() {
+    if ( isset( $GLOBALS['cm_settings_cache'] ) && is_array( $GLOBALS['cm_settings_cache'] ) ) {
+        return $GLOBALS['cm_settings_cache'];
+    }
     $defaults = cm_default_settings();
     $saved    = (array) get_option( 'cm_settings', array() );
     $merged   = $defaults;
@@ -582,19 +584,22 @@ function cm_get_settings() {
         }
         $merged[ $k ] = $v;
     }
+    $GLOBALS['cm_settings_cache'] = $merged;
     return $merged;
 }
 
 /**
- * Reset de cm_get cache — aanroepen na opslaan van instellingen.
+ * Leegt de instellingen-cache. Wordt automatisch aangeroepen zodra de optie
+ * cm_settings wijzigt (zie hooks hieronder), zodat cm_get() binnen hetzelfde
+ * request nooit oude waarden teruggeeft — ook niet als er ergens een nieuwe
+ * update_option('cm_settings') bijkomt.
  */
 function cm_get_flush() {
-    // Force re-read bij volgende cm_get() call
-    // We doen dit door de static te resetten via een wrapper
-    // In PHP is dit niet mogelijk op een static in een andere functie,
-    // dus we gebruiken een globale flag
-    $GLOBALS['cm_settings_cache'] = null;
+    unset( $GLOBALS['cm_settings_cache'] );
 }
+add_action( 'update_option_cm_settings', 'cm_get_flush' );
+add_action( 'add_option_cm_settings',    'cm_get_flush' );
+add_action( 'delete_option_cm_settings', 'cm_get_flush' );
 
 /**
  * Zoek een cookie op in de Open Cookie Database (wp_cm_cookie_db).
