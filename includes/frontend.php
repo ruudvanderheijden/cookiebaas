@@ -1350,8 +1350,8 @@ function cm_render_frontend() {
             var past  = 'Thu, 01 Jan 1970 00:00:00 GMT';
 
             var prefixes = type === 'analytics'
-                ? ['_ga', '_gid', '_gat', '_utm', '__utm', 'mp_', '_hjSession', '_hjid', '_hjFirst', '_hjIncluded', 'ajs_', '__hstc', 'hubspotutk']
-                : ['_fbp', '_fbc', 'fr', 'IDE', 'DSID', 'test_cookie', 'NID', 'ANID', 'anj', '__gads', '__gpi'];
+                ? ['_ga', '_gid', '_gat', '_utm', '__utm', 'mp_', '_hjSession', '_hjid', '_hjFirst', '_hjIncluded', 'ajs_', '__hstc', 'hubspotutk', '_clck', '_clsk', 'sbjs_']
+                : ['_fbp', '_fbc', 'fr', 'IDE', 'DSID', 'test_cookie', 'NID', 'ANID', 'anj', '__gads', '__gpi', '_gcl', '_uetsid', '_uetvid', '_ttp', '_tt_', 'li_sugr', 'bcookie', 'lidc', 'UserMatchHistory', '_pin_unauth'];
 
             // Verzamel alle te verwijderen namen: expliciet + prefix-scan op document.cookie
             var toDelete = names.slice();
@@ -1393,10 +1393,18 @@ function cm_render_frontend() {
             try {
                 sessionStorage.setItem('cm_revoke', JSON.stringify({ analytics: analytics, marketing: marketing }));
             } catch(e) {}
-            // Direct ook verwijderen voor het geval de reload snel gaat
-            if (analytics) deleteCookiesByType('analytics');
-            if (marketing)  deleteCookiesByType('marketing');
-            setTimeout(function() { window.location.reload(); }, 150);
+            var sweep = function() {
+                if (analytics) deleteCookiesByType('analytics');
+                if (marketing)  deleteCookiesByType('marketing');
+            };
+            sweep();
+            // Tweede veegbeurt vlak vóór de herlaad: Google-tags kunnen tussen
+            // de consent-update en de herlaad nog een laatste hit afronden en
+            // daarbij _ga / _ga_XXXX opnieuw schrijven.
+            setTimeout(function() {
+                sweep();
+                window.location.reload();
+            }, 250);
         }
 
 
@@ -1803,6 +1811,40 @@ function cm_render_frontend() {
             }
         }
 
+        // Consent-signalen naar Google, GTM en Microsoft UET.
+        // MOET als eerste na een keuze gebeuren — óók bij een intrekking:
+        // zolang Google nog 'granted' denkt, blijft het hits versturen en
+        // cookies (o.a. _ga en _ga_XXXX) opnieuw schrijven, zelfs nadat wij ze
+        // net verwijderd hebben.
+        function sendConsentSignals(analytics, marketing, method) {
+            var a = analytics ? 'granted' : 'denied';
+            var k = marketing ? 'granted' : 'denied';
+            if (typeof gtag === 'function') {
+                gtag('consent', 'update', {
+                    'analytics_storage':  a,
+                    'ad_storage':         k,
+                    'ad_user_data':       k,
+                    'ad_personalization': k
+                });
+            }
+            // dataLayer-event voor GTM-triggers — formaat exact zoals
+            // gedocumenteerd in de admin ("Niet-Google tags via GTM")
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                'event':              'cm_consent_update',
+                'cm_analytics':       !!analytics,
+                'cm_marketing':       !!marketing,
+                'cm_method':          method,
+                'analytics_storage':  a,
+                'ad_storage':         k,
+                'ad_user_data':       k,
+                'ad_personalization': k
+            });
+            // Microsoft UET (Bing Ads) consent update
+            window.uetq = window.uetq || [];
+            window.uetq.push('consent', 'update', { 'ad_storage': k });
+        }
+
         function applyConsent(analytics, marketing, method, serviceConsent) {
             var prev = getConsent();
             setConsent({ analytics: analytics, marketing: marketing, method: method, services: serviceConsent || null });
@@ -1811,6 +1853,11 @@ function cm_render_frontend() {
                 if (pr()) pr().classList.remove('cm-active');
                 hideBanner();
             }
+
+            // Eerst Google c.s. de nieuwe status geven, dán pas cookies
+            // opruimen — anders schrijft GA ze meteen weer terug.
+            sendConsentSignals(analytics, marketing, method);
+
             logConsent(analytics ? 1 : 0, marketing ? 1 : 0, method);
 
             var hadAnalytics = prev && prev.analytics;
@@ -1839,7 +1886,13 @@ function cm_render_frontend() {
                 if (revokeA || revokeM) {
                     try { sessionStorage.setItem('cm_revoke', JSON.stringify({ analytics: revokeA, marketing: revokeM })); } catch(e) {}
                 }
-                setTimeout(function(){ window.location.reload(); }, 300);
+                setTimeout(function(){
+                    // Tweede veegbeurt: Google kan tussentijds nog een laatste
+                    // hit hebben afgerond en cookies opnieuw hebben geschreven
+                    if (revokeA) deleteCookiesByType('analytics');
+                    if (revokeM) deleteCookiesByType('marketing');
+                    window.location.reload();
+                }, 300);
                 return;
             }
 
@@ -1870,34 +1923,6 @@ function cm_render_frontend() {
                     return;
                 }
             }
-
-            // SPOOR 1 — Google Consent Mode v2 update
-            // Ook bij een weigering versturen: Google-tags schakelen dan
-            // definitief naar cookieloze pings (advanced mode / modellering).
-            if (typeof gtag === 'function') {
-                gtag('consent', 'update', {
-                    'analytics_storage':  analytics ? 'granted' : 'denied',
-                    'ad_storage':         marketing ? 'granted' : 'denied',
-                    'ad_user_data':       marketing ? 'granted' : 'denied',
-                    'ad_personalization': marketing ? 'granted' : 'denied'
-                });
-            }
-            // dataLayer-event voor GTM-triggers — formaat exact zoals
-            // gedocumenteerd in de admin ("Niet-Google tags via GTM")
-            window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({
-                'event':              'cm_consent_update',
-                'cm_analytics':       !!analytics,
-                'cm_marketing':       !!marketing,
-                'cm_method':          method,
-                'analytics_storage':  analytics ? 'granted' : 'denied',
-                'ad_storage':         marketing ? 'granted' : 'denied',
-                'ad_user_data':       marketing ? 'granted' : 'denied',
-                'ad_personalization': marketing ? 'granted' : 'denied'
-            });
-            // Microsoft UET (Bing Ads) consent update
-            window.uetq = window.uetq || [];
-            window.uetq.push('consent', 'update', { 'ad_storage': marketing ? 'granted' : 'denied' });
 
             // SPOOR 2 — Overige geblokkeerde scripts
             var hasBlocked = document.querySelectorAll('script[data-cm-type]').length > 0;

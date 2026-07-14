@@ -1,5 +1,11 @@
 # Changelog — Cookiebaas
 
+## [1.7.8] - 2026-07-14
+
+### Opgelost
+- **GA-cookies (`_ga`, `_ga_XXXXXXXXXX`) konden terugkomen na een weigering.** Bij het intrekken van toestemming werden de cookies verwijderd en werd de pagina herladen, maar de `gtag('consent','update','denied')` werd op dat pad nooit verstuurd. Google dacht dus nog steeds toestemming te hebben, rondde in dat venster nog één of twee hits af (zichtbaar als `gcs=G111` ná de weigering) en schreef daarbij `_ga` en `_ga_XXXXXXXXXX` opnieuw — precies nadat de plugin ze had verwijderd. De consent-update (Google, GTM-dataLayer én Microsoft UET) wordt nu als **eerste** actie na elke keuze verstuurd, vóór het opruimen en herladen. Daarnaast volgt er vlak vóór de herlaad nog een tweede opruimronde.
+- **Meer trackingcookies worden opgeruimd bij intrekking**: Google Ads (`_gcl*`), Microsoft UET (`_uetsid`, `_uetvid`), TikTok (`_ttp`, `_tt_*`), LinkedIn (`bcookie`, `lidc`, `li_sugr`, `UserMatchHistory`), Pinterest (`_pin_unauth`), Microsoft Clarity (`_clck`, `_clsk`) en WooCommerce Order Attribution (`sbjs_*`).
+
 ## [1.7.7] - 2026-07-14
 
 ### Opgelost — kritiek (privacy)
