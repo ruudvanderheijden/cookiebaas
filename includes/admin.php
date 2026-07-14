@@ -2642,6 +2642,13 @@ function cm_render_admin_page() {
                                 <p class="description">GPC is de opvolger van DNT en is wettelijk verplicht in 12+ Amerikaanse staten (o.a. Californi&euml;, Colorado, Connecticut). Europese toezichthouders (CNIL, ICO) zien GPC als geldige uitoefening van het recht op bezwaar (AVG art. 21). Als GPC actief is, worden analytics- en marketing-cookies automatisch geweigerd.</p>
                             </td>
                         </tr>
+                        <tr>
+                            <th><label>Herladen na akkoord</label></th>
+                            <td>
+                                <label><input type="checkbox" name="reload_after_consent" value="1" <?php checked($s['reload_after_consent'] ?? 0,1); ?>> Herlaad de pagina ook na het geven van toestemming</label>
+                                <p class="description">Standaard <strong>uit</strong>: na akkoord worden scripts en embeds direct vrijgegeven zonder herlaad (geen flits, scrollpositie en formuliervelden blijven behouden). Aanzetten geeft een schone, volledig gemeten <code>page_view</code> van de landingspagina in plaats van een gemodelleerde. Bij het <strong>intrekken</strong> van toestemming wordt altijd herladen — dat is nodig om al draaiende scripts te stoppen.</p>
+                            </td>
+                        </tr>
                         </tbody></table>
                     </div>
 

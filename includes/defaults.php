@@ -102,6 +102,9 @@ function cm_default_settings() {
         // URL passthrough: plakt bij denied consent meet-info als _gl= parameter
         // aan interne links (betere attributie, maar lelijke URL's) — standaard uit
         'google_url_passthrough'    => 0,
+        // Pagina herladen ná het GEVEN van toestemming (bij intrekken wordt
+        // altijd herladen). Uit = scripts/embeds dynamisch vrijgeven zonder flits.
+        'reload_after_consent'      => 0,
         // Script blocking — optionele extra patronen (ingebouwde kennisbank werkt automatisch)
         'block_analytics_patterns'  => '',
         'block_marketing_patterns'  => '',

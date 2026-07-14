@@ -1,5 +1,10 @@
 # Changelog — Cookiebaas
 
+## [1.7.9] - 2026-07-14
+
+### Gewijzigd
+- **Herladen na akkoord is nu een instelling en staat standaard uit.** Na het geven van toestemming worden scripts en embeds weer dynamisch vrijgegeven zonder pagina-herlaad (geen flits, scrollpositie en formuliervelden blijven behouden) — het gedrag van vóór 1.7.7, nu bovenop de cache-veilige consent-afhandeling. Bij het **intrekken** van toestemming (weigeren na eerder akkoord, of een dienst uitzetten) wordt altijd herladen; dat is nodig om al draaiende scripts te stoppen. Nieuwe checkbox "Herladen na akkoord" op het Algemeen-tabblad voor wie na acceptatie een schone, volledig gemeten `page_view` van de landingspagina wil in plaats van een gemodelleerde.
+
 ## [1.7.8] - 2026-07-14
 
 ### Opgelost

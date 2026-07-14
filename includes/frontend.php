@@ -1317,6 +1317,7 @@ function cm_render_frontend() {
         var COOKIE_NAME       = 'cc_cm_consent';
         var EXPIRY_MONTHS     = <?php echo intval( cm_get('expiry_months') ); ?>;
         var SHOW_FLOAT        = <?php echo cm_get('show_float_btn') ? 'true' : 'false'; ?>;
+        var RELOAD_ON_ACCEPT  = <?php echo cm_get('reload_after_consent') ? 'true' : 'false'; ?>;
         var AJAX_URL          = '<?php echo esc_js( site_url("/wp-admin/admin-ajax.php") ); ?>';
         var ANALYTICS_DEFAULT = <?php echo cm_get('analytics_default') ? 'true' : 'false'; ?>;
         var RESPECT_DNT       = <?php echo cm_get('respect_dnt') ? 'true' : 'false'; ?>;
@@ -1935,13 +1936,16 @@ function cm_render_frontend() {
             if (analytics) releaseEmbeds('analytics');
             if (marketing) releaseEmbeds('marketing');
 
-            // SPOOR 4 — Herlaad na een keuze van de bezoeker, zodat de pagina
-            // in een schone, consistente staat komt: alle scripts en embeds
-            // worden opnieuw met de juiste toestemming geïnitialiseerd.
-            // Niet bij automatische afwijzing (DNT/GPC): daar valt niets vrij
-            // te geven en zou de herlaad alleen maar hinderlijk zijn.
-            // De consent-logging gaat via sendBeacon en overleeft de herlaad.
-            if (method !== 'dnt' && method !== 'gpc') {
+            // SPOOR 4 — optioneel herladen na het GEVEN van toestemming.
+            // Standaard uit: de scripts en embeds zijn hierboven al dynamisch
+            // vrijgegeven (geen flits, scrollpositie en formulieren blijven
+            // behouden). Aanzetten geeft een schone, volledig gemeten
+            // page_view van de landingspagina. Bij INTREKKING wordt altijd
+            // herladen — die paden (revokeAndReload / page-mode /
+            // serviceRevoked) zijn hierboven al afgehandeld en komen hier
+            // niet. De consent-logging gaat via sendBeacon en overleeft de
+            // herlaad. Niet bij automatische afwijzing (DNT/GPC).
+            if (RELOAD_ON_ACCEPT && (analytics || marketing) && method !== 'dnt' && method !== 'gpc') {
                 setTimeout(function(){ window.location.reload(); }, 250);
             }
         }
