@@ -3,7 +3,7 @@
  * Plugin Name: Cookiebaas
  * Plugin URI:  https://www.cookiebaas.nl/
  * Description: Cookiemelding plugin volgens AVG/GDPR-conformiteit met Google Consent Mode (v2) integratie en privacyverklaring generator.
- * Version:     1.7.6
+ * Version:     1.7.7
  * Author:      Ruud van der Heijden
  * Author URI:  https://www.cookiebaas.nl/
  * License:     GPL-2.0+
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'CM_VERSION',     '1.7.6' );
+define( 'CM_VERSION',     '1.7.7' );
 define( 'CM_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'CM_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 
@@ -170,11 +170,33 @@ add_action( 'plugins_loaded', function() {
             update_option( 'cm_settings', $merged );
         }
         update_option( 'cm_version', CM_VERSION );
+
+        // Paginacache leegmaken: oudere versies bakten de consent-status van de
+        // bezoeker die de cache vulde in de HTML. Zulke gecachte pagina's kunnen
+        // een "granted" consent aan álle bezoekers serveren — direct wissen.
+        cm_purge_page_caches();
     }
 
     // Cron plannen als log-retentie actief is (altijd om 12:00)
     cm_maybe_schedule_retention_cron();
 });
+
+/**
+ * Leegt de paginacache van bekende cachingplugins.
+ */
+function cm_purge_page_caches() {
+    if ( function_exists('rocket_clean_domain') )    rocket_clean_domain();      // WP Rocket
+    if ( function_exists('w3tc_flush_all') )         w3tc_flush_all();           // W3 Total Cache
+    if ( function_exists('wp_cache_clear_cache') )   wp_cache_clear_cache();     // WP Super Cache
+    if ( class_exists('\LiteSpeed\Purge') )          do_action('litespeed_purge_all');
+    if ( has_action('litespeed_purge_all') )         do_action('litespeed_purge_all');
+    if ( function_exists('sg_cachepress_purge_cache') ) sg_cachepress_purge_cache(); // SiteGround
+    if ( class_exists('\WpeCommon') && method_exists('\WpeCommon', 'purge_varnish_cache') ) {
+        \WpeCommon::purge_varnish_cache(); // WP Engine
+    }
+    do_action( 'cachify_flush_cache' );
+    do_action( 'cm_purge_page_caches' );
+}
 
 /* ================================================================
    LOG RETENTIE — automatisch opschonen via WordPress cron

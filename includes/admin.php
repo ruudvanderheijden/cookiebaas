@@ -201,6 +201,10 @@ function cm_ajax_save_settings() {
     // Cron herplannen als retentie is gewijzigd
     cm_maybe_schedule_retention_cron();
 
+    // Instellingen zitten in de gecachte HTML (blokkering, Consent Mode) —
+    // paginacache legen zodat bezoekers de nieuwe versie krijgen
+    if ( function_exists('cm_purge_page_caches') ) cm_purge_page_caches();
+
     wp_send_json_success( array( 'message' => 'Opgeslagen.' ) );
 }
 

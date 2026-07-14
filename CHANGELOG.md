@@ -1,5 +1,17 @@
 # Changelog — Cookiebaas
 
+## [1.7.7] - 2026-07-14
+
+### Opgelost — kritiek (privacy)
+- **Paginacache serveerde de toestemming van een andere bezoeker.** De plugin rende de consent-status server-side in de HTML (`gtag('consent','update','granted')`). Vulde een bezoeker mét toestemming de paginacache van LiteSpeed/WP Rocket/Cloudflare, dan kreeg **iedere volgende bezoeker die gecachte "granted"-status** — inclusief bezoekers die nog niets gekozen of juist geweigerd hadden. Google Analytics vuurde dan volledig (`gcs=G111`) en plaatste `_ga`-cookies zonder toestemming. Vastgesteld op een productiesite met LiteSpeed: een schone browser zonder consent-cookie kreeg HTML met `cm_method: accept-all`.
+  De HTML is nu volledig **cache-veilig**: identiek voor elke bezoeker. De consent-status wordt in de browser uit de cookie gelezen en de `gtag('consent','update')` wordt client-side verstuurd — synchroon vóór de Google-tag laadt, dus er worden nooit cookies met een verkeerde status gezet. Dit verklaart ook waarom cookies na een weigering leken terug te komen: de gecachte pagina gaf direct weer toestemming.
+- **Blocker sloopte de tags binnen Google Tag Manager.** Scripts die GTM zélf injecteert (o.a. `gtag/js` voor GA4) werden door de scriptblocker gestript, waardoor GA4 in advanced mode nooit initialiseerde en er ook geen cookieloze pings werden verstuurd. In Consent Mode advanced worden Google's eigen meetdomeinen nu niet meer geblokkeerd — Consent Mode regelt die tags zelf. Een GTM-snippet uit een thema of andere plugin wordt in advanced mode nu ook doorgelaten (en respecteert de consent-defaults). In basic mode blijft alles geblokkeerd tot toestemming.
+- **Cookies werden niet verwijderd na een weigering** (zie hierboven): de gecachte pagina zette na de herlaad direct weer `granted`, waarna GA de `_ga`-cookies opnieuw plaatste.
+
+### Gewijzigd
+- **De pagina herlaadt nu na elke keuze** (akkoord, weigeren of opslaan), zodat scripts, embeds en cookies gegarandeerd in een consistente staat komen. De consent-logging gaat via `sendBeacon` en overleeft de herlaad. Automatische afwijzing via Do Not Track / Global Privacy Control herlaadt niet (daar valt niets vrij te geven).
+- **Paginacache wordt automatisch geleegd** na een plugin-update en na het opslaan van instellingen (LiteSpeed, WP Rocket, W3 Total Cache, WP Super Cache, SiteGround, WP Engine, Cachify + `cm_purge_page_caches` hook). Zo verdwijnen vergiftigde cachepagina's van oudere versies direct.
+
 ## [1.7.6] - 2026-07-14
 
 ### Gewijzigd

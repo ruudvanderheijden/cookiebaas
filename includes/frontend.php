@@ -342,20 +342,13 @@ function cm_inject_google_consent_mode() {
     $gtm_id = trim( cm_get('gtm_container_id') );
     $ua_id  = trim( cm_get('ua_tracking_id') );
 
-    // Lees huidig consent
-    $consent     = null;
-    $cookie_name = 'cc_cm_consent';
-    if ( isset( $_COOKIE[$cookie_name] ) ) {
-        $consent = json_decode( stripslashes( urldecode( $_COOKIE[$cookie_name] ) ), true );
-    }
-    $has_decision = is_array( $consent );
-
-    // google_load_default ("Google cookies direct laden") geldt alleen zolang
-    // er nog geen keuze is gemaakt — een expliciete weigering wint altijd.
-    $google_load_default       = (bool) cm_get('google_load_default');
-    $analytics_default_granted = $google_load_default && ! $has_decision;
-    $allow_analytics = ! empty( $consent['analytics'] ) || $analytics_default_granted;
-    $allow_marketing = ! empty( $consent['marketing'] );
+    // CACHE-VEILIG: deze HTML mag NIET afhangen van de consent-cookie van de
+    // bezoeker die hem toevallig genereert. Paginacaches (LiteSpeed, WP Rocket,
+    // Cloudflare) serveren één kopie aan iedereen — een server-side ingebakken
+    // gtag('consent','update','granted') zou dan aan álle bezoekers worden
+    // geserveerd, ook zonder toestemming. De consent-update gebeurt daarom
+    // client-side: het script hieronder leest de cookie in de browser.
+    $google_load_default = (bool) cm_get('google_load_default');
 
     // Consent Mode v2 "advanced": laad de Google-tag altijd, óók vóór een
     // keuze en na een weigering. De consent-defaults staan op denied, dus er
@@ -364,17 +357,16 @@ function cm_inject_google_consent_mode() {
     // en conversies via modellering geschat worden. Dat is de kern van
     // advanced mode en bewust toegestaan.
     $cm_advanced = (bool) cm_get('google_consent_mode_advanced');
-    $load_google = $allow_analytics || $cm_advanced;
 
-    $analytics_update = $allow_analytics ? 'granted' : 'denied';
-    $marketing_update = $allow_marketing ? 'granted' : 'denied';
+    // Beide vlaggen zijn instellingen (geen cookies) → cache-veilig.
+    $load_google = $cm_advanced || $google_load_default;
     ?>
 <!-- Cookiebaas Consent Mode v2 -->
 <script data-no-defer="1" nowprocket>
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('consent', 'default', {
-    'analytics_storage':  '<?php echo $analytics_default_granted ? 'granted' : 'denied'; ?>',
+    'analytics_storage':  '<?php echo $google_load_default ? 'granted' : 'denied'; ?>',
     'ad_storage':         'denied',
     'ad_user_data':       'denied',
     'ad_personalization': 'denied',
@@ -386,31 +378,45 @@ gtag('set', 'ads_data_redaction', true);
 <?php if ( cm_get('google_url_passthrough') ) : ?>
 gtag('set', 'url_passthrough', true);
 <?php endif; ?>
-<?php if ( $consent ) : ?>
-gtag('consent', 'update', {
-    'analytics_storage':  '<?php echo esc_js( $analytics_update ); ?>',
-    'ad_storage':         '<?php echo esc_js( $marketing_update ); ?>',
-    'ad_user_data':       '<?php echo esc_js( $marketing_update ); ?>',
-    'ad_personalization': '<?php echo esc_js( $marketing_update ); ?>'
-});
-window.dataLayer.push({
-    'event':              'cm_consent_update',
-    'cm_analytics':       <?php echo $allow_analytics ? 'true' : 'false'; ?>,
-    'cm_marketing':       <?php echo $allow_marketing ? 'true' : 'false'; ?>,
-    'cm_method':          '<?php echo esc_js( isset( $consent['method'] ) ? $consent['method'] : 'stored' ); ?>',
-    'analytics_storage':  '<?php echo esc_js( $analytics_update ); ?>',
-    'ad_storage':         '<?php echo esc_js( $marketing_update ); ?>',
-    'ad_user_data':       '<?php echo esc_js( $marketing_update ); ?>',
-    'ad_personalization': '<?php echo esc_js( $marketing_update ); ?>'
-});
-window.uetq = window.uetq || [];
-window.uetq.push('consent', 'update', { 'ad_storage': '<?php echo esc_js( $marketing_update ); ?>' });
-<?php endif; ?>
+/* Consent-update client-side: leest de cookie in de browser, zodat deze HTML
+   identiek is voor elke bezoeker en veilig gecachet kan worden. Draait
+   synchroon direct na de defaults — Google verwerkt de dataLayer-wachtrij pas
+   wanneer de tag laadt, dus default en update komen altijd in de juiste
+   volgorde aan en er worden nooit cookies met een verkeerde status gezet. */
+(function(){
+    var c = null;
+    try {
+        var m = document.cookie.match(/(?:^|;\s*)cc_cm_consent=([^;]*)/);
+        if (m) c = JSON.parse(decodeURIComponent(m[1]));
+    } catch(e) {}
+    if (!c) return;
+    var a = c.analytics ? 'granted' : 'denied';
+    var k = c.marketing ? 'granted' : 'denied';
+    gtag('consent', 'update', {
+        'analytics_storage':  a,
+        'ad_storage':         k,
+        'ad_user_data':       k,
+        'ad_personalization': k
+    });
+    window.dataLayer.push({
+        'event':              'cm_consent_update',
+        'cm_analytics':       !!c.analytics,
+        'cm_marketing':       !!c.marketing,
+        'cm_method':          c.method || 'stored',
+        'analytics_storage':  a,
+        'ad_storage':         k,
+        'ad_user_data':       k,
+        'ad_personalization': k
+    });
+    window.uetq = window.uetq || [];
+    window.uetq.push('consent', 'update', { 'ad_storage': k });
+})();
 </script>
 <?php
-    // GA4 self-loader — beide scripts krijgen server-side het juiste type
-    // Bij geen consent: type="text/plain" + data-cm-type="analytics"
-    // Bij consent:      normale script tags
+    // GA4 self-loader — de keuze hangt uitsluitend af van instellingen
+    // (advanced mode / direct laden), nooit van de consent-cookie → cache-veilig.
+    // Advanced mode: live geladen, Consent Mode regelt de cookies.
+    // Basic mode:    type="text/plain" — de JS geeft het script vrij na consent.
     if ( $ga4_id && preg_match('/^G-[A-Z0-9]+$/i', $ga4_id) ) :
         if ( $load_google ) : ?>
 <script async data-cm-allow="1" data-no-defer="1" nowprocket src="https://www.googletagmanager.com/gtag/js?id=<?php echo esc_attr($ga4_id); ?>"></script>
@@ -430,16 +436,13 @@ window.uetq.push('consent', 'update', { 'ad_storage': '<?php echo esc_js( $marke
         <?php endif;
     endif;
 
-    // UA (Universal Analytics) self-loader — verouderd maar nog ondersteund
-    if ( $ua_id && preg_match('/^UA-[0-9]+-[0-9]+$/i', $ua_id) ) :
-        if ( $allow_analytics ) : ?>
-<script async data-no-defer="1" nowprocket src="https://www.google-analytics.com/analytics.js"></script>
-<script data-no-defer="1" nowprocket>window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;ga('create','<?php echo esc_js($ua_id); ?>','auto');ga('send','pageview');</script>
-        <?php else : ?>
+    // UA (Universal Analytics) self-loader — verouderd, kent geen Consent Mode.
+    // Altijd geblokkeerd renderen (cache-veilig); de JS geeft het script vrij
+    // zodra er analytics-consent is.
+    if ( $ua_id && preg_match('/^UA-[0-9]+-[0-9]+$/i', $ua_id) ) : ?>
 <script type="text/plain" data-cm-type="analytics" data-cm-blocked-src="https://www.google-analytics.com/analytics.js" async></script>
 <script type="text/plain" data-cm-type="analytics">window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;ga('create','<?php echo esc_js($ua_id); ?>','auto');ga('send','pageview');</script>
-        <?php endif;
-    endif; ?>
+    <?php endif; ?>
     <?php
 }
 
@@ -497,12 +500,40 @@ function cm_get_known_patterns() {
     );
 }
 
+/**
+ * Google's eigen meetdomeinen. In Consent Mode advanced beheert Google deze
+ * tags zélf op basis van de consent-signalen (denied = cookieloze ping, geen
+ * cookies). Ze mogen dan NIET door de blocker gestript worden — anders sneuvelen
+ * ook de scripts die GTM zelf in de pagina injecteert (o.a. gtag/js voor GA4)
+ * en werkt advanced mode helemaal niet meer.
+ */
+function cm_google_consent_domains() {
+    return array(
+        'googletagmanager.com',
+        'google-analytics.com',
+        'analytics.google.com',
+        'googleadservices.com',
+        'doubleclick.net',
+        'google.com/pagead',
+        'google.com/ccm',
+    );
+}
+
 // Combineer ingebouwde kennisbank met aangepaste patronen
 function cm_get_all_patterns( $type ) {
     $known   = cm_get_known_patterns();
     $builtin = isset( $known[$type] ) ? $known[$type] : array();
     $custom  = array_filter( array_map( 'trim', explode( ',', cm_get('block_' . $type . '_patterns') ) ) );
-    return array_values( array_unique( array_merge( $builtin, $custom ) ) );
+    $all     = array_values( array_unique( array_merge( $builtin, $custom ) ) );
+
+    // Advanced mode: Google-tags regelen consent zelf → niet blokkeren
+    if ( cm_get('google_consent_mode_advanced') ) {
+        $google = cm_google_consent_domains();
+        $all = array_values( array_filter( $all, function( $p ) use ( $google ) {
+            return ! in_array( $p, $google, true );
+        }));
+    }
+    return $all;
 }
 
 add_action( 'wp', 'cm_init_cookie_blocker' );
@@ -515,15 +546,11 @@ function cm_init_cookie_blocker() {
     // nooit consent geven en blijven scripts/embeds permanent dood.
     if ( ! cm_license_is_valid() ) return;
 
-    $consent     = null;
-    $cookie_name = 'cc_cm_consent';
-    if ( isset( $_COOKIE[$cookie_name] ) ) {
-        $consent = json_decode( stripslashes( urldecode( $_COOKIE[$cookie_name] ) ), true );
-    }
-    $allow_analytics = ! empty( $consent['analytics'] );
-    $allow_marketing = ! empty( $consent['marketing'] );
-    if ( $allow_analytics && $allow_marketing ) return;
-
+    // CACHE-VEILIG: altijd blokkeren, ongeacht de consent-cookie van deze
+    // bezoeker. De HTML wordt door paginacaches aan iedereen geserveerd, dus
+    // mag er nooit een "vrijgegeven" versie in de cache belanden. Bezoekers
+    // mét toestemming krijgen de scripts en embeds direct vrijgegeven door de
+    // JS (releaseScripts/releaseEmbeds bij init).
     ob_start( 'cm_filter_buffer' );
     add_action( 'wp_footer', 'cm_end_buffer', 9999 );
 }
@@ -561,8 +588,11 @@ function cm_inline_script_blocked( $block, $patterns_a, $patterns_m, $allow_anal
         foreach ( $patterns_a as $p ) {
             if ( $p && stripos( $block, $p ) !== false ) return 'analytics';
         }
-        // Automatische GTM/GA inline herkenning
-        if ( stripos($block,'dataLayer')!==false && ( stripos($block,'gtag(')!==false || stripos($block,'GTM-')!==false ) ) {
+        // Automatische GTM/GA inline herkenning — in advanced mode overslaan:
+        // Google-tags regelen consent zelf (zie cm_google_consent_domains)
+        if ( ! cm_get('google_consent_mode_advanced')
+             && stripos($block,'dataLayer')!==false
+             && ( stripos($block,'gtag(')!==false || stripos($block,'GTM-')!==false ) ) {
             return 'analytics';
         }
     }
@@ -579,14 +609,11 @@ function cm_inline_script_blocked( $block, $patterns_a, $patterns_m, $allow_anal
 function cm_filter_buffer( $html ) {
     if ( ! $html ) return $html;
 
-    $consent     = null;
-    $cookie_name = 'cc_cm_consent';
-    if ( isset( $_COOKIE[$cookie_name] ) ) {
-        $consent = json_decode( stripslashes( urldecode( $_COOKIE[$cookie_name] ) ), true );
-    }
-    $allow_analytics = ! empty( $consent['analytics'] );
-    $allow_marketing = ! empty( $consent['marketing'] );
-    if ( $allow_analytics && $allow_marketing ) return $html;
+    // CACHE-VEILIG: blokkeer altijd, ongeacht de consent-cookie (zie
+    // cm_init_cookie_blocker). De JS geeft scripts en embeds vrij zodra de
+    // browser een geldige toestemming in de cookie vindt.
+    $allow_analytics = false;
+    $allow_marketing = false;
 
     $pA = cm_get_all_patterns('analytics');
     $pM = cm_get_all_patterns('marketing');
@@ -730,13 +757,20 @@ function cm_output_script_blocker() {
 
     var pA=<?php echo wp_json_encode($pA); ?>;
     var pM=<?php echo wp_json_encode($pM); ?>;
+    /* Advanced mode: Google-tags (ook die GTM zelf injecteert) regelen consent
+       zelf via Consent Mode — nooit blokkeren, anders sneuvelen de tag en de
+       cookieloze pings. */
+    var CM_ADVANCED=<?php echo cm_get('google_consent_mode_advanced') ? 'true' : 'false'; ?>;
+    var GOOGLE_DOMAINS=<?php echo wp_json_encode( cm_google_consent_domains() ); ?>;
 
     /* --- Patroon matching --- */
     function matches(s,p){if(!s)return false;s=s.toLowerCase();for(var i=0;i<p.length;i++){if(p[i]&&s.indexOf(p[i].toLowerCase())!==-1)return true;}return false;}
+    function isGoogle(src,txt){return CM_ADVANCED&&(matches(src,GOOGLE_DOMAINS)||matches(txt,GOOGLE_DOMAINS));}
     function getType(src,txt){
+        if(isGoogle(src,txt))return false;
         if(!allowA){
             if(matches(src,pA)||matches(txt,pA))return'analytics';
-            if(txt&&txt.indexOf('dataLayer')!==-1&&(txt.indexOf('gtag(')!==-1||txt.indexOf('GTM-')!==-1))return'analytics';
+            if(!CM_ADVANCED&&txt&&txt.indexOf('dataLayer')!==-1&&(txt.indexOf('gtag(')!==-1||txt.indexOf('GTM-')!==-1))return'analytics';
         }
         if(!allowM){
             if(matches(src,pM)||matches(txt,pM))return'marketing';
@@ -1875,6 +1909,16 @@ function cm_render_frontend() {
             // SPOOR 3 — Geblokkeerde embeds (iframes) vrijgeven
             if (analytics) releaseEmbeds('analytics');
             if (marketing) releaseEmbeds('marketing');
+
+            // SPOOR 4 — Herlaad na een keuze van de bezoeker, zodat de pagina
+            // in een schone, consistente staat komt: alle scripts en embeds
+            // worden opnieuw met de juiste toestemming geïnitialiseerd.
+            // Niet bij automatische afwijzing (DNT/GPC): daar valt niets vrij
+            // te geven en zou de herlaad alleen maar hinderlijk zijn.
+            // De consent-logging gaat via sendBeacon en overleeft de herlaad.
+            if (method !== 'dnt' && method !== 'gpc') {
+                setTimeout(function(){ window.location.reload(); }, 250);
+            }
         }
 
         // Verwijder een specifieke lijst van cookienamen via alle domein/pad-combinaties
@@ -1950,6 +1994,13 @@ function cm_render_frontend() {
                     + '&method='     + encodeURIComponent(method)
                     + '&session_id=' + encodeURIComponent(getSessionId())
                     + '&url='        + encodeURIComponent(window.location.href);
+
+                // sendBeacon overleeft de herlaad na een consentkeuze; XHR kan
+                // door de navigatie afgebroken worden.
+                if (navigator.sendBeacon) {
+                    var blob = new Blob([body], { type: 'application/x-www-form-urlencoded' });
+                    if (navigator.sendBeacon(AJAX_URL, blob)) return;
+                }
 
                 var xhr = new XMLHttpRequest();
                 xhr.open('POST', AJAX_URL, true);
