@@ -99,6 +99,9 @@ function cm_default_settings() {
         // geen cookies) zodat Google via cookieloze pings bezoekers kan modelleren.
         // Tags vuren pas na consent update. 0 = "basic" (tag geblokkeerd tot consent).
         'google_consent_mode_advanced' => 1,
+        // URL passthrough: plakt bij denied consent meet-info als _gl= parameter
+        // aan interne links (betere attributie, maar lelijke URL's) — standaard uit
+        'google_url_passthrough'    => 0,
         // Script blocking — optionele extra patronen (ingebouwde kennisbank werkt automatisch)
         'block_analytics_patterns'  => '',
         'block_marketing_patterns'  => '',

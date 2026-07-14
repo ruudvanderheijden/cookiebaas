@@ -2874,6 +2874,13 @@ function cm_render_admin_page() {
                                 <p class="description">Google Consent Mode v2 <strong>advanced</strong>: de tag/container laadt direct met alle consent-signalen op <code>denied</code>. Er worden géén cookies geplaatst en er gaan geen volledige metingen naar Google, maar Google-tags (ook binnen GTM) versturen wel <strong>cookieloze pings</strong> waarmee bezoekersaantallen en conversies via modellering geschat worden — ook vóór een keuze en na een weigering. Na acceptatie vuren de tags direct volledig, zonder herlaad. Uitgevinkt = <strong>basic</strong>: de tag wordt volledig geblokkeerd tot toestemming. Let op: niet-Google tags in GTM (bijv. Meta Pixel) kennen geen Consent Mode — geef die in GTM zelf een consent-vereiste (zie hieronder). Geldt niet voor Universal Analytics (verouderd, ondersteunt geen Consent Mode).</p>
                             </td>
                         </tr>
+                        <tr>
+                            <th><label for="google_url_passthrough">URL passthrough</label></th>
+                            <td>
+                                <label><input type="checkbox" id="google_url_passthrough" name="google_url_passthrough" value="1" <?php checked( cm_get('google_url_passthrough'), 1 ); ?>> Geef meetinformatie door via de URL zolang cookies geweigerd zijn</label>
+                                <p class="description">Plakt een <code>_gl=</code>-parameter aan interne links zolang er geen (analytics-)consent is, zodat Google sessies en advertentieklikken zonder cookies kan volgen. Verbetert de attributie/modellering iets, maar maakt <strong>alle interne links lelijk</strong> en kan caching per URL fragmenteren. Standaard uit.</p>
+                            </td>
+                        </tr>
                         </tbody></table>
                     </div>
 
@@ -4377,6 +4384,13 @@ function cm_render_tracking_page() {
                     <td>
                         <label><input type="checkbox" id="google_consent_mode_advanced" name="google_consent_mode_advanced" value="1" <?php checked( cm_get('google_consent_mode_advanced'), 1 ); ?>> Laad de Google-tag (GTM/GA4) altijd in, ook vóór toestemming — zonder cookies tot er consent is</label>
                         <p class="description">Google Consent Mode v2 <strong>advanced</strong>: de tag/container laadt direct met alle consent-signalen op <code>denied</code>. Er worden géén cookies geplaatst en er gaan geen volledige metingen naar Google, maar Google-tags (ook binnen GTM) versturen wel <strong>cookieloze pings</strong> waarmee bezoekersaantallen en conversies via modellering geschat worden — ook vóór een keuze en na een weigering. Na acceptatie vuren de tags direct volledig, zonder herlaad. Uitgevinkt = <strong>basic</strong>: de tag wordt volledig geblokkeerd tot toestemming. Let op: niet-Google tags in GTM (bijv. Meta Pixel) kennen geen Consent Mode — geef die in GTM zelf een consent-vereiste (zie hieronder).</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="google_url_passthrough">URL passthrough</label></th>
+                    <td>
+                        <label><input type="checkbox" id="google_url_passthrough" name="google_url_passthrough" value="1" <?php checked( cm_get('google_url_passthrough'), 1 ); ?>> Geef meetinformatie door via de URL zolang cookies geweigerd zijn</label>
+                        <p class="description">Plakt een <code>_gl=</code>-parameter aan interne links zolang er geen (analytics-)consent is, zodat Google sessies en advertentieklikken zonder cookies kan volgen. Verbetert de attributie/modellering iets, maar maakt <strong>alle interne links lelijk</strong> en kan caching per URL fragmenteren. Standaard uit.</p>
                     </td>
                 </tr>
                 </tbody></table>

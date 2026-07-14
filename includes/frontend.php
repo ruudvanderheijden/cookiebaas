@@ -383,7 +383,9 @@ gtag('consent', 'default', {
     'wait_for_update':    500
 });
 gtag('set', 'ads_data_redaction', true);
+<?php if ( cm_get('google_url_passthrough') ) : ?>
 gtag('set', 'url_passthrough', true);
+<?php endif; ?>
 <?php if ( $consent ) : ?>
 gtag('consent', 'update', {
     'analytics_storage':  '<?php echo esc_js( $analytics_update ); ?>',

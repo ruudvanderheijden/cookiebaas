@@ -1,5 +1,10 @@
 # Changelog — Cookiebaas
 
+## [1.7.6] - 2026-07-14
+
+### Gewijzigd
+- **URL passthrough is nu een instelling en staat standaard uit.** De plugin zette voorheen altijd `gtag('set','url_passthrough',true)`, waardoor Google-tags bij geweigerde/nog niet gegeven consent een `_gl=`-parameter aan alle interne links plakten (lelijke URL's zoals `?_gl=1*…*_ga*…`, en mogelijke cache-fragmentatie per unieke URL). Sinds de advanced-modus laadt Google ook vóór consent, waardoor dit zichtbaar werd. Nieuwe checkbox "URL passthrough" bij de Google-integratie (standaard uit) voor wie de extra attributie/modellering bewust wil; `ads_data_redaction` blijft altijd aan.
+
 ## [1.7.5] - 2026-07-13
 
 ### Opgelost — live preview Vormgeving
