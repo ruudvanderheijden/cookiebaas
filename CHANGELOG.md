@@ -1,5 +1,19 @@
 # Changelog — Cookiebaas
 
+## [1.9.0] - 2026-07-15
+
+_Hoofdstuk 4 van 6 uit de code-audit: een testsuite. Geen wijzigingen aan de plugincode zelf — dit is een vangnet dat de volgende hoofdstukken (blocker-refactor, licentie-omkering, geo-fix) veilig maakt._
+
+### Toegevoegd — `tests/`-map
+- **Zero-dependency PHP-testrunner** (`php tests/run.php`): lint alle plugin-PHP en draait vier suites, elk in een eigen proces. Geen composer/PHPUnit nodig (past bij de "geen build-systeem"-opzet van de plugin). Exit-code geschikt voor CI of een pre-commit hook.
+  - `test-cache-safety.php` — **de belangrijkste**: bewijst byte-voor-byte dat de gerenderde HTML identiek is voor bezoekers zónder keuze, mét akkoord, mét weigering en bij gedeeltelijke consent (het privacylek uit v1.7.7 kan niet terugkeren). Advanced én basic mode.
+  - `test-consent-mode.php` — Consent Mode v2 head-injectie: advanced laadt altijd, client-side cookie-lezer, `url_passthrough` optioneel, JS-delay-bescherming.
+  - `test-cookie-scan.php` — kennisbank, prefix-matcher (`_` én `-`), Google-cookies op google.com, omgevingsdetectie (login, reacties, wachtwoordposts, WooCommerce Order Attribution, LiteSpeed).
+  - `test-settings-cache.php` — `cm_get()` / `cm_get_flush()` en de automatische flush-hook uit v1.8.0.
+- **End-to-end smoketest** (`tests/smoke.mjs`, Playwright, optioneel): draait de echte consent-flow in een browser tegen een live/staging-site en controleert dat er vóór consent géén `_ga`-cookies zijn, dat ze ná akkoord verschijnen, en dat ze ná weigeren verdwijnen en wegblijven (borgt o.a. de v1.7.8-fix). Geverifieerd groen tegen een productiesite.
+
+De map `tests/` en `node_modules` worden uitgesloten van de distributie-zip — klanten krijgen ze niet mee.
+
 ## [1.8.0] - 2026-07-14
 
 _Hoofdstuk 6 van 6 uit de code-audit: opschonen. Geen functionele wijzigingen voor de bezoeker._

@@ -1,4 +1,16 @@
+# Claude Code
 .claude/settings.local.json
 .claude/worktrees/
+
+# Node (alleen voor de optionele Playwright-smoketest, nooit committen)
+node_modules/
+package-lock.json
+package.json
+
+# Distributie-artefacten
+*.zip
+/dist/
+
+# OS
 .DS_Store
 **/.DS_Store
