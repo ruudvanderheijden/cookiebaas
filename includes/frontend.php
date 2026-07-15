@@ -519,21 +519,103 @@ function cm_google_consent_domains() {
     );
 }
 
-// Combineer ingebouwde kennisbank met aangepaste patronen
+// Combineer ingebouwde kennisbank met aangepaste patronen.
+// De Google-uitzondering (advanced mode) zit NIET hier maar in de gedeelde
+// blocker-interpreter (cm_blocker_match), zodat server en browser dezelfde
+// regels volgen.
 function cm_get_all_patterns( $type ) {
     $known   = cm_get_known_patterns();
     $builtin = isset( $known[$type] ) ? $known[$type] : array();
     $custom  = array_filter( array_map( 'trim', explode( ',', cm_get('block_' . $type . '_patterns') ) ) );
-    $all     = array_values( array_unique( array_merge( $builtin, $custom ) ) );
+    return array_values( array_unique( array_merge( $builtin, $custom ) ) );
+}
 
-    // Advanced mode: Google-tags regelen consent zelf → niet blokkeren
-    if ( cm_get('google_consent_mode_advanced') ) {
-        $google = cm_google_consent_domains();
-        $all = array_values( array_filter( $all, function( $p ) use ( $google ) {
-            return ! in_array( $p, $google, true );
-        }));
+/* ================================================================
+   BLOCKER — ÉÉN BRON VOOR SERVER (PHP) EN BROWSER (JS)
+   De beslissing "moet dit script geblokkeerd worden, en als welke categorie?"
+   wordt op twee plekken uitgevoerd: server-side in de output-buffer
+   (cm_filter_buffer) en client-side in de runtime-blocker (cm_output_script_blocker,
+   ook voor dynamisch geladen scripts). Om te voorkomen dat die twee uit elkaar
+   lopen, staan de regels in cm_blocker_config() en interpreteert cm_blocker_match()
+   ze. De JS-kant krijgt exact dezelfde config via wp_json_encode en spiegelt de
+   interpreter (zie cm_output_script_blocker).
+================================================================ */
+
+/** Alle blocker-regels als één datastructuur (naar JS geëmit via wp_json_encode). */
+function cm_blocker_config() {
+    return array(
+        // Volgorde telt: analytics wint van marketing bij een dubbele match.
+        'categories' => array( 'analytics', 'marketing' ),
+        'patterns'   => array(
+            'analytics' => cm_get_all_patterns( 'analytics' ),
+            'marketing' => cm_get_all_patterns( 'marketing' ),
+        ),
+        // Inline-heuristieken: match op de scripttekst zelf (geen src).
+        // all = alle needles moeten voorkomen; any = minstens één (leeg = n.v.t.).
+        'heuristics' => array(
+            'analytics' => array(
+                array( 'all' => array( 'dataLayer' ), 'any' => array( 'gtag(', 'GTM-' ), 'skip_if_advanced' => true ),
+            ),
+            'marketing' => array(
+                array( 'all' => array(), 'any' => array( 'fbq(', 'fbevents' ), 'skip_if_advanced' => false ),
+            ),
+        ),
+        // Plugin-eigen / al afgehandelde scripts nooit blokkeren.
+        'skip'           => array( 'cc_cm_consent', 'cm-blocker', 'cm_render_frontend', 'WAKKR', 'dataLayer.push(arguments)', 'wait_for_update' ),
+        // In advanced mode regelen Google's eigen tags consent zelf → niet blokkeren.
+        'google_domains' => cm_google_consent_domains(),
+        'advanced'       => (bool) cm_get('google_consent_mode_advanced'),
+    );
+}
+
+/** Toetst één inline-heuristiek tegen de scripttekst. */
+function cm_blocker_heuristic_hit( $text, $h ) {
+    if ( $text === '' ) return false;
+    foreach ( $h['all'] as $needle ) {
+        if ( stripos( $text, $needle ) === false ) return false;
     }
-    return $all;
+    if ( ! empty( $h['any'] ) ) {
+        $any = false;
+        foreach ( $h['any'] as $needle ) {
+            if ( stripos( $text, $needle ) !== false ) { $any = true; break; }
+        }
+        if ( ! $any ) return false;
+    }
+    return true;
+}
+
+/**
+ * Bepaalt of een script geblokkeerd moet worden en in welke categorie.
+ * Geeft 'analytics' | 'marketing' | false terug. Werkt voor zowel externe
+ * scripts (src gevuld, text leeg) als inline scripts (src leeg, text gevuld).
+ * $allow bevat de reeds gegeven toestemming per categorie.
+ */
+function cm_blocker_match( $src, $text, $config, $allow = array() ) {
+    $src  = (string) $src;
+    $text = (string) $text;
+
+    // Plugin-eigen / al afgehandelde scripts overslaan.
+    foreach ( $config['skip'] as $w ) {
+        if ( $w !== '' && stripos( $text, $w ) !== false ) return false;
+    }
+    // Google's eigen tags in advanced mode nooit blokkeren.
+    if ( ! empty( $config['advanced'] ) ) {
+        foreach ( $config['google_domains'] as $d ) {
+            if ( ( $src !== '' && stripos( $src, $d ) !== false ) || ( $text !== '' && stripos( $text, $d ) !== false ) ) return false;
+        }
+    }
+    foreach ( $config['categories'] as $cat ) {
+        if ( ! empty( $allow[ $cat ] ) ) continue; // al toegestaan → niet blokkeren
+        foreach ( $config['patterns'][ $cat ] as $p ) {
+            if ( $p === '' ) continue;
+            if ( ( $src !== '' && stripos( $src, $p ) !== false ) || ( $text !== '' && stripos( $text, $p ) !== false ) ) return $cat;
+        }
+        foreach ( $config['heuristics'][ $cat ] as $h ) {
+            if ( ! empty( $h['skip_if_advanced'] ) && ! empty( $config['advanced'] ) ) continue;
+            if ( cm_blocker_heuristic_hit( $text, $h ) ) return $cat;
+        }
+    }
+    return false;
 }
 
 add_action( 'wp', 'cm_init_cookie_blocker' );
@@ -561,71 +643,23 @@ function cm_end_buffer() {
     }
 }
 
-function cm_script_tag_blocked( $tag, $patterns_a, $patterns_m, $allow_analytics, $allow_marketing ) {
-    // Externe scripts — match op src
-    if ( preg_match( '/\bsrc\s*=\s*["\']([^"\']*)["\']/', $tag, $m ) ) {
-        $src = $m[1];
-        if ( ! $allow_analytics ) {
-            foreach ( $patterns_a as $p ) {
-                if ( $p && stripos( $src, $p ) !== false ) return 'analytics';
-            }
-        }
-        if ( ! $allow_marketing ) {
-            foreach ( $patterns_m as $p ) {
-                if ( $p && stripos( $src, $p ) !== false ) return 'marketing';
-            }
-        }
-    }
-    return false;
-}
-
-function cm_inline_script_blocked( $block, $patterns_a, $patterns_m, $allow_analytics, $allow_marketing ) {
-    // Sla plugin-eigen scripts over
-    foreach ( array( 'cc_cm_consent', 'cm-blocker', 'cm_render_frontend', 'WAKKR', 'dataLayer.push(arguments)', 'wait_for_update' ) as $skip ) {
-        if ( stripos( $block, $skip ) !== false ) return false;
-    }
-    if ( ! $allow_analytics ) {
-        foreach ( $patterns_a as $p ) {
-            if ( $p && stripos( $block, $p ) !== false ) return 'analytics';
-        }
-        // Automatische GTM/GA inline herkenning — in advanced mode overslaan:
-        // Google-tags regelen consent zelf (zie cm_google_consent_domains)
-        if ( ! cm_get('google_consent_mode_advanced')
-             && stripos($block,'dataLayer')!==false
-             && ( stripos($block,'gtag(')!==false || stripos($block,'GTM-')!==false ) ) {
-            return 'analytics';
-        }
-    }
-    if ( ! $allow_marketing ) {
-        foreach ( $patterns_m as $p ) {
-            if ( $p && stripos( $block, $p ) !== false ) return 'marketing';
-        }
-        // Facebook Pixel inline herkenning
-        if ( stripos($block,'fbq(')!==false || stripos($block,'fbevents')!==false ) return 'marketing';
-    }
-    return false;
-}
-
 function cm_filter_buffer( $html ) {
     if ( ! $html ) return $html;
 
     // CACHE-VEILIG: blokkeer altijd, ongeacht de consent-cookie (zie
     // cm_init_cookie_blocker). De JS geeft scripts en embeds vrij zodra de
     // browser een geldige toestemming in de cookie vindt.
-    $allow_analytics = false;
-    $allow_marketing = false;
+    $config = cm_blocker_config();
 
-    $pA = cm_get_all_patterns('analytics');
-    $pM = cm_get_all_patterns('marketing');
-
-    // Blokkeer externe scripts
+    // Blokkeer externe scripts (match op src)
     $html = preg_replace_callback(
         '/<script(\s[^>]*)?>/i',
-        function( $matches ) use ( $pA, $pM, $allow_analytics, $allow_marketing ) {
+        function( $matches ) use ( $config ) {
             $tag = $matches[0];
             if ( stripos( $tag, 'data-cm-type=' ) !== false ) return $tag;
             if ( stripos( $tag, 'data-cm-allow' ) !== false ) return $tag; // door plugin bewust geladen (Consent Mode advanced)
-            $type = cm_script_tag_blocked( $tag, $pA, $pM, $allow_analytics, $allow_marketing );
+            if ( ! preg_match( '/\bsrc\s*=\s*["\']([^"\']*)["\']/', $tag, $m ) ) return $tag;
+            $type = cm_blocker_match( $m[1], '', $config );
             if ( ! $type ) return $tag;
             $tag = preg_replace( '/\btype\s*=\s*["\'][^"\']*["\']/i', '', $tag );
             return str_replace( '<script', '<script type="text/plain" data-cm-type="' . $type . '"', $tag );
@@ -633,15 +667,15 @@ function cm_filter_buffer( $html ) {
         $html
     );
 
-    // Blokkeer inline scripts
+    // Blokkeer inline scripts (match op de scripttekst)
     $html = preg_replace_callback(
         '/<script(?:\s[^>]*)?>[\s\S]*?<\/script>/i',
-        function( $matches ) use ( $pA, $pM, $allow_analytics, $allow_marketing ) {
+        function( $matches ) use ( $config ) {
             $b = $matches[0];
             if ( stripos( $b, 'data-cm-type=' ) !== false ) return $b;
             if ( stripos( $b, 'data-cm-allow' ) !== false ) return $b; // door plugin bewust geladen (Consent Mode advanced)
             if ( preg_match( '/\bsrc\s*=/i', $b ) ) return $b; // externe scripts al afgehandeld
-            $type = cm_inline_script_blocked( $b, $pA, $pM, $allow_analytics, $allow_marketing );
+            $type = cm_blocker_match( '', $b, $config );
             if ( ! $type ) return $b;
             return preg_replace( '/<script(\s[^>]*)?>/i', '<script type="text/plain" data-cm-type="' . $type . '">', $b, 1 );
         },
@@ -746,8 +780,7 @@ function cm_output_script_blocker() {
     if ( is_admin() ) return;
     if ( ! cm_license_is_valid() ) return; // fail-open, zie cm_init_cookie_blocker
     // Altijd renderen — ook zonder patronen (voor Consent Mode update)
-    $pA = cm_get_all_patterns('analytics');
-    $pM = cm_get_all_patterns('marketing');
+    $config = cm_blocker_config();
     ?>
 <script id="cm-blocker" data-no-defer="1" nowprocket>(function(){
     /* --- Consent lezen --- */
@@ -755,39 +788,40 @@ function cm_output_script_blocker() {
     var consent=getConsent(),allowA=!!(consent&&consent.analytics),allowM=!!(consent&&consent.marketing);
     if(allowA&&allowM)return;
 
-    var pA=<?php echo wp_json_encode($pA); ?>;
-    var pM=<?php echo wp_json_encode($pM); ?>;
-    /* Advanced mode: Google-tags (ook die GTM zelf injecteert) regelen consent
-       zelf via Consent Mode — nooit blokkeren, anders sneuvelen de tag en de
-       cookieloze pings. */
-    var CM_ADVANCED=<?php echo cm_get('google_consent_mode_advanced') ? 'true' : 'false'; ?>;
-    var GOOGLE_DOMAINS=<?php echo wp_json_encode( cm_google_consent_domains() ); ?>;
+    /* Zelfde regels als de server-side blocker (cm_blocker_config in PHP),
+       hier één-op-één geïnterpreteerd door cmMatch — één bron van waarheid. */
+    var CFG=<?php echo wp_json_encode( $config ); ?>;
+    var allow={analytics:allowA,marketing:allowM};
 
-    /* --- Patroon matching --- */
-    function matches(s,p){if(!s)return false;s=s.toLowerCase();for(var i=0;i<p.length;i++){if(p[i]&&s.indexOf(p[i].toLowerCase())!==-1)return true;}return false;}
-    function isGoogle(src,txt){return CM_ADVANCED&&(matches(src,GOOGLE_DOMAINS)||matches(txt,GOOGLE_DOMAINS));}
-    function getType(src,txt){
-        if(isGoogle(src,txt))return false;
-        if(!allowA){
-            if(matches(src,pA)||matches(txt,pA))return'analytics';
-            if(!CM_ADVANCED&&txt&&txt.indexOf('dataLayer')!==-1&&(txt.indexOf('gtag(')!==-1||txt.indexOf('GTM-')!==-1))return'analytics';
-        }
-        if(!allowM){
-            if(matches(src,pM)||matches(txt,pM))return'marketing';
-            if(txt&&(txt.indexOf('fbq(')!==-1||txt.indexOf('fbevents')!==-1))return'marketing';
+    function has(h,n){return !!h&&!!n&&h.toLowerCase().indexOf(n.toLowerCase())!==-1;}
+    function heuristicHit(txt,h){
+        if(!txt)return false;
+        for(var i=0;i<h.all.length;i++){if(!has(txt,h.all[i]))return false;}
+        if(h.any&&h.any.length){var any=false;for(var j=0;j<h.any.length;j++){if(has(txt,h.any[j])){any=true;break;}}if(!any)return false;}
+        return true;
+    }
+    /* Spiegelt cm_blocker_match() in PHP. src of txt mag leeg zijn. */
+    function cmMatch(src,txt){
+        src=src||'';txt=txt||'';
+        for(var s=0;s<CFG.skip.length;s++){if(CFG.skip[s]&&has(txt,CFG.skip[s]))return false;}
+        if(CFG.advanced){for(var g=0;g<CFG.google_domains.length;g++){var d=CFG.google_domains[g];if(has(src,d)||has(txt,d))return false;}}
+        for(var c=0;c<CFG.categories.length;c++){
+            var cat=CFG.categories[c];
+            if(allow[cat])continue;
+            var ps=CFG.patterns[cat]||[];
+            for(var p=0;p<ps.length;p++){if(ps[p]&&(has(src,ps[p])||has(txt,ps[p])))return cat;}
+            var hs=CFG.heuristics[cat]||[];
+            for(var h=0;h<hs.length;h++){if(hs[h].skip_if_advanced&&CFG.advanced)continue;if(heuristicHit(txt,hs[h]))return cat;}
         }
         return false;
     }
 
     /* --- Script blokkeren --- */
-    var skipWords=['cc_cm_consent','cm-blocker','cm_render_frontend','WAKKR','wait_for_update'];
-    function shouldSkip(txt){for(var i=0;i<skipWords.length;i++){if(txt.indexOf(skipWords[i])!==-1)return true;}return false;}
     function blockNode(s){
         if(s.getAttribute('data-cm-type'))return;
         if(s.getAttribute('data-cm-allow'))return; /* door plugin bewust geladen (Consent Mode advanced) */
         var src=s.getAttribute('src')||'',txt=s.textContent||'';
-        if(shouldSkip(txt))return;
-        var t=getType(src,txt);
+        var t=cmMatch(src,txt);
         if(!t)return;
         s.setAttribute('data-cm-type',t);
         if(src){s.setAttribute('data-cm-blocked-src',src);s.removeAttribute('src');}

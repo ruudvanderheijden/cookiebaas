@@ -65,19 +65,21 @@ function run_mode( $advanced ) {
     cm_assert( 'consent DEFAULT staat wel in de HTML (denied)', strpos( $none, "'analytics_storage':  'denied'" ) !== false );
     cm_assert( 'client-side cookie-lezer aanwezig', strpos( $none, 'cc_cm_consent=([^;]*)' ) !== false );
 
-    $google_in_patterns = in_array( 'googletagmanager.com', cm_get_all_patterns( 'analytics' ), true );
+    // Gedrag van de gedeelde blocker-interpreter op een extern Google-script.
+    $cfg = cm_blocker_config();
+    $google_blocked = cm_blocker_match( 'https://www.googletagmanager.com/gtag/js?id=G-X', '', $cfg );
     if ( $advanced ) {
         cm_test_group( '[advanced] Google-tags niet blokkeren (Consent Mode regelt ze)' );
         cm_assert( 'GTM-loader van de plugin wordt live geladen', strpos( $none, 'data-cm-allow="1"' ) !== false );
         cm_assert( 'GTM-snippet van ander plugin NIET geblokkeerd',
             strpos( $none, '<script type="text/plain" data-cm-type="analytics">(function(w,d,s,l,i)' ) === false );
-        cm_assert( 'googletagmanager.com staat NIET in de blokkeer-patronen', ! $google_in_patterns );
+        cm_assert( 'interpreter blokkeert een extern Google-script NIET', $google_blocked === false );
     } else {
         cm_test_group( '[basic] Google volledig blokkeren tot consent' );
         cm_assert( 'GTM-loader geblokkeerd (text/plain)',
             strpos( $none, '<script type="text/plain" data-cm-type="analytics">(function(w,d,s,l,i)' ) !== false );
         cm_assert( 'geen live GTM-loader zonder consent', strpos( $none, 'data-cm-allow="1"' ) === false );
-        cm_assert( 'googletagmanager.com staat WEL in de patronen', $google_in_patterns );
+        cm_assert( 'interpreter blokkeert een extern Google-script WEL', $google_blocked === 'analytics' );
     }
 
     cm_test_group( "[$label] Niet-Google trackers blijven altijd geblokkeerd" );

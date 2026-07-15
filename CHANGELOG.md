@@ -1,5 +1,14 @@
 # Changelog — Cookiebaas
 
+## [2.1.0] - 2026-07-15
+
+_Hoofdstuk 5 van 6 uit de code-audit: de dubbele blocker samengevoegd tot één bron. Geen zichtbare gedragswijziging — dezelfde scripts worden geblokkeerd/doorgelaten als voorheen._
+
+### Gewijzigd — blocker-logica uit één bron
+- De plugin blokkeert trackingscripts op twee plekken: server-side in de output-buffer (voor de eerste paginalading) en client-side in de browser (voor dynamisch bijgeladen scripts). Die twee implementeerden dezelfde beslisregels **twee keer, in twee talen** (PHP en JS), en waren stilletjes uit elkaar gaan lopen: de "plugin-eigen scripts overslaan"-lijst verschilde één regel, en de Google-uitzondering voor advanced mode werd aan beide kanten op een andere manier opgelost.
+- De regels staan nu in één datastructuur (`cm_blocker_config()`) met één PHP-interpreter (`cm_blocker_match()`); de browser krijgt exact dezelfde config en spiegelt de interpreter. Een tracker of uitzondering toevoegen gebeurt voortaan op één plek in plaats van twee. Als bijvangst zijn de gescheiden functies voor externe en inline scripts samengevoegd.
+- **Geverifieerd:** een pariteitscheck draait de échte browser-interpreter (uit de plugincode geëxtraheerd) onder Node tegen dezelfde 13-gevallen-matrix als de PHP-kant — beide beslissen identiek. Vastgelegd in `tests/test-blocker.php`.
+
 ## [1.9.0] - 2026-07-15
 
 _Hoofdstuk 4 van 6 uit de code-audit: een testsuite. Geen wijzigingen aan de plugincode zelf — dit is een vangnet dat de volgende hoofdstukken (blocker-refactor, licentie-omkering, geo-fix) veilig maakt._
