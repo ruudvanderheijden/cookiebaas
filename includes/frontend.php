@@ -946,22 +946,13 @@ function cm_render_frontend() {
 
     $GLOBALS['cm_rendered'] = true;
 
-    // Geo-targeting check
-    // Optie 1 (standaard): altijd banner tonen — geo_enabled = 0
-    // Optie 2: alleen tonen aan landen met privacywetgeving — geo_enabled = 1
-    if ( cm_get('geo_enabled') ) {
-        if ( ! cm_requires_consent_banner() ) {
-            // Bezoeker komt uit een land zonder vergelijkbare privacywetgeving
-            $outside = cm_get('geo_outside_eu') ?: 'hide';
-            if ( $outside === 'accept' ) {
-                // Automatisch consent geven via JS
-                $cd = cm_get('subdomain_sharing') && cm_get('subdomain_root_domain') ? '; domain=' . esc_js( cm_get('subdomain_root_domain') ) : '';
-                echo '<script data-no-defer="1" nowprocket>(function(){if(!document.cookie.includes("cc_cm_consent=")){var exp=new Date(Date.now()+365*24*3600*1000).toUTCString();var c="cc_cm_consent="+encodeURIComponent(JSON.stringify({v:"2.0",sv:"1",analytics:true,marketing:true,method:"geo-auto",exp:exp}))+"; expires="+exp+"; path=/; SameSite=Lax";if(location.protocol==="https:")c+="; Secure";c+="' . $cd . '";document.cookie=c;}})();</script>' . "\n";
-            }
-            // Beide opties: geen banner renderen
-            return;
-        }
-    }
+    // Geo-targeting: de beslissing "hoort deze bezoeker een banner te zien?"
+    // hangt af van zijn IP-land en is dus PER BEZOEKER verschillend. Die mag
+    // NIET in de (gedeelde) pagina-HTML terechtkomen — onder een paginacache
+    // krijgt de eerste bezoeker het voor iedereen (zelfde klasse als de
+    // cache-vergiftiging uit v1.7.7). De banner wordt daarom altijd gerenderd;
+    // de geo-keuze valt client-side via een ongecachete land-lookup
+    // (admin-ajax cm_geo_check). Zie de init()/geoDecide()-logica hieronder.
 
     $show_float      = cm_get('show_float_btn');
     $float_btn_style = cm_get('float_btn_style'); // 'text' of 'icon'
@@ -1351,6 +1342,8 @@ function cm_render_frontend() {
         var RESPECT_GPC       = <?php echo cm_get('respect_gpc') ? 'true' : 'false'; ?>;
         var IS_DNT            = RESPECT_DNT && (navigator.doNotTrack === '1' || window.doNotTrack === '1' || navigator.msDoNotTrack === '1');
         var IS_GPC            = RESPECT_GPC && (navigator.globalPrivacyControl === true);
+        var GEO_ENABLED       = <?php echo cm_get('geo_enabled') ? 'true' : 'false'; ?>;
+        var GEO_OUTSIDE       = '<?php echo esc_js( cm_get('geo_outside_eu') ?: 'hide' ); ?>';
         window.CM_CONFIG      = { expiry_months: EXPIRY_MONTHS, show_float: SHOW_FLOAT, consent_version: '<?php echo esc_js( (string) get_option("cm_consent_version", 1) ); ?>' };
 
         // Cookienamen per categorie — gebruikt bij intrekking consent
@@ -2258,6 +2251,40 @@ function cm_render_frontend() {
             }, true); // capture: vóór thema-handlers (WPBakery/Salient stopPropagation)
         }
 
+        // Geo-targeting client-side. Vraagt het IP-land op via een ONGECACHETE
+        // endpoint (admin-ajax) en beslist in de browser, zodat de pagina-HTML
+        // identiek blijft voor iedereen (cache-veilig). Faalt de lookup, dan
+        // tonen we veiligheidshalve altijd de banner.
+        function geoDecide() {
+            var done = false;
+            function finish(requiresConsent) {
+                if (done) return; done = true;
+                if (requiresConsent) { showBanner(); return; }
+                // Bezoeker buiten de gereguleerde landen:
+                if (GEO_OUTSIDE === 'accept') {
+                    applyConsent(true, true, 'geo-auto');   // auto-akkoord (met logging)
+                }
+                // 'hide': geen banner en geen consent — scripts blijven geblokkeerd.
+            }
+            try {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', AJAX_URL, true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.timeout = 4000;
+                xhr.onload = function() {
+                    var requires = true; // fail-safe: bij twijfel de banner tonen
+                    try {
+                        var r = JSON.parse(xhr.responseText);
+                        if (r && r.success && r.data && r.data.requires_consent === false) requires = false;
+                    } catch(e) {}
+                    finish(requires);
+                };
+                xhr.onerror   = function(){ finish(true); };
+                xhr.ontimeout = function(){ finish(true); };
+                xhr.send('action=cm_geo_check');
+            } catch(e) { finish(true); }
+        }
+
         function init() {
             moveToBody();
             makeLinksExternal();
@@ -2273,14 +2300,19 @@ function cm_render_frontend() {
             var versionMismatch = c && c.sv && c.sv !== SERVER_VERSION;
             var needsBanner = !c || isExpired(c) || versionMismatch;
 
-            // Do Not Track / Global Privacy Control: automatisch weigeren als actief en geen consent opgeslagen
-            if ((IS_DNT || IS_GPC) && needsBanner) {
-                applyConsent(false, false, IS_GPC ? 'gpc' : 'dnt');
-                return;
-            }
-
             if (needsBanner) {
-                showBanner();
+                // Do Not Track / Global Privacy Control gaat vóór geo: een
+                // expliciet privacy-signaal betekent altijd weigeren, ongeacht land.
+                if (IS_DNT || IS_GPC) {
+                    applyConsent(false, false, IS_GPC ? 'gpc' : 'dnt');
+                    return;
+                }
+                // Geo-targeting: beslis client-side via een ongecachete lookup.
+                if (GEO_ENABLED) {
+                    geoDecide();
+                } else {
+                    showBanner();
+                }
             } else {
                 // Bestaande geldige consent — scripts vrijgeven
                 if (c.analytics) { fire('cm_analytics_enabled'); releaseScripts('analytics'); releaseEmbeds('analytics'); }

@@ -1035,6 +1035,19 @@ function cm_ajax_import_settings() {
 }
 
 /* ================================================================
+   AJAX — GEO-CHECK
+   Bepaalt per bezoeker (op basis van het IP-land) of de banner getoond moet
+   worden. Dit gebeurt bewust via admin-ajax — dat wordt niet door paginacaches
+   gecachet — zodat de per-bezoeker beslissing nooit in gedeelde HTML belandt.
+================================================================ */
+add_action( 'wp_ajax_nopriv_cm_geo_check', 'cm_ajax_geo_check' );
+add_action( 'wp_ajax_cm_geo_check',        'cm_ajax_geo_check' );
+function cm_ajax_geo_check() {
+    nocache_headers();
+    wp_send_json_success( array( 'requires_consent' => cm_requires_consent_banner() ) );
+}
+
+/* ================================================================
    AJAX — CONSENT LOGGING
 ================================================================ */
 

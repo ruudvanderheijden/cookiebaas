@@ -1,5 +1,17 @@
 # Changelog — Cookiebaas
 
+## [2.3.0] - 2026-07-15
+
+_Hoofdstuk 5 van 6 uit de code-audit: de laatste per-bezoeker beslissing uit de gecachte HTML gehaald._
+
+### Opgelost — geo-targeting was niet cache-veilig
+- Met **geo-targeting aan** ("alleen tonen in landen met privacywetgeving") besliste de plugin server-side, op basis van het IP-land van de bezoeker, of de banner überhaupt gerenderd werd — en bij "automatisch akkoord" werd zelfs een consent-cookie-script in de HTML gebakken. Onder een paginacache (LiteSpeed, WP Rocket, Cloudflare) krijgt iedereen de kopie van de **eerste** bezoeker: vulde een niet-EU-bezoeker de cache, dan kreeg een EU-bezoeker daarna geen banner (of werd zelfs automatisch akkoord gegeven). Dit is dezelfde klasse als het privacylek uit v1.7.7.
+- De banner wordt nu **altijd** gerenderd (identieke, cache-veilige HTML voor iedereen). De geo-keuze valt **client-side** via een lichte, **ongecachete** lookup (`admin-ajax cm_geo_check`) die het land per bezoeker leest. Faalt de lookup, dan wordt de banner veiligheidshalve getoond.
+
+### Gewijzigd
+- **Do Not Track / Global Privacy Control gaat nu vóór geo-targeting.** Een bezoeker met een expliciet privacy-signaal wordt altijd geweigerd, ongeacht land — juridisch de veiligere volgorde.
+- Het gedrag van de twee "overige landen"-opties blijft gelijk: _Geen banner_ toont geen banner, _Automatisch akkoord_ geeft (client-side, mét logging) toestemming. Bij geo-targeting aan komt er per paginaweergave zonder bestaande keuze één extra, niet-cachebare verzoekje bij; met geo-targeting uit (de standaard) verandert er niets.
+
 ## [2.2.0] - 2026-07-15
 
 _Hoofdstuk 4 van 6 uit de code-audit: de fail-open licentie omgedraaid._
