@@ -7,7 +7,10 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 add_action( 'wp_head', 'cm_output_inline_css', 1 );
 function cm_output_inline_css() {
     if ( is_admin() ) return;
-    if ( ! cm_license_is_valid() ) return; // geen banner = geen CSS nodig
+    // Bewust GEEN licentiecheck: de banner en zijn styling moeten altijd
+    // werken, ook bij een verlopen/ontbrekende licentie (compliance mag nooit
+    // van een betaalstatus afhangen). Alleen premium-extra's (cookiescan)
+    // worden afgeknepen. Zie cm_scan_requires_license().
     $s  = cm_get_settings();
     $op = intval( cm_get('overlay_opacity') ) / 100;
     $rp = intval( cm_get('radius_popup') )   . 'px';
@@ -334,10 +337,8 @@ function cm_requires_consent_banner() {
 add_action( 'wp_head', 'cm_inject_google_consent_mode', -1000 );
 function cm_inject_google_consent_mode() {
     if ( is_admin() ) return;
-    // Fail-open: zonder banner kan geen consent gegeven worden, dus ook
-    // geen GA4/GTM laden (zou tracking zonder toestemming betekenen).
-    if ( ! cm_license_is_valid() ) return;
-
+    // Bewust GEEN licentiecheck: Consent Mode en de defaults op denied moeten
+    // altijd geladen worden, zodat Google-tags nooit zonder toestemming meten.
     $ga4_id = trim( cm_get('ga4_measurement_id') );
     $gtm_id = trim( cm_get('gtm_container_id') );
     $ua_id  = trim( cm_get('ua_tracking_id') );
@@ -623,10 +624,8 @@ function cm_init_cookie_blocker() {
     if ( is_admin() ) return;
     if ( defined('DOING_AJAX') && DOING_AJAX ) return;
     if ( defined('REST_REQUEST') && REST_REQUEST ) return;
-    // Fail-open: zonder geldige licentie wordt de banner niet gerenderd,
-    // dus mag er ook niets geblokkeerd worden — anders kan de bezoeker
-    // nooit consent geven en blijven scripts/embeds permanent dood.
-    if ( ! cm_license_is_valid() ) return;
+    // Bewust GEEN licentiecheck: de scriptblokkering is de compliance-kern en
+    // moet altijd draaien, ook zonder geldige licentie.
 
     // CACHE-VEILIG: altijd blokkeren, ongeacht de consent-cookie van deze
     // bezoeker. De HTML wordt door paginacaches aan iedereen geserveerd, dus
@@ -686,7 +685,7 @@ function cm_filter_buffer( $html ) {
     if ( cm_get('embed_blocker_enabled') ) {
         $html = preg_replace_callback(
             '/<iframe\s[^>]*(?:\/>|>[\s\S]*?<\/iframe>)/i',
-            function( $matches ) use ( $allow_analytics, $allow_marketing ) {
+            function( $matches ) {
                 $tag = $matches[0];
                 // Al geblokkeerd? Skip.
                 if ( stripos( $tag, 'data-cm-embed' ) !== false ) return $tag;
@@ -696,11 +695,8 @@ function cm_filter_buffer( $html ) {
                 // Match tegen bekende embed-domeinen
                 $info = cm_match_embed_domain( $src );
                 if ( ! $info ) return $tag;
-                $cat = $info['category'];
-                // Check of consent al gegeven is voor deze categorie
-                if ( $cat === 'analytics' && $allow_analytics ) return $tag;
-                if ( $cat === 'marketing' && $allow_marketing ) return $tag;
-                // Bouw placeholder HTML (vervangt volledige <iframe>...</iframe>)
+                // CACHE-VEILIG: altijd blokkeren (allow = false); de JS geeft de
+                // embed vrij zodra de browser toestemming in de cookie vindt.
                 return cm_build_embed_placeholder( $tag, $src, $info );
             },
             $html
@@ -778,7 +774,7 @@ function cm_build_embed_placeholder( $original_tag, $src, $info ) {
 add_action( 'wp_head', 'cm_output_script_blocker', -999 );
 function cm_output_script_blocker() {
     if ( is_admin() ) return;
-    if ( ! cm_license_is_valid() ) return; // fail-open, zie cm_init_cookie_blocker
+    // Bewust GEEN licentiecheck: de runtime-blocker hoort bij de compliance-kern.
     // Altijd renderen — ook zonder patronen (voor Consent Mode update)
     $config = cm_blocker_config();
     ?>
@@ -939,11 +935,8 @@ function cm_render_frontend() {
     if ( ! empty( $GLOBALS['cm_rendered'] ) ) return;
     if ( is_admin() ) return;
 
-    // Licentie check — zonder geldige licentie geen banner
-    if ( ! cm_license_is_valid() ) {
-        $GLOBALS['cm_rendered'] = true;
-        return;
-    }
+    // Bewust GEEN licentiecheck: de banner is de compliance-kern en wordt
+    // altijd getoond, ook bij een verlopen/ontbrekende licentie.
 
     // Pagina-uitzonderingen — geen banner op uitgesloten pagina's
     if ( cm_is_excluded_page() ) {

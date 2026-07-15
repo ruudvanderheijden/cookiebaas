@@ -20,7 +20,14 @@ error_reporting( E_ALL & ~E_DEPRECATED );
 
 if ( ! defined( 'ABSPATH' ) )         define( 'ABSPATH', '/tmp/' );
 if ( ! defined( 'CM_PLUGIN_ROOT' ) )  define( 'CM_PLUGIN_ROOT', dirname( __DIR__ ) );
+if ( ! defined( 'CM_PLUGIN_DIR' ) )   define( 'CM_PLUGIN_DIR', dirname( __DIR__ ) . '/' );
+if ( ! defined( 'CM_PLUGIN_URL' ) )   define( 'CM_PLUGIN_URL', 'https://example.test/wp-content/plugins/cookiebaas/' );
+if ( ! defined( 'CM_VERSION' ) )      define( 'CM_VERSION', 'test' );
 if ( ! defined( 'DB_NAME' ) )         define( 'DB_NAME', 'test_db' );
+if ( ! defined( 'MINUTE_IN_SECONDS' ) ) define( 'MINUTE_IN_SECONDS', 60 );
+if ( ! defined( 'HOUR_IN_SECONDS' ) )   define( 'HOUR_IN_SECONDS', 3600 );
+if ( ! defined( 'DAY_IN_SECONDS' ) )    define( 'DAY_IN_SECONDS', 86400 );
+if ( ! defined( 'WEEK_IN_SECONDS' ) )   define( 'WEEK_IN_SECONDS', 604800 );
 
 // ---------------------------------------------------------------------------
 // Configureerbare testtoestand (per test aan te passen vóór het requiren van
@@ -112,7 +119,15 @@ if ( ! function_exists( '__' ) )             { function __( $s, $d = null ) { re
 if ( ! function_exists( 'wp_create_nonce' ) ){ function wp_create_nonce( $a = '' ) { return 'testnonce'; } }
 if ( ! function_exists( 'wp_upload_dir' ) )  { function wp_upload_dir() { return array( 'basedir' => '/tmp', 'baseurl' => 'https://example.test/up' ); } }
 if ( ! function_exists( 'trailingslashit' ) ){ function trailingslashit( $s ) { return rtrim( (string) $s, '/' ) . '/'; } }
-if ( ! function_exists( 'cm_license_is_valid' ) ) { function cm_license_is_valid() { return (bool) $GLOBALS['cm_test_license_ok']; } }
+if ( ! function_exists( 'get_transient' ) )  { function get_transient( $k ) { return false; } }
+if ( ! function_exists( 'set_transient' ) )  { function set_transient( $k, $v, $e = 0 ) { return true; } }
+if ( ! function_exists( 'delete_transient' ) ){ function delete_transient( $k ) { return true; } }
+if ( ! function_exists( 'is_ssl' ) )         { function is_ssl() { return true; } }
+// Licentie-stub. Een test die de échte includes/license.php wil laden (om de
+// licentielogica zelf te testen) definieert vooraf CM_TEST_REAL_LICENSE.
+if ( ! defined( 'CM_TEST_REAL_LICENSE' ) && ! function_exists( 'cm_license_is_valid' ) ) {
+    function cm_license_is_valid() { return (bool) $GLOBALS['cm_test_license_ok']; }
+}
 
 // ---------------------------------------------------------------------------
 // Assertie-helpers

@@ -1,5 +1,17 @@
 # Changelog — Cookiebaas
 
+## [2.2.0] - 2026-07-15
+
+_Hoofdstuk 4 van 6 uit de code-audit: de fail-open licentie omgedraaid._
+
+### Opgelost — compliance mag nooit uitgaan bij een betaalprobleem
+- **De cookiebanner en scriptblokkering verdwenen zodra de licentie verliep of ontbrak.** Een compliance-plugin mag zijn bescherming nooit afhankelijk maken van een betaalstatus: op de vervaldag ging een site zo stilzwijgend zonder toestemming trackeren, terwijl bezoekers niet eens meer een banner kregen om te weigeren. De banner, de styling, Google Consent Mode (defaults op `denied`) en de script-/embed-blokkering **werken nu altijd**, ongeacht de licentie.
+- Alleen de **cookiescan** is nu de premium-functie die een actieve licentie vereist (handmatig én automatisch). Het **consent-logboek en de automatische updates blijven gewoon doorlopen** — zodat de site zijn toestemmingsbewijs behoudt en kritieke beveiligingsfixes elke site bereiken.
+- De admin-teksten die ten onrechte meldden dat "de banner niet wordt getoond" zijn gecorrigeerd; de licentiemeldingen leggen nu uit dat banner en blokkering doorwerken en alleen de scan gepauzeerd is.
+
+### Opgelost — bijvangst
+- Een latente fout uit v2.1.0 in de embed-blokkering (`cm_filter_buffer` verwees naar variabelen die na de refactor niet meer bestonden) gaf PHP-waarschuwingen in het logboek. De embed-blokkering is nu expliciet cache-veilig (blokkeert altijd server-side; de browser geeft vrij na consent). Gevonden dankzij de nieuwe testsuite.
+
 ## [2.1.0] - 2026-07-15
 
 _Hoofdstuk 5 van 6 uit de code-audit: de dubbele blocker samengevoegd tot één bron. Geen zichtbare gedragswijziging — dezelfde scripts worden geblokkeerd/doorgelaten als voorheen._

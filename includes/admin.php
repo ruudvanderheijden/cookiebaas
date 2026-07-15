@@ -362,6 +362,9 @@ add_action( 'wp_ajax_cm_scan_urls', 'cm_ajax_scan_urls' );
 function cm_ajax_scan_urls() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );
     if ( ! current_user_can( 'manage_options' ) ) wp_die();
+    if ( cm_scan_requires_license() ) {
+        wp_send_json_error( array( 'msg' => 'De cookiescan vereist een actieve licentie. De cookiebanner en -blokkering werken gewoon door.' ) );
+    }
 
     $home = trailingslashit( home_url('/') );
     $urls = array( $home );
@@ -394,6 +397,9 @@ add_action( 'wp_ajax_cm_scan_batch', 'cm_ajax_scan_batch' );
 function cm_ajax_scan_batch() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );
     if ( ! current_user_can( 'manage_options' ) ) wp_die();
+    if ( cm_scan_requires_license() ) {
+        wp_send_json_error( array( 'msg' => 'De cookiescan vereist een actieve licentie.' ) );
+    }
     @set_time_limit( 120 );
 
     $urls = isset($_POST['urls']) ? (array) $_POST['urls'] : array();
@@ -3214,11 +3220,20 @@ function cm_render_cookies_page() {
 
             <div class="cm-group">
                 <h3 class="cm-group-title">Cookie scan</h3>
+                <?php if ( cm_scan_requires_license() ) : ?>
+                <div style="padding:14px 20px 16px">
+                    <div style="background:#fcf9e8;border:1px solid #dba617;border-radius:4px;padding:12px 16px;font-size:13px;color:#996800">
+                        &#9888; De cookiescan is een premium-functie en vereist een actieve licentie. De cookiebanner en -blokkering werken gewoon door.
+                        <a href="<?php echo admin_url('admin.php?page=cookiemelding-beheer'); ?>">Licentie beheren &rarr;</a>
+                    </div>
+                </div>
+                <?php else : ?>
                 <div style="padding:14px 20px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
                     <button type="button" class="button button-secondary" id="cm-scan-btn">Cookie scan starten</button>
                     <span style="color:#646970;font-size:13px">Crawlt alle pagina's en detecteert cookies via HTTP-headers en script-detectie.</span>
                 </div>
                 <div id="cm-scan-result" style="display:none;border-top:1px solid #f0f0f1;padding:16px 20px"></div>
+                <?php endif; ?>
             </div>
 
             <div class="cm-group">
@@ -3938,11 +3953,11 @@ function cm_render_licentie_content() {
                 </div>
             <?php elseif ( $has_key ) : ?>
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-                    <span style="color:#b32d2e;font-size:18px;font-weight:700">&#10007;</span>
-                    <span style="font-weight:600;color:#b32d2e">Licentie <?php echo esc_html( $lic['status'] === 'expired' ? 'verlopen' : 'ongeldig' ); ?> — banner is niet actief</span>
+                    <span style="color:#dba617;font-size:18px;font-weight:700">&#9888;</span>
+                    <span style="font-weight:600;color:#996800">Licentie <?php echo esc_html( $lic['status'] === 'expired' ? 'verlopen' : 'ongeldig' ); ?> — banner en blokkering werken door, cookiescan gepauzeerd</span>
                 </div>
             <?php else : ?>
-                <p style="margin:0 0 12px;font-size:13px;color:#b32d2e;font-weight:600">Geen licentie geactiveerd — de cookiebanner wordt niet getoond.</p>
+                <p style="margin:0 0 12px;font-size:13px;color:#996800;font-weight:600">Geen licentie geactiveerd — de cookiebanner en -blokkering werken gewoon; alleen de cookiescan is gepauzeerd.</p>
             <?php endif; ?>
 
             <table class="form-table cm-form-table" style="margin:0"><tbody>

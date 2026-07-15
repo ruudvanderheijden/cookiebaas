@@ -3,7 +3,7 @@
  * Plugin Name: Cookiebaas
  * Plugin URI:  https://www.cookiebaas.nl/
  * Description: Cookiemelding plugin volgens AVG/GDPR-conformiteit met Google Consent Mode (v2) integratie en privacyverklaring generator.
- * Version:     2.1.0
+ * Version:     2.2.0
  * Author:      Ruud van der Heijden
  * Author URI:  https://www.cookiebaas.nl/
  * License:     GPL-2.0+
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'CM_VERSION',     '2.1.0' );
+define( 'CM_VERSION',     '2.2.0' );
 define( 'CM_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'CM_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 
@@ -321,6 +321,9 @@ add_action( 'cm_auto_scan_cron', 'cm_run_auto_scan' );
 function cm_run_auto_scan() {
     $mode  = cm_get('auto_scan_mode');
     if ( $mode === 'off' ) return;
+    // Premium-feature: zonder geldige licentie draait de automatische scan niet.
+    // (Banner en blokkering blijven werken.)
+    if ( function_exists('cm_scan_requires_license') && cm_scan_requires_license() ) return;
 
     update_option( 'cm_auto_scan_last', gmdate('Y-m-d H:i:s') );
 

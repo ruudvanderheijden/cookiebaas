@@ -35,12 +35,27 @@ function cm_license_save( $data ) {
 /**
  * Is de licentie geldig?
  * Geldig = status 'active', niet verlopen, domein gekoppeld.
+ *
+ * LET OP: dit stuurt NIET de compliance-kern aan. De cookiebanner, de
+ * scriptblokkering en Consent Mode werken ALTIJD, ongeacht licentie — een
+ * privacyproduct mag zijn bescherming nooit uitzetten bij een betaalprobleem.
+ * De licentie gate uitsluitend premium-extra's; gebruik daarvoor de expliciete
+ * cm_scan_requires_license()-achtige helpers, niet deze functie in de frontend.
  */
 function cm_license_is_valid() {
     $lic = cm_license_get();
     if ( empty( $lic['key'] ) || $lic['status'] !== 'active' ) return false;
     if ( ! empty( $lic['expires_at'] ) && strtotime( $lic['expires_at'] ) < time() ) return false;
     return true;
+}
+
+/**
+ * Mag de cookiescan draaien? De scan is een premium-feature; zonder geldige
+ * licentie is hij gepauzeerd. (Banner, blokkering, consent-logboek en updates
+ * blijven gewoon werken.)
+ */
+function cm_scan_requires_license() {
+    return ! cm_license_is_valid();
 }
 
 /* ================================================================
@@ -244,13 +259,15 @@ function cm_ajax_license_check() {
    ================================================================ */
 add_action( 'admin_notices', 'cm_license_admin_notice' );
 function cm_license_admin_notice() {
-    $lic = cm_license_get();
+    $lic  = cm_license_get();
+    $link = ' <a href="' . admin_url('admin.php?page=cookiemelding-beheer#tab=licentie') . '" onclick="var t=jQuery(\'.cm-nav-tabs .nav-tab[data-tab=licentie]\');if(t.length){t.click();window.scrollTo(0,0);return false;}">';
+
     if ( empty( $lic['key'] ) ) {
-        echo '<div class="notice notice-warning"><p><strong>Cookiebaas:</strong> Geen licentie geactiveerd. De cookiebanner wordt niet getoond en er worden geen cookies of embeds geblokkeerd. <a href="' . admin_url('admin.php?page=cookiemelding-beheer#tab=licentie') . '" onclick="var t=jQuery(\'.cm-nav-tabs .nav-tab[data-tab=licentie]\');if(t.length){t.click();window.scrollTo(0,0);return false;}">Licentie activeren &rarr;</a></p></div>';
+        echo '<div class="notice notice-warning"><p><strong>Cookiebaas:</strong> Geen licentie geactiveerd. De cookiebanner en -blokkering werken gewoon door; alleen de <strong>cookiescan</strong> is gepauzeerd.' . $link . 'Licentie activeren &rarr;</a></p></div>';
         return;
     }
     if ( ! cm_license_is_valid() ) {
         $reason = $lic['status'] === 'expired' ? 'verlopen' : 'ongeldig';
-        echo '<div class="notice notice-error"><p><strong>Cookiebaas:</strong> Uw licentie is ' . esc_html($reason) . '. De cookiebanner wordt niet getoond en er worden geen cookies of embeds geblokkeerd. <a href="' . admin_url('admin.php?page=cookiemelding-beheer#tab=licentie') . '" onclick="var t=jQuery(\'.cm-nav-tabs .nav-tab[data-tab=licentie]\');if(t.length){t.click();window.scrollTo(0,0);return false;}">Licentie beheren &rarr;</a></p></div>';
+        echo '<div class="notice notice-warning"><p><strong>Cookiebaas:</strong> Uw licentie is ' . esc_html($reason) . '. De cookiebanner en -blokkering blijven werken; alleen de <strong>cookiescan</strong> is gepauzeerd tot u de licentie verlengt.' . $link . 'Licentie beheren &rarr;</a></p></div>';
     }
 }
