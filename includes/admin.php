@@ -40,6 +40,7 @@ function cm_admin_assets( $hook ) {
         'cookiebaas_page_cookiemelding-beheer',
     );
     if ( ! in_array( $hook, $our_hooks, true ) ) return;
+    wp_enqueue_media();
     wp_enqueue_style(  'cm-admin',         CM_PLUGIN_URL . 'assets/css/admin.css',    array(), CM_VERSION );
     wp_enqueue_style(  'cm-frontend-prev', CM_PLUGIN_URL . 'assets/css/frontend.css', array(), CM_VERSION );
     wp_enqueue_script( 'cm-admin',         CM_PLUGIN_URL . 'assets/js/admin.js',      array('jquery'), CM_VERSION, true );
@@ -186,6 +187,11 @@ function cm_ajax_save_settings() {
                 'strong' => array(),
                 'em'     => array(),
             ));
+        } elseif ( $key === 'float_icon_custom_svg' ) {
+            // Ongefilterd bewaren — frontend.php sanitized met een strikte tag/attribuut-whitelist bij het renderen
+            $settings[ $key ] = wp_unslash( $_POST[ $key ] );
+        } elseif ( $key === 'float_icon_image_url' ) {
+            $settings[ $key ] = esc_url_raw( wp_unslash( $_POST[ $key ] ) );
         } else {
             $settings[ $key ] = sanitize_text_field( wp_unslash( $_POST[ $key ] ) );
         }
@@ -1835,20 +1841,37 @@ function cm_render_admin_page() {
                                 </div>
 
                                 <p style="font-size:12px;font-weight:600;color:#1d2327;margin:0 0 10px">Icoontje</p>
-                                <?php $custom_svg = $s['float_icon_custom_svg'] ?? ''; ?>
+                                <?php
+                                $custom_svg = $s['float_icon_custom_svg'] ?? '';
+                                $icon_image = $s['float_icon_image_url'] ?? '';
+                                $icon_type  = !empty($icon_image) ? 'image' : ( !empty($custom_svg) ? 'custom' : 'default' );
+                                ?>
                                 <div style="display:flex;gap:12px;margin-bottom:10px">
-                                    <label style="display:flex;align-items:center;gap:8px;border:2px solid <?php echo empty($custom_svg) ? '#2271b1' : '#dcdcde'; ?>;border-radius:6px;padding:10px 16px;cursor:pointer;background:<?php echo empty($custom_svg) ? '#f0f6fb' : '#fff'; ?>">
-                                        <input type="radio" name="cm_icon_type" value="default" <?php checked(empty($custom_svg)); ?> style="margin:0" class="cm-icon-type-radio">
+                                    <label style="display:flex;align-items:center;gap:8px;border:2px solid <?php echo $icon_type === 'default' ? '#2271b1' : '#dcdcde'; ?>;border-radius:6px;padding:10px 16px;cursor:pointer;background:<?php echo $icon_type === 'default' ? '#f0f6fb' : '#fff'; ?>">
+                                        <input type="radio" name="cm_icon_type" value="default" <?php checked($icon_type, 'default'); ?> style="margin:0" class="cm-icon-type-radio">
                                         <span style="font-size:13px;font-weight:600;color:#1d2327">Standaard</span>
                                     </label>
-                                    <label style="display:flex;align-items:center;gap:8px;border:2px solid <?php echo !empty($custom_svg) ? '#2271b1' : '#dcdcde'; ?>;border-radius:6px;padding:10px 16px;cursor:pointer;background:<?php echo !empty($custom_svg) ? '#f0f6fb' : '#fff'; ?>">
-                                        <input type="radio" name="cm_icon_type" value="custom" <?php checked(!empty($custom_svg)); ?> style="margin:0" class="cm-icon-type-radio">
-                                        <span style="font-size:13px;font-weight:600;color:#1d2327">Eigen SVG</span>
+                                    <label style="display:flex;align-items:center;gap:8px;border:2px solid <?php echo $icon_type === 'custom' ? '#2271b1' : '#dcdcde'; ?>;border-radius:6px;padding:10px 16px;cursor:pointer;background:<?php echo $icon_type === 'custom' ? '#f0f6fb' : '#fff'; ?>">
+                                        <input type="radio" name="cm_icon_type" value="custom" <?php checked($icon_type, 'custom'); ?> style="margin:0" class="cm-icon-type-radio">
+                                        <span style="font-size:13px;font-weight:600;color:#1d2327">Eigen SVG-code</span>
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:8px;border:2px solid <?php echo $icon_type === 'image' ? '#2271b1' : '#dcdcde'; ?>;border-radius:6px;padding:10px 16px;cursor:pointer;background:<?php echo $icon_type === 'image' ? '#f0f6fb' : '#fff'; ?>">
+                                        <input type="radio" name="cm_icon_type" value="image" <?php checked($icon_type, 'image'); ?> style="margin:0" class="cm-icon-type-radio">
+                                        <span style="font-size:13px;font-weight:600;color:#1d2327">Afbeelding</span>
                                     </label>
                                 </div>
-                                <div id="cm-custom-svg-area" style="<?php echo empty($custom_svg) ? 'display:none;' : ''; ?>margin-top:10px">
+                                <div id="cm-custom-svg-area" style="<?php echo $icon_type !== 'custom' ? 'display:none;' : ''; ?>margin-top:10px">
                                     <textarea name="float_icon_custom_svg" id="float_icon_custom_svg" rows="4" style="width:100%;max-width:500px;font-family:monospace;font-size:12px;border:1px solid #8c8f94;border-radius:4px;padding:8px;background:#fff;color:#2c3338" placeholder="Plak hier uw SVG code, bijv: &lt;svg viewBox=&quot;0 0 24 24&quot;&gt;...&lt;/svg&gt;"><?php echo esc_textarea($custom_svg); ?></textarea>
                                     <p class="description" style="margin:4px 0 0;padding:0">Plak de volledige <code>&lt;svg&gt;...&lt;/svg&gt;</code> code. Het icoontje wordt automatisch geschaald. De kleur wordt bepaald door de icoontje-kleur instelling op de Vormgeving-tab.</p>
+                                </div>
+                                <div id="cm-image-icon-area" style="<?php echo $icon_type !== 'image' ? 'display:none;' : ''; ?>margin-top:10px">
+                                    <input type="hidden" name="float_icon_image_url" id="float_icon_image_url" value="<?php echo esc_attr($icon_image); ?>">
+                                    <div id="cm-image-icon-preview" style="<?php echo empty($icon_image) ? 'display:none;' : ''; ?>margin-bottom:8px;width:52px;height:52px;border-radius:50%;overflow:hidden;background:#f0f0f1;border:1px solid #dcdcde">
+                                        <img src="<?php echo esc_url($icon_image); ?>" alt="" style="width:100%;height:100%;object-fit:contain">
+                                    </div>
+                                    <button type="button" class="button" id="cm-image-icon-select">Kies afbeelding&hellip;</button>
+                                    <button type="button" class="button" id="cm-image-icon-remove" style="<?php echo empty($icon_image) ? 'display:none;' : ''; ?>">Verwijderen</button>
+                                    <p class="description" style="margin:6px 0 0;padding:0">Kies een afbeelding uit de mediabibliotheek (SVG, WebP, JPG, PNG). Wordt onvertaald weergegeven, dus zorg zelf voor de juiste kleur/contrast.</p>
                                 </div>
                             </div>
 

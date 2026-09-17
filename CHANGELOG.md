@@ -1,5 +1,13 @@
 # Changelog — Cookiebaas
 
+## [2.4.0] - 2026-09-17
+
+### Toegevoegd
+- Bij de zwevende knop (Layout-tab) kan het ronde icoon nu ook een **eigen afbeelding** zijn, gekozen uit de mediabibliotheek (SVG, WebP, JPG, PNG), naast de bestaande opties "Standaard" en "Eigen SVG-code" (geplakte markup).
+
+### Opgelost
+- **Eigen SVG-code voor het zwevende icoon werd nooit opgeslagen.** Het veld liep bij het bewaren door `sanitize_text_field()`, dat alle HTML-tags — dus ook `<svg>...</svg>` — verwijdert. De optie stond wel in de admin en werd op het frontend al veilig gesanitized bij het renderen, maar de invoer kwam leeg aan. Het veld wordt nu ongefilterd bewaard; de bestaande whitelist-sanitizing bij het renderen blijft de beveiliging.
+
 ## [2.3.0] - 2026-07-15
 
 _Hoofdstuk 5 van 6 uit de code-audit: de laatste per-bezoeker beslissing uit de gecachte HTML gehaald._

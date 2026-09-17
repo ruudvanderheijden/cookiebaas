@@ -615,12 +615,36 @@
             var $l = $(this).closest('label');
             $l.css({ borderColor: $(this).val() === val ? '#2271b1' : '#dcdcde', background: $(this).val() === val ? '#f0f6fb' : '#fff' });
         });
-        if (val === 'custom') {
-            $('#cm-custom-svg-area').show();
-        } else {
-            $('#cm-custom-svg-area').hide();
-            $('#float_icon_custom_svg').val('');
-        }
+        $('#cm-custom-svg-area').toggle(val === 'custom');
+        $('#cm-image-icon-area').toggle(val === 'image');
+        if (val !== 'custom') $('#float_icon_custom_svg').val('');
+        if (val !== 'image') { $('#float_icon_image_url').val(''); $('#cm-image-icon-preview').hide(); $('#cm-image-icon-remove').hide(); }
+    });
+
+    // Zweefknop — afbeelding kiezen via mediabibliotheek
+    var cmIconFrame;
+    $(document).on('click', '#cm-image-icon-select', function(e) {
+        e.preventDefault();
+        if (cmIconFrame) { cmIconFrame.open(); return; }
+        cmIconFrame = wp.media({
+            title: 'Kies een icoontje',
+            library: { type: ['image'] },
+            button: { text: 'Gebruik dit icoontje' },
+            multiple: false
+        });
+        cmIconFrame.on('select', function() {
+            var att = cmIconFrame.state().get('selection').first().toJSON();
+            $('#float_icon_image_url').val(att.url);
+            $('#cm-image-icon-preview img').attr('src', att.url);
+            $('#cm-image-icon-preview').show();
+            $('#cm-image-icon-remove').show();
+        });
+        cmIconFrame.open();
+    });
+    $(document).on('click', '#cm-image-icon-remove', function(e) {
+        e.preventDefault();
+        $('#float_icon_image_url').val('');
+        $('#cm-image-icon-preview').hide();
     });
 
     /* ---- Selectief resetten: checkbox wijzigt knopstatus ---- */

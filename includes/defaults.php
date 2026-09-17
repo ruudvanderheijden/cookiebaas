@@ -270,6 +270,7 @@ function cm_default_settings() {
         // Zweefknop — icoontje grootte en custom SVG
         'float_icon_size'              => 'normal',   // normal | small
         'float_icon_custom_svg'        => '',          // leeg = standaard icoontje, anders: volledige SVG markup
+        'float_icon_image_url'         => '',          // leeg = geen afbeelding, anders: URL naar media-bibliotheek bestand (svg/webp/jpg/png)
         // Embed blocker — blokkeert iframes (YouTube, Vimeo, etc.) tot consent
         'embed_blocker_enabled'        => 1,    // 1 = actief, 0 = uit
         'embed_blocked_services'       => '',   // leeg = alle diensten blokkeren (standaard). Komma-gescheiden lijst om specifieke diensten te blokkeren.

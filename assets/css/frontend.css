@@ -637,6 +637,8 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
     box-shadow: 0 6px 24px rgba(0,0,0,0.28) !important;
 }
 #cm-float-btn.cm-float-icon svg { display: block; flex-shrink: 0; }
+#cm-float-btn.cm-float-icon .cm-float-icon-img { width: 32px !important; height: 32px !important; display: block; flex-shrink: 0; object-fit: contain; }
+#cm-float-btn.cm-float-icon.cm-float-small .cm-float-icon-img { width: 24px !important; height: 24px !important; }
 
 /* ================================================================
    WCAG 2.1 AA — zichtbare focusstijlen (alleen keyboard, niet touch)
