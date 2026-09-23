@@ -1,5 +1,10 @@
 # Changelog — Cookiebaas
 
+## [2.4.2] - 2026-09-23
+
+### Opgelost
+- **De cookiebanner zette twee `<h2>`'s vóór de `<h1>` van de pagina in de HTML.** De banner en het voorkeuren-venster renderen vroeg in `<body>` (voor de eigenlijke pagina-inhoud), waardoor hun titels als eerste twee koppen in de documentvolgorde stonden — een heading-orde-fout die SEO/accessibility-scanners terecht opvingen. Beide titels zijn nu `<p role="heading" aria-level="2">` in plaats van `<h2>`: schermlezers kondigen ze nog steeds als "kop niveau 2" aan binnen de modal (dat is waar het om gaat voor toegankelijkheid), maar ze tellen niet meer mee in de letterlijke `<h1>`-`<h6>`-volgorde van de pagina.
+
 ## [2.4.1] - 2026-09-23
 
 ### Opgelost

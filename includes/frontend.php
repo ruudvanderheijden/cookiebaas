@@ -1081,7 +1081,7 @@ function cm_render_frontend() {
          data-mobile-padding="<?php echo cm_get('banner_mobile_padding') ? '1' : '0'; ?>"
          style="display:none">
         <div class="cm-box">
-            <h2 class="cm-title" id="cm-banner-title"><?php echo esc_html( cm_t('txt_banner_title') ); ?></h2>
+            <p class="cm-title" id="cm-banner-title" role="heading" aria-level="2"><?php echo esc_html( cm_t('txt_banner_title') ); ?></p>
             <div class="cm-text" id="cm-banner-desc"><?php echo wp_kses( cm_t('txt_banner_body'), array('a'=>array('href'=>array(),'target'=>array()),'strong'=>array(),'em'=>array()) ); ?></div>
             <div class="cm-footer">
                 <div class="cm-footer-left">
@@ -1102,7 +1102,7 @@ function cm_render_frontend() {
         <div class="cm-prefs-box">
             <div class="cm-prefs-header">
                 <button type="button" class="cm-prefs-close" id="cm-prefs-close" aria-label="Sluiten">&#x2715;</button>
-                <h2 class="cm-prefs-title" id="cm-prefs-title-h2"><?php echo esc_html( cm_t('txt_prefs_title') ); ?></h2>
+                <p class="cm-prefs-title" id="cm-prefs-title-h2" role="heading" aria-level="2"><?php echo esc_html( cm_t('txt_prefs_title') ); ?></p>
                 <p class="cm-prefs-text" id="cm-prefs-desc"><?php echo wp_kses( cm_t('txt_prefs_body'), array('a'=>array('href'=>array(),'target'=>array()),'strong'=>array(),'em'=>array()) ); ?></p>
                 <button type="button" class="cm-allow-all" id="cm-allowall-btn"><?php echo esc_html( cm_t('txt_btn_allowall') ); ?></button>
             </div>
