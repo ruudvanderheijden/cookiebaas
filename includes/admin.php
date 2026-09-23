@@ -2666,6 +2666,15 @@ function cm_color_field( $name, $settings ) {
     echo '</div>';
 }
 
+/* ---- Helper: kleurpicker voor de privacyverklaring-pagina (eigen save-pipeline) ---- */
+function cm_pv_color_field( $name, $privacy ) {
+    $val = isset($privacy[$name]) && $privacy[$name] !== '' ? esc_attr($privacy[$name]) : '#000000';
+    echo '<div class="cm-color-row">';
+    echo '<input type="color" name="' . esc_attr($name) . '" id="' . esc_attr($name) . '" class="cm-color-picker cm-pv-field" value="' . $val . '">';
+    echo '<input type="text" class="cm-hex-input" data-for="' . esc_attr($name) . '" value="' . $val . '" maxlength="7" placeholder="#000000">';
+    echo '</div>';
+}
+
 /* ---- Helper: optionele kleurpicker (mag leeg = geen rand) ---- */
 function cm_color_field_optional( $name, $settings ) {
     $val = isset($settings[$name]) ? esc_attr($settings[$name]) : '';
@@ -2977,6 +2986,19 @@ function cm_render_privacy_standalone_page() {
                             <div style="padding:8px 0 0"><button type="button" class="button button-secondary cm-pv-add-optout">+ Link toevoegen</button></div>
                         </td>
                     </tr>
+                    </tbody></table>
+                </div>
+
+                <!-- Cookietabel — kleuren -->
+                <div class="cm-group">
+                    <h3 class="cm-group-title">Cookietabel &mdash; kleuren <span style="font-size:11px;font-weight:400;color:#787c82">— tabel in [cookiebaas_privacy] en [cookiebaas_cookies], losstaand van uw thema</span></h3>
+                    <table class="form-table cm-form-table"><tbody>
+                    <tr><th><label>Koprij achtergrond</label></th><td><?php cm_pv_color_field('pv_table_header_bg', $pv); ?></td></tr>
+                    <tr><th><label>Koprij tekst</label></th><td><?php cm_pv_color_field('pv_table_header_color', $pv); ?></td></tr>
+                    <tr><th><label>Rand</label></th><td><?php cm_pv_color_field('pv_table_border', $pv); ?></td></tr>
+                    <tr><th><label>Rij achtergrond</label></th><td><?php cm_pv_color_field('pv_table_row_bg', $pv); ?></td></tr>
+                    <tr><th><label>Rij achtergrond (om-en-om)</label></th><td><?php cm_pv_color_field('pv_table_row_alt_bg', $pv); ?></td></tr>
+                    <tr><th><label>Tekstkleur</label></th><td><?php cm_pv_color_field('pv_table_text', $pv); ?></td></tr>
                     </tbody></table>
                 </div>
 

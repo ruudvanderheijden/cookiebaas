@@ -1,5 +1,13 @@
 # Changelog — Cookiebaas
 
+## [2.4.1] - 2026-09-23
+
+### Opgelost
+- **Instellingen importeren gaf altijd "niet afkomstig van de Cookiemelding plugin".** De import-controle in de admin-JS keurde alleen nog bestanden goed met `plugin: "cookiemelding"` in de meta, terwijl exports sinds de naamswijziging naar Cookiebaas `plugin: "cookiebaas"` schrijven — elke recente export werd zo client-side afgewezen vóór 'ie bij de server kwam. Importeren accepteert nu weer beide waarden, net als de server-side validatie al deed.
+
+### Toegevoegd
+- Kleuren van de cookietabel in `[cookiebaas_privacy]` en `[cookiebaas_cookies]` zijn nu instelbaar (Privacyverklaring-pagina): koprij, rand, rijachtergrond (normaal/om-en-om) en tekstkleur. De tabel wordt met `!important`-resets losgekoppeld van thema-CSS, zodat hij er op elke site hetzelfde uitziet.
+
 ## [2.4.0] - 2026-09-17
 
 ### Toegevoegd

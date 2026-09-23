@@ -284,20 +284,56 @@ function cm_render_privacy_page() {
     </div><!-- /.cm-privacy-page -->
 
     <?php
-    // Inline stijl voor de tabel (eenmalig)
     echo '<style>
     .cm-privacy-page { max-width:800px; line-height:1.7; }
     .cm-privacy-page h2 { margin-top:2em; }
     .cm-privacy-page h3 { margin-top:1.4em; }
     .cm-pv-company { margin-bottom:1em; line-height:1.9; }
     .cm-pv-meta { color:#777; font-size:.9em; margin-bottom:2em; }
-    .cm-pv-table { width:100%; border-collapse:collapse; margin:1em 0 1.5em; font-size:.93em; }
-    .cm-pv-table th { background:#f5f5f5; text-align:left; padding:8px 12px; border:1px solid #ddd; font-weight:600; }
-    .cm-pv-table td { padding:7px 12px; border:1px solid #ddd; vertical-align:top; }
-    .cm-pv-table tr:nth-child(even) td { background:#fafafa; }
     </style>';
+    echo cm_pv_table_css();
 
     return ob_get_clean();
+}
+
+/**
+ * Losstaande, thema-onafhankelijke stijl voor de cookietabel (.cm-pv-table).
+ * Gebruikt !important en resets voor eigenschappen die WordPress-thema's
+ * vaak los op `table`/`th`/`td` zetten (border, achtergrond, uitlijning,
+ * lettertype), zodat de tabel er overal hetzelfde uitziet.
+ */
+function cm_pv_table_css() {
+    $p  = get_option( 'cm_privacy', cm_default_privacy() );
+    $pv = function( $key ) use ( $p ) {
+        $d = cm_default_privacy();
+        return isset( $p[ $key ] ) && $p[ $key ] !== '' ? $p[ $key ] : $d[ $key ];
+    };
+    $header_bg    = esc_attr( $pv('pv_table_header_bg') );
+    $header_color = esc_attr( $pv('pv_table_header_color') );
+    $border       = esc_attr( $pv('pv_table_border') );
+    $row_bg       = esc_attr( $pv('pv_table_row_bg') );
+    $row_alt_bg   = esc_attr( $pv('pv_table_row_alt_bg') );
+    $text         = esc_attr( $pv('pv_table_text') );
+
+    return '<style>
+    .cm-privacy-page table.cm-pv-table {
+        width:100% !important; max-width:100% !important; border-collapse:collapse !important; border-spacing:0 !important;
+        margin:1em 0 1.5em !important; font-size:.93em !important; font-family:inherit !important; line-height:1.5 !important;
+        background:' . $row_bg . ' !important; table-layout:auto !important; box-shadow:none !important;
+    }
+    .cm-privacy-page table.cm-pv-table th, .cm-privacy-page table.cm-pv-table td {
+        padding:8px 12px !important; border:1px solid ' . $border . ' !important; vertical-align:top !important;
+        text-align:left !important; background:transparent !important; color:' . $text . ' !important;
+        font-weight:400 !important; font-family:inherit !important; font-size:inherit !important; line-height:inherit !important;
+    }
+    .cm-privacy-page table.cm-pv-table th {
+        background:' . $header_bg . ' !important; color:' . $header_color . ' !important; font-weight:600 !important;
+    }
+    .cm-privacy-page table.cm-pv-table tbody tr { background:' . $row_bg . ' !important; }
+    .cm-privacy-page table.cm-pv-table tbody tr:nth-child(even) { background:' . $row_alt_bg . ' !important; }
+    .cm-privacy-page table.cm-pv-table tbody tr:nth-child(even) td { background:transparent !important; }
+    .cm-privacy-page table.cm-pv-table code { background:transparent !important; color:inherit !important; padding:0 !important; }
+    </style>';
 }
 
 /**
@@ -361,6 +397,7 @@ function cm_render_cookies_shortcode() {
         echo '<p>Er zijn nog geen cookies geconfigureerd.</p>';
     }
     echo '</div>';
+    echo cm_pv_table_css();
     return ob_get_clean();
 }
 

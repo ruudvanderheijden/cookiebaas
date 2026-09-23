@@ -1669,8 +1669,8 @@
         reader.onload = function(e) {
             try {
                 var data = JSON.parse(e.target.result);
-                if (!data._meta || data._meta.plugin !== 'cookiemelding') {
-                    $('#cm-import-status').css('color','#b32d2e').text('Ongeldig bestand — niet afkomstig van de Cookiemelding plugin.');
+                if (!data._meta || ['cookiebaas', 'cookiemelding'].indexOf(data._meta.plugin) === -1) {
+                    $('#cm-import-status').css('color','#b32d2e').text('Ongeldig bestand — niet afkomstig van de Cookiebaas plugin.');
                     _importData = null;
                     $('#cm-import-btn').prop('disabled', true);
                     $('#cm-import-preview').hide();

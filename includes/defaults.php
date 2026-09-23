@@ -939,6 +939,14 @@ function cm_default_privacy() {
             array('doel'=>'Beveiliging en fraudepreventie (serverlogbestanden)','grondslag'=>'Gerechtvaardigd belang','termijn'=>'Max. 6 maanden'),
         )),
 
+        // 4. Cookietabel — kleuren (shortcodes [cookiebaas_privacy] en [cookiebaas_cookies])
+        'pv_table_header_bg'    => '#f5f5f5',
+        'pv_table_header_color' => '#111111',
+        'pv_table_border'       => '#dddddd',
+        'pv_table_row_bg'       => '#ffffff',
+        'pv_table_row_alt_bg'   => '#fafafa',
+        'pv_table_text'         => '#333333',
+
         // 4. Cookies — optionele GTM-zin
         'pv_gtm'                => '1',
 
