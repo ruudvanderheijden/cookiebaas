@@ -126,6 +126,7 @@ function cm_render_privacy_page() {
     $doeleinden = json_decode( $pv('pv_doeleinden'), true );
     if ( ! empty( $doeleinden ) && is_array( $doeleinden ) ) :
     ?>
+    <div class="cm-pv-table-wrap">
     <table class="cm-pv-table">
         <thead>
             <tr><th>Doel</th><th>Grondslag</th><th>Bewaartermijn</th></tr>
@@ -140,6 +141,7 @@ function cm_render_privacy_page() {
         <?php endforeach; ?>
         </tbody>
     </table>
+    </div>
     <?php endif; ?>
     <p>Voor de verwerking op basis van gerechtvaardigd belang hebben wij een afweging gemaakt tussen ons belang en uw privacybelangen. U kunt te allen tijde bezwaar maken tegen deze verwerking.</p>
 
@@ -171,6 +173,7 @@ function cm_render_privacy_page() {
     $ontvangers = json_decode( $pv('pv_ontvangers'), true );
     if ( ! empty( $ontvangers ) && is_array( $ontvangers ) ) :
     ?>
+    <div class="cm-pv-table-wrap">
     <table class="cm-pv-table">
         <thead>
             <tr><th>Partij</th><th>Doel</th><th>Locatie</th></tr>
@@ -186,6 +189,7 @@ function cm_render_privacy_page() {
         <?php endforeach; ?>
         </tbody>
     </table>
+    </div>
     <p>*Zie paragraaf 6 over internationale doorgifte.</p>
     <?php endif; ?>
 
@@ -316,9 +320,13 @@ function cm_pv_table_css() {
     $text         = esc_attr( $pv('pv_table_text') );
 
     return '<style>
+    .cm-privacy-page .cm-pv-table-wrap {
+        width:100% !important; max-width:100% !important; overflow-x:auto !important; -webkit-overflow-scrolling:touch !important;
+        margin:1em 0 1.5em !important;
+    }
     .cm-privacy-page table.cm-pv-table {
-        width:100% !important; max-width:100% !important; border-collapse:collapse !important; border-spacing:0 !important;
-        margin:1em 0 1.5em !important; font-size:.93em !important; font-family:inherit !important; line-height:1.5 !important;
+        width:100% !important; min-width:480px !important; border-collapse:collapse !important; border-spacing:0 !important;
+        margin:0 !important; font-size:.93em !important; font-family:inherit !important; line-height:1.5 !important;
         background:' . $row_bg . ' !important; table-layout:auto !important; box-shadow:none !important;
     }
     .cm-privacy-page table.cm-pv-table th, .cm-privacy-page table.cm-pv-table td {
@@ -363,7 +371,7 @@ function cm_pv_cookie_tabel( $with_numbers = true ) {
         if ( empty( $cat_data['cookies'] ) ) continue;
         $out .= '<h3>' . esc_html( $cat_data['label'] ) . '</h3>';
         $out .= '<p class="cm-pv-cookie-grondslag"><strong>Rechtsgrondslag:</strong> ' . esc_html( $cat_data['grondslag'] ) . '</p>';
-        $out .= '<table class="cm-pv-table"><thead><tr>'
+        $out .= '<div class="cm-pv-table-wrap"><table class="cm-pv-table"><thead><tr>'
               . '<th>Cookie</th><th>Organisatie</th><th>Doel</th><th>Looptijd</th>'
               . '</tr></thead><tbody>';
         foreach ( $cat_data['cookies'] as $ck ) {
@@ -374,7 +382,7 @@ function cm_pv_cookie_tabel( $with_numbers = true ) {
                   . '<td style="white-space:nowrap">' . esc_html( $ck['duration'] ?? '' ) . '</td>'
                   . '</tr>';
         }
-        $out .= '</tbody></table>';
+        $out .= '</tbody></table></div>';
     }
     return $out;
 }

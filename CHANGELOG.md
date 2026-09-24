@@ -1,5 +1,10 @@
 # Changelog — Cookiebaas
 
+## [2.4.3] - 2026-09-24
+
+### Opgelost
+- **De cookietabellen in de privacyverklaring (`[cookiebaas_privacy]`, `[cookiebaas_cookies]`) werden op mobiel afgesneden.** De tabel had een vaste breedte van 100% zonder dat de kolommen konden krimpen of scrollen, waardoor smalle viewports de rechterkolommen simpelweg buiten beeld duwden. Elke `.cm-pv-table` (doeleinden, ontvangers, cookies per categorie) staat nu in een horizontaal scrollbare wrapper (`overflow-x:auto`) met een minimumbreedte, zodat de tabel op mobiel te scrollen is in plaats van afgekapt te worden.
+
 ## [2.4.2] - 2026-09-23
 
 ### Opgelost
