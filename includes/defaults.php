@@ -38,7 +38,7 @@ function cm_default_settings() {
         // Cookie voorkeuren button
         'color_prefs_border'        => '#d1d1d1',
         'color_cat_border'          => '#eaeaea',
-        'color_cat_header_hover'    => 'rgb(250 252 255)',
+        'color_cat_header_hover'    => '#fafcff',  // hex: input type=color accepteert geen rgb()
         'color_cat_desc'            => '#1d2327',
         'color_cat_detail'          => '#666666',
         'color_cookie_name'         => '#333333',
@@ -179,6 +179,7 @@ function cm_default_settings() {
         'dm_accept_text'               => '#111111',
         'dm_accept_hover_bg'           => '#0091ff',
         'dm_accept_hover_text'         => '#ffffff',
+        'dm_accept_border'             => '',
         'dm_reject_bg'                 => '#f2f2f2',
         'dm_reject_hover_bg'           => '#0091ff',
         'dm_reject_text'               => '#111111',
@@ -885,6 +886,25 @@ function cm_map_category( $ocd_category ) {
         'Security'         => 'functional',
     );
     return isset( $map[ $ocd_category ] ) ? $map[ $ocd_category ] : 'functional';
+}
+
+/**
+ * Cookielijst-regel voor een cookie die de automatische scan vond.
+ * $row is het resultaat van cm_lookup_cookie(): de DB-categorie is daar al
+ * intern (functional/analytics/marketing), niet de OCD-naam.
+ */
+function cm_autoscan_entry( $name, $row ) {
+    if ( ! $row ) {
+        return array( 'name' => $name, 'provider' => 'Onbekend', 'purpose' => '', 'duration' => '', 'category' => 'functional' );
+    }
+    $cat = in_array( $row['category'] ?? '', array( 'functional', 'analytics', 'marketing' ), true ) ? $row['category'] : 'functional';
+    return array(
+        'name'     => $name,
+        'provider' => ( $row['platform'] ?? '' ) ?: ( ( $row['controller'] ?? '' ) ?: 'Onbekend' ),
+        'purpose'  => $row['description'] ?? '',
+        'duration' => $row['retention'] ?? '',
+        'category' => $cat,
+    );
 }
 
 /**

@@ -66,11 +66,12 @@ function cm_ajax_reset_google() {
     wp_send_json_success();
 }
 
-
+add_action( 'wp_ajax_cm_reset_settings', 'cm_ajax_reset_settings' );
 function cm_ajax_reset_settings() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );
     if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
     update_option( 'cm_settings', cm_default_settings() );
+    cm_purge_page_caches();
     wp_send_json_success();
 }
 
@@ -121,6 +122,7 @@ function cm_ajax_reset_cookielist() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );
     if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
     update_option( 'cm_cookie_list', array() );
+    cm_purge_page_caches();
     wp_send_json_success();
 }
 
@@ -129,6 +131,7 @@ function cm_ajax_reset_privacy() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );
     if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
     update_option( 'cm_privacy', cm_default_privacy() );
+    cm_purge_page_caches();
     wp_send_json_success();
 }
 
@@ -153,47 +156,52 @@ function cm_ajax_bump_consent_version() {
     if ( count($changelog) > 50 ) $changelog = array_slice($changelog, -50);
     update_option( 'cm_consent_changelog', $changelog );
 
+    // De consent-versie staat in de gecachte HTML — zonder purge krijgen
+    // bezoekers pas opnieuw de banner als de paginacache verloopt
+    cm_purge_page_caches();
+
     wp_send_json_success( array( 'version' => $new_v ) );
 }
 
-function cm_ajax_save_settings() {
-    check_ajax_referer( 'cm_save_settings', 'nonce' );
-    if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
-
+/**
+ * Sanitize instellingen tegen de defaults (die dienen als whitelist).
+ * Gedeeld door opslaan en import, zodat import de sanitizing niet omzeilt.
+ *
+ * @param array $input    Ongeslashte invoer (POST of geïmporteerde JSON).
+ * @param array $existing Basis: velden die niet in $input zitten blijven hieruit staan.
+ */
+function cm_sanitize_settings( array $input, array $existing ) {
     $defaults = cm_default_settings();
 
-    // Begin met bestaande opgeslagen waarden zodat velden van andere pagina's nooit verloren gaan
-    $existing = get_option( 'cm_settings', array() );
-    $settings = is_array( $existing ) ? $existing : array();
-
     // Zorg dat alle defaultkeys als fallback aanwezig zijn
+    $settings = $existing;
     foreach ( $defaults as $key => $default ) {
         if ( ! array_key_exists( $key, $settings ) ) {
             $settings[ $key ] = $default;
         }
     }
 
-    // Verwerk alleen de velden die daadwerkelijk in deze POST zitten
+    // Verwerk alleen de velden die daadwerkelijk in de invoer zitten
     // Checkboxes komen als 0 mee als ze uitgevinkt zijn (JS stuurt altijd de waarde)
-    // Velden van andere pagina's ontbreken in POST → bestaande waarde blijft intact
+    // Velden van andere pagina's ontbreken → bestaande waarde blijft intact
+    $html_fields = array( 'txt_banner_body', 'txt_prefs_body', 'txt_banner_body_en', 'txt_prefs_body_en' );
     foreach ( $defaults as $key => $default ) {
-        if ( ! isset( $_POST[ $key ] ) ) continue;
+        if ( ! isset( $input[ $key ] ) ) continue;
 
-        // Velden die HTML mogen bevatten (alle taalvarianten van body-teksten)
-        $html_fields = array( 'txt_banner_body', 'txt_prefs_body', 'txt_banner_body_en', 'txt_prefs_body_en' );
         if ( in_array( $key, $html_fields, true ) ) {
-            $settings[ $key ] = wp_kses( wp_unslash( $_POST[ $key ] ), array(
+            // Velden die HTML mogen bevatten (alle taalvarianten van body-teksten)
+            $settings[ $key ] = wp_kses( (string) $input[ $key ], array(
                 'a' => array( 'href' => array(), 'target' => array() ),
                 'strong' => array(),
                 'em'     => array(),
             ));
         } elseif ( $key === 'float_icon_custom_svg' ) {
             // Ongefilterd bewaren — frontend.php sanitized met een strikte tag/attribuut-whitelist bij het renderen
-            $settings[ $key ] = wp_unslash( $_POST[ $key ] );
+            $settings[ $key ] = is_string( $input[ $key ] ) ? $input[ $key ] : '';
         } elseif ( $key === 'float_icon_image_url' ) {
-            $settings[ $key ] = esc_url_raw( wp_unslash( $_POST[ $key ] ) );
+            $settings[ $key ] = esc_url_raw( (string) $input[ $key ] );
         } else {
-            $settings[ $key ] = sanitize_text_field( wp_unslash( $_POST[ $key ] ) );
+            $settings[ $key ] = sanitize_text_field( $input[ $key ] );
         }
     }
 
@@ -201,6 +209,17 @@ function cm_ajax_save_settings() {
     if ( ! empty( $settings['google_load_default'] ) ) {
         $settings['analytics_default'] = 1;
     }
+
+    return $settings;
+}
+
+function cm_ajax_save_settings() {
+    check_ajax_referer( 'cm_save_settings', 'nonce' );
+    if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
+
+    // Begin met bestaande opgeslagen waarden zodat velden van andere pagina's nooit verloren gaan
+    $existing = get_option( 'cm_settings', array() );
+    $settings = cm_sanitize_settings( wp_unslash( $_POST ), is_array( $existing ) ? $existing : array() );
 
     update_option( 'cm_settings', $settings );
 
@@ -1014,23 +1033,25 @@ function cm_ajax_import_settings() {
 
     $imported = array();
 
+    // Alles gaat door dezelfde sanitizing als opslaan: een exportbestand is
+    // gewone gebruikersinvoer. Ontbrekende keys krijgen de default.
     if ( isset( $data['settings'] ) && is_array( $data['settings'] ) ) {
-        // Merge met defaults zodat nieuwe keys altijd aanwezig zijn
-        $merged = array_merge( cm_default_settings(), $data['settings'] );
-        update_option( 'cm_settings', $merged );
+        update_option( 'cm_settings', cm_sanitize_settings( $data['settings'], cm_default_settings() ) );
         $imported[] = 'plugin-instellingen';
     }
 
     if ( isset( $data['cookie_list'] ) && is_array( $data['cookie_list'] ) ) {
-        update_option( 'cm_cookie_list', $data['cookie_list'] );
-        $imported[] = count( $data['cookie_list'] ) . ' cookies';
+        $cookie_list = cm_sanitize_cookie_list( $data['cookie_list'] );
+        update_option( 'cm_cookie_list', $cookie_list );
+        $imported[] = count( $cookie_list ) . ' cookies';
     }
 
     if ( isset( $data['privacy'] ) && is_array( $data['privacy'] ) ) {
-        $merged_pv = array_merge( cm_default_privacy(), $data['privacy'] );
-        update_option( 'cm_privacy', $merged_pv );
+        update_option( 'cm_privacy', cm_sanitize_privacy( array_merge( cm_default_privacy(), $data['privacy'] ) ) );
         $imported[] = 'privacyverklaring';
     }
+
+    if ( $imported ) cm_purge_page_caches();
 
     wp_send_json_success( array(
         'msg'      => 'Import geslaagd: ' . implode( ', ', $imported ) . '.',
@@ -1184,6 +1205,34 @@ function cm_ajax_log_consent() {
     ) );
 }
 
+/**
+ * WHERE-clausule voor de consent log: zoeken op consent-ID en filteren op
+ * keuze. Serverside, zodat het filter over alle pagina's werkt. 'Akkoord'
+ * telt embed-accept mee, net als de statistiek.
+ *
+ * @param string $like   Al ge-escapete LIKE-waarde, of '' voor niet zoeken.
+ * @param string $filter all | accept-all | reject-all | custom
+ * @return array [ $sql, $args ] voor $wpdb->prepare()
+ */
+function cm_log_where( $like, $filter ) {
+    $methods = array(
+        'accept-all' => array( 'accept-all', 'embed-accept' ),
+        'reject-all' => array( 'reject-all' ),
+        'custom'     => array( 'custom' ),
+    );
+    $where = array();
+    $args  = array();
+    if ( $like !== '' ) {
+        $where[] = 'consent_id LIKE %s';
+        $args[]  = $like;
+    }
+    if ( isset( $methods[ $filter ] ) ) {
+        $where[] = 'method IN (' . implode( ',', array_fill( 0, count( $methods[ $filter ] ), '%s' ) ) . ')';
+        $args    = array_merge( $args, $methods[ $filter ] );
+    }
+    return array( $where ? 'WHERE ' . implode( ' AND ', $where ) : '', $args );
+}
+
 add_action( 'wp_ajax_cm_get_log', 'cm_ajax_get_log' );
 function cm_ajax_get_log() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );
@@ -1211,22 +1260,16 @@ function cm_ajax_get_log() {
         }
     }
 
-    if ( $search ) {
-        $like   = '%' . $wpdb->esc_like( $search ) . '%';
-        $rows   = $wpdb->get_results( $wpdb->prepare(
-            "SELECT id, consent_id, analytics, marketing, method, url, plugin_version, created_at FROM `{$table}` WHERE consent_id LIKE %s ORDER BY created_at DESC LIMIT %d OFFSET %d",
-            $like, $per, $offset
-        ), ARRAY_A );
-        $total  = (int) $wpdb->get_var( $wpdb->prepare(
-            "SELECT COUNT(*) FROM `{$table}` WHERE consent_id LIKE %s", $like
-        ) );
-    } else {
-        $rows  = $wpdb->get_results( $wpdb->prepare(
-            "SELECT id, consent_id, analytics, marketing, method, url, plugin_version, created_at FROM `{$table}` ORDER BY created_at DESC LIMIT %d OFFSET %d",
-            $per, $offset
-        ), ARRAY_A );
-        $total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$table}`" );
-    }
+    $filter = isset($_POST['filter']) ? sanitize_text_field( wp_unslash( $_POST['filter'] ) ) : 'all';
+    list( $where, $args ) = cm_log_where( $search ? '%' . $wpdb->esc_like( $search ) . '%' : '', $filter );
+
+    $rows  = $wpdb->get_results( $wpdb->prepare(
+        "SELECT id, consent_id, analytics, marketing, method, url, plugin_version, created_at FROM `{$table}` {$where} ORDER BY created_at DESC LIMIT %d OFFSET %d",
+        array_merge( $args, array( $per, $offset ) )
+    ), ARRAY_A );
+    $total = (int) ( $args
+        ? $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$table}` {$where}", $args ) )
+        : $wpdb->get_var( "SELECT COUNT(*) FROM `{$table}`" ) );
 
     $stats = $wpdb->get_row(
         "SELECT
@@ -1359,8 +1402,22 @@ function cm_ajax_save_cookie_list() {
         $raw = $_POST['cookies']; // fallback voor oude aanroepen
     }
 
+    $clean = cm_sanitize_cookie_list( $raw );
+
+    // Altijd opslaan — ook als $clean leeg is (gebruiker heeft alle cookies verwijderd)
+    update_option( 'cm_cookie_list', $clean );
+    // De cookielijst staat in het voorkeurenvenster van elke (gecachte) pagina
+    cm_purge_page_caches();
+    wp_send_json_success( array( 'count' => count($clean) ) );
+}
+
+/**
+ * Sanitize een cookielijst (opslaan, import en automatische scan).
+ */
+function cm_sanitize_cookie_list( array $raw ) {
     $clean = array();
     foreach ( $raw as $ck ) {
+        if ( ! is_array( $ck ) ) continue;
         $name = sanitize_text_field( isset($ck['name']) ? $ck['name'] : '' );
         if ( ! $name ) continue;
         $cat = sanitize_text_field( isset($ck['category']) ? $ck['category'] : 'functional' );
@@ -1378,10 +1435,7 @@ function cm_ajax_save_cookie_list() {
             'builtin'  => false,
         );
     }
-
-    // Altijd opslaan — ook als $clean leeg is (gebruiker heeft alle cookies verwijderd)
-    update_option( 'cm_cookie_list', $clean );
-    wp_send_json_success( array( 'count' => count($clean) ) );
+    return $clean;
 }
 
 add_action( 'wp_ajax_cm_get_cookie_list', 'cm_ajax_get_cookie_list' );
@@ -3970,7 +4024,7 @@ function cm_render_reset_content() {
                 </label>
                 <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:#fff5f5;border:1px solid #f5c6c7;border-radius:4px;cursor:pointer">
                     <input type="checkbox" name="cm_reset_item" value="license" id="cr-license" style="margin-top:2px">
-                    <span><strong>Licentie</strong><span style="display:block;font-size:12px;color:#646970;margin-top:2px">Verwijdert de licentiegegevens. De banner werkt niet meer totdat u opnieuw een licentie activeert.</span></span>
+                    <span><strong>Licentie</strong><span style="display:block;font-size:12px;color:#646970;margin-top:2px">Verwijdert de licentiegegevens. De banner en scriptblokkering blijven werken; de cookiescan pauzeert tot u opnieuw een licentie activeert.</span></span>
                 </label>
             </div>
             <button type="button" class="button" id="cm-reset-selective-preview" disabled style="color:#d63638;border-color:#d63638;font-weight:600">Geselecteerde items resetten</button>

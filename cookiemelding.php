@@ -3,7 +3,7 @@
  * Plugin Name: Cookiebaas
  * Plugin URI:  https://www.cookiebaas.nl/
  * Description: Cookiemelding plugin volgens AVG/GDPR-conformiteit met Google Consent Mode (v2) integratie en privacyverklaring generator.
- * Version:     2.4.4
+ * Version:     2.4.5
  * Author:      Ruud van der Heijden
  * Author URI:  https://www.cookiebaas.nl/
  * License:     GPL-2.0+
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'CM_VERSION',     '2.4.4' );
+define( 'CM_VERSION',     '2.4.5' );
 define( 'CM_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'CM_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 
@@ -164,6 +164,14 @@ add_action( 'plugins_loaded', function() {
             if ( version_compare( $stored_version, '1.4.6', '<' ) ) {
                 if ( ($merged['color_reject_border'] ?? '') === '#111111' ) {
                     $merged['color_reject_border'] = '';
+                }
+            }
+
+            // v2.4.5: de oude rgb()-default van color_cat_header_hover werd door
+            // <input type="color"> bij de eerste keer opslaan stil #000000
+            if ( version_compare( $stored_version, '2.4.5', '<' ) ) {
+                if ( in_array( $merged['color_cat_header_hover'] ?? '', array( '#000000', 'rgb(250 252 255)' ), true ) ) {
+                    $merged['color_cat_header_hover'] = '#fafcff';
                 }
             }
 
@@ -348,8 +356,10 @@ function cm_run_auto_scan() {
         foreach ( $new_cookies as $ck ) {
             $managed[] = $ck;
         }
-        update_option( 'cm_cookie_list', $managed );
+        // Zelfde normalisatie als handmatig opslaan (provider-mapping, builtin-vlag)
+        update_option( 'cm_cookie_list', cm_sanitize_cookie_list( $managed ) );
         update_option( 'cm_auto_scan_last_added', count($new_cookies) );
+        cm_purge_page_caches();
 
     } elseif ( $mode === 'notify' ) {
         // Melding per e-mail sturen
@@ -429,15 +439,7 @@ function cm_perform_background_scan() {
     $new_cookies = array();
     foreach ( $set_cookies as $name ) {
         if ( isset($existing_names[$name]) ) continue;
-        // Zoek info op via cm_lookup_cookie
-        $info = cm_lookup_cookie($name);
-        $new_cookies[] = array(
-            'name'     => $name,
-            'provider' => $info ? ( $info['service'] ?? 'Onbekend' ) : 'Onbekend',
-            'purpose'  => $info ? ( $info['description'] ?? '' ) : '',
-            'duration' => $info ? ( $info['retention'] ?? '' ) : '',
-            'category' => $info ? cm_map_category( $info['category'] ?? 'Functional' ) : 'functional',
-        );
+        $new_cookies[] = cm_autoscan_entry( $name, cm_lookup_cookie( $name ) );
         $existing_names[$name] = true;
     }
 

@@ -556,12 +556,13 @@
     function cmSyncEmbedServices() {
         var checked = [];
         $('.cm-embed-service-cb:checked').each(function() { checked.push($(this).val()); });
-        // Als alle checkboxes aangevinkt zijn, sla lege string op (= alles blokkeren, standaard)
+        // Alles aangevinkt → lege string (= alles blokkeren, standaard).
+        // Niets aangevinkt → 'none': een lege string zou juist alles blokkeren.
         var total = $('.cm-embed-service-cb').length;
         if (checked.length === total) {
             $('#embed_blocked_services').val('');
         } else {
-            $('#embed_blocked_services').val(checked.join(','));
+            $('#embed_blocked_services').val(checked.join(',') || 'none');
         }
     }
     function cmStyleEmbedCb($cb) {
@@ -1482,20 +1483,27 @@
         if (!confirm('LET OP: Dit reset ALLES — instellingen, cookielijst, privacyverklaring, consent log, consent data én licentie. Dit kan niet ongedaan worden gemaakt. Weet u het zeker?')) return;
         var $btn = $(this), $status = $('#cm-reset-all-status');
         $btn.prop('disabled', true).text('Bezig...');
-        var done = 0, total = 6;
-        function checkDone() {
-            done++;
-            if (done === total) {
+        var done = 0, total = 6, errors = [];
+        function checkDone(label) {
+            return function(r) {
+                done++;
+                if (!r || !r.success) errors.push(label);
+                if (done < total) return;
+                if (errors.length) {
+                    $status.text('Fout bij: ' + errors.join(', ') + '. De rest is gereset.').css('color','#b32d2e');
+                    $btn.prop('disabled', false).html('&#x26A0; Alles resetten');
+                    return;
+                }
                 $status.text('✓ Alles gereset. Pagina wordt herladen...').css('color','#00a32a');
                 setTimeout(function() { location.reload(); }, 1500);
-            }
+            };
         }
-        $.post(CM_DATA.ajax_url, { action: 'cm_reset_settings',        nonce: CM_DATA.nonce }, checkDone).fail(checkDone);
-        $.post(CM_DATA.ajax_url, { action: 'cm_reset_cookielist',       nonce: CM_DATA.nonce }, checkDone).fail(checkDone);
-        $.post(CM_DATA.ajax_url, { action: 'cm_reset_privacy',          nonce: CM_DATA.nonce }, checkDone).fail(checkDone);
-        $.post(CM_DATA.ajax_url, { action: 'cm_clear_log',              nonce: CM_DATA.nonce }, checkDone).fail(checkDone);
-        $.post(CM_DATA.ajax_url, { action: 'cm_bump_consent_version',   nonce: CM_DATA.nonce }, checkDone).fail(checkDone);
-        $.post(CM_DATA.ajax_url, { action: 'cm_reset_license',          nonce: CM_DATA.nonce }, checkDone).fail(checkDone);
+        $.post(CM_DATA.ajax_url, { action: 'cm_reset_settings',        nonce: CM_DATA.nonce }, checkDone('Instellingen')).fail(checkDone('Instellingen'));
+        $.post(CM_DATA.ajax_url, { action: 'cm_reset_cookielist',       nonce: CM_DATA.nonce }, checkDone('Cookielijst')).fail(checkDone('Cookielijst'));
+        $.post(CM_DATA.ajax_url, { action: 'cm_reset_privacy',          nonce: CM_DATA.nonce }, checkDone('Privacyverklaring')).fail(checkDone('Privacyverklaring'));
+        $.post(CM_DATA.ajax_url, { action: 'cm_clear_log',              nonce: CM_DATA.nonce }, checkDone('Consent log')).fail(checkDone('Consent log'));
+        $.post(CM_DATA.ajax_url, { action: 'cm_bump_consent_version',   nonce: CM_DATA.nonce }, checkDone('Consent data')).fail(checkDone('Consent data'));
+        $.post(CM_DATA.ajax_url, { action: 'cm_reset_license',          nonce: CM_DATA.nonce }, checkDone('Licentie')).fail(checkDone('Licentie'));
     });
 
     /* ---- Privacy terugzetten ---- */
@@ -1953,7 +1961,7 @@
     });
 
     $(document).on('click', '#cm-license-deactivate', function() {
-        if (!confirm('Weet u zeker dat u de licentie wilt deactiveren? De banner stopt direct.')) return;
+        if (!confirm('Weet u zeker dat u de licentie wilt deactiveren? De banner en scriptblokkering blijven werken; alleen de cookiescan pauzeert.')) return;
         var $btn = $(this).prop('disabled', true).text('Deactiveren...');
         $.post(CM_DATA.ajax_url, { action: 'cm_license_deactivate', nonce: CM_DATA.nonce }, function(r) {
             $btn.prop('disabled', false).text('Deactiveren');
@@ -2076,6 +2084,7 @@
     ================================================================ */
     var cmLogPage = 1;
     var cmLogSearch = '';
+    var cmLogFilterMethod = 'all';
 
     function cmLoadLog(page) {
         page = page || 1;
@@ -2089,6 +2098,7 @@
             nonce:  CM_DATA.nonce,
             page:   page,
             search: cmLogSearch,
+            filter: cmLogFilterMethod,
         }, function(r) {
             if (!r.success) {
                 $('#cm-log-rows').html('<tr><td colspan="6" style="color:#b32d2e;padding:16px;text-align:center">Fout bij laden van de log.</td></tr>');
@@ -2334,7 +2344,6 @@
     });
 
     // ---- Filter pillen ----
-    var cmLogFilterMethod = 'all';
     $(document).on('click', '.cm-log-filter', function() {
         var filter = $(this).data('filter');
         cmLogFilterMethod = filter;
@@ -2349,15 +2358,8 @@
                 $(this).css({ background: '#fff', color: c, borderColor: c });
             }
         });
-        // Filter rijen client-side (sneller dan server request)
-        if (filter === 'all') {
-            $('#cm-log-rows tr').show();
-        } else {
-            $('#cm-log-rows tr').each(function() {
-                var method = $(this).data('method');
-                $(this).toggle(method === filter);
-            });
-        }
+        // Serverside filteren, zodat het filter over alle pagina's werkt
+        cmLoadLog(1);
     });
 
     // Auto-laden bij pagina open

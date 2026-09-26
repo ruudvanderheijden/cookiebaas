@@ -417,21 +417,32 @@ function cm_ajax_save_privacy() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );
     if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
 
-    $defaults = cm_default_privacy();
-    $privacy  = array();
+    update_option( 'cm_privacy', cm_sanitize_privacy( wp_unslash( $_POST ) ) );
+    // De verklaring en cookietabel staan in gecachte pagina's
+    cm_purge_page_caches();
+    wp_send_json_success( array( 'message' => 'Privacyverklaring opgeslagen.' ) );
+}
 
-    foreach ( $defaults as $key => $default ) {
-        if ( in_array( $key, array('pv_doeleinden','pv_optout_links','pv_ontvangers'), true ) ) {
-            // JSON-velden: komen als geëncodeerde string binnen
-            $privacy[ $key ] = isset( $_POST[ $key ] ) ? sanitize_textarea_field( wp_unslash( $_POST[ $key ] ) ) : $default;
-        } elseif ( ( strpos( $key, 'pv_cf_' ) === 0 && ! in_array( $key, array( 'pv_cf_extra', 'pv_cf_grondslag' ), true ) ) || in_array( $key, array('pv_gtm','pv_ap_tonen','pv_nieuwsbrief_enabled','pv_profilering_enabled'), true ) ) {
+/**
+ * Sanitize de privacyverklaring (opslaan en import). Een ontbrekende checkbox
+ * telt als uitgevinkt; ontbrekende tekstvelden krijgen de default.
+ */
+function cm_sanitize_privacy( array $input ) {
+    // Tekstvakken waarvan de regeleinden er toe doen (nl2br / één item per regel)
+    $textareas = array( 'pv_doeleinden', 'pv_optout_links', 'pv_ontvangers', 'pv_cf_extra', 'pv_doorgifte', 'pv_profilering_tekst', 'pv_wijzigingen_extra' );
+    $privacy   = array();
+
+    foreach ( cm_default_privacy() as $key => $default ) {
+        if ( in_array( $key, $textareas, true ) ) {
+            // Incl. de JSON-velden: komen als geëncodeerde string binnen
+            $privacy[ $key ] = isset( $input[ $key ] ) ? sanitize_textarea_field( $input[ $key ] ) : $default;
+        } elseif ( ( strpos( $key, 'pv_cf_' ) === 0 && $key !== 'pv_cf_grondslag' ) || in_array( $key, array('pv_gtm','pv_ap_tonen','pv_nieuwsbrief_enabled','pv_profilering_enabled'), true ) ) {
             // Checkboxes: 1 of 0
-            $privacy[ $key ] = isset( $_POST[ $key ] ) && $_POST[ $key ] === '1' ? '1' : '0';
+            $privacy[ $key ] = isset( $input[ $key ] ) && (string) $input[ $key ] === '1' ? '1' : '0';
         } else {
-            $privacy[ $key ] = isset( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : $default;
+            $privacy[ $key ] = isset( $input[ $key ] ) ? sanitize_text_field( $input[ $key ] ) : $default;
         }
     }
 
-    update_option( 'cm_privacy', $privacy );
-    wp_send_json_success( array( 'message' => 'Privacyverklaring opgeslagen.' ) );
+    return $privacy;
 }

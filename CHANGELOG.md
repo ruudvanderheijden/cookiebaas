@@ -1,5 +1,19 @@
 # Changelog — Cookiebaas
 
+## [2.4.5] - 2026-09-26
+
+### Opgelost
+- **"Alles resetten" en de selectieve reset van Instellingen deden niets aan de instellingen.** De handler `cm_reset_settings` was nooit geregistreerd; "Alles resetten" telde de fout als geslaagd en meldde toch "✓ Alles gereset". De handler is geregistreerd en "Alles resetten" meldt nu per onderdeel wat er misging.
+- **Tekstvakken van de privacyverklaring verloren hun regeleinden bij opslaan.** Alle velden gingen door `sanitize_text_field`, waardoor "één veld per regel" (extra contactformuliervelden) en alinea's in doorgifte, profilering en wijzigingen samenvielen tot één regel. Tekstvakken gebruiken nu `sanitize_textarea_field`.
+- **De automatische scan zette elke nieuwe cookie op 'functional' met provider 'Onbekend'.** De scan las een niet-bestaande sleutel (`service`) en mapte de al interne DB-categorie nogmaals, wat altijd op 'functional' uitkwam. Categorie en provider komen nu correct uit de cookie-database; nieuwe cookies gaan door dezelfde normalisatie als handmatig opslaan.
+- **Na opslaan van cookielijst of privacyverklaring bleef de paginacache staan.** Alleen het opslaan van Instellingen leegde de cache, dus gecachte pagina's (bijv. LiteSpeed) toonden tot een week lang een verouderde cookielijst en verklaring. Ook na resetten, importeren, een automatische scan en het verhogen van de consent-versie wordt de cache nu geleegd — dat laatste is belangrijk: zonder purge kregen bezoekers pas opnieuw de banner als de cache verliep.
+- **Importeren omzeilde de sanitizing.** Instellingen, cookielijst en privacyverklaring uit een exportbestand werden ongefilterd opgeslagen. Import gaat nu door exact dezelfde sanitizing als opslaan; onbekende sleutels worden genegeerd.
+- **De hoverkleur van de categoriekop werd zwart na de eerste keer opslaan.** De default was `rgb(250 252 255)`, wat een `<input type="color">` niet kent en stil als `#000000` terugschrijft. De default is nu `#fafcff`; bestaande installaties met de zwarte waarde worden bij de update hersteld.
+- **De randkleur van de akkoordknop in het donkere thema werd nooit opgeslagen.** `dm_accept_border` ontbrak in de defaults (die als whitelist dienen). Toegevoegd.
+- **Alle embed-diensten uitvinken blokkeerde juist alles.** Een lege lijst betekent "alles blokkeren" (de standaard). Niets aangevinkt wordt nu als `none` opgeslagen: dan wordt niets geblokkeerd.
+- **De filters in de consent log werkten alleen op de 25 geladen rijen.** Filteren gebeurt nu serverside, over de hele log, en blijft gelden bij bladeren en zoeken. "Akkoord" telt akkoord via een embed mee, net als de statistiek.
+- **Tegenstrijdige licentieteksten.** De bevestiging bij Deactiveren en de licentie-optie bij Reset zeiden dat de banner stopt; sinds 2.2.0 blijven banner en scriptblokkering altijd werken en pauzeert alleen de cookiescan. De teksten zeggen dat nu ook.
+
 ## [2.4.4] - 2026-09-26
 
 ### Opgelost

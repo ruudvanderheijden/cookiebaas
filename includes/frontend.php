@@ -89,7 +89,7 @@ function cm_output_inline_css() {
     echo '--cm-cat-border:'      . esc_attr( cm_get('color_cat_border') ?: '#e8e4de' )      . ';';
     echo '--cm-service-bg:'      . esc_attr( cm_get('color_service_bg') ?: '#f6f4f1' )      . ';';
     echo '--cm-cookie-item-bg:'  . esc_attr( cm_get('color_cookie_item_bg') ?: '#ffffff' )  . ';';
-    echo '--cm-cat-header-hover:'. esc_attr( cm_get('color_cat_header_hover') ?: 'rgb(250 252 255)' ) . ';';
+    echo '--cm-cat-header-hover:'. esc_attr( cm_get('color_cat_header_hover') ?: '#fafcff' ) . ';';
     echo '--cm-cat-desc-color:'  . esc_attr( cm_get('color_cat_desc') ?: '#1d2327' )        . ';';
     echo '--cm-cat-detail-color:'. esc_attr( cm_get('color_cat_detail') ?: '#666666' )      . ';';
     echo '--cm-cookie-name-color:'. esc_attr( cm_get('color_cookie_name') ?: '#333333' )    . ';';
