@@ -359,6 +359,8 @@ Handmatig test Ruud zelf op de lokale Brinckers-site (WordPress 7.1, TranslatePr
 
 ## 9. Uitrol
 
+- **2.4.5 blijft de uitgebrachte versie** tot 3.0.0 klaar is. De updater biedt alleen gepubliceerde GitHub-releases aan (`releases/latest`), dus klanten krijgen 3.0 pas te zien als release 3.0.0 bestaat. 3.0 is een nieuwe major versie, geen update van 2.4.x.
+- `CM_VERSION` en de plugin-header blijven op `main` op 2.4.5 tot de release. Pas in de releasecommit worden ze 3.0.0.
 - Er wordt gebouwd op `main`, per menu-item in losse commits, zonder tussentijdse releases.
 - Hotfixes voor 2.4.x tijdens de bouw gaan via een tijdelijke branch vanaf tag `v2.4.5`, en worden daarna naar `main` gecherry-pickt.
 - Release 3.0.0 volgt als alle pagina's af zijn en de tests groen zijn. De changelog krijgt een tabel "Waar staat wat?" (oud → nieuw) voor bestaande klanten.
