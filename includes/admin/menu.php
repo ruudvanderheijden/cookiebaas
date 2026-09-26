@@ -15,6 +15,7 @@ function cm_admin_pages() {
         'cookiebaas-blokkering' => 'Blokkering',
         'cookiebaas-cookies'    => 'Cookies',
         'cookiebaas-privacy'    => 'Privacyverklaring',
+        'cookiebaas-log'        => 'Consent log',
     );
 }
 
@@ -26,9 +27,12 @@ function cm_admin3_register_menu() {
         'cm_admin_render_page', 'dashicons-privacy', 82
     );
     foreach ( cm_admin_pages() as $slug => $title ) {
-        $GLOBALS['cm_admin_hooks'][] = add_submenu_page(
+        $hook = add_submenu_page(
             'cookiebaas', $title . ' — Cookiebaas', $title, 'manage_options', $slug, 'cm_admin_render_page'
         );
+        $GLOBALS['cm_admin_hooks'][] = $hook;
+        // Bulkacties van de lijsttabel verwerken vóór er output is
+        if ( $slug === 'cookiebaas-log' && function_exists( 'cm_log_handle_bulk' ) ) add_action( 'load-' . $hook, 'cm_log_handle_bulk' );
     }
 }
 
@@ -37,6 +41,13 @@ function cm_admin_current_tab( array $tabs, $requested ) {
     if ( $requested !== '' && isset( $tabs[ $requested ] ) ) return $requested;
     $keys = array_keys( $tabs );
     return $keys ? $keys[0] : '';
+}
+
+/** Link naar een pagina (en tab) van de admin, met eventueel extra argumenten. */
+function cm_admin_page_url( $page, $tab = '', array $args = array() ) {
+    $query = array( 'page' => $page );
+    if ( $tab !== '' ) $query['tab'] = $tab;
+    return add_query_arg( array_merge( $query, $args ), admin_url( 'admin.php' ) );
 }
 
 /** Tabs van één pagina uit het register (Taak 2). */

@@ -1015,34 +1015,6 @@ function cm_ajax_log_consent() {
     ) );
 }
 
-/**
- * WHERE-clausule voor de consent log: zoeken op consent-ID en filteren op
- * keuze. Serverside, zodat het filter over alle pagina's werkt. 'Akkoord'
- * telt embed-accept mee, net als de statistiek.
- *
- * @param string $like   Al ge-escapete LIKE-waarde, of '' voor niet zoeken.
- * @param string $filter all | accept-all | reject-all | custom
- * @return array [ $sql, $args ] voor $wpdb->prepare()
- */
-function cm_log_where( $like, $filter ) {
-    $methods = array(
-        'accept-all' => array( 'accept-all', 'embed-accept' ),
-        'reject-all' => array( 'reject-all' ),
-        'custom'     => array( 'custom' ),
-    );
-    $where = array();
-    $args  = array();
-    if ( $like !== '' ) {
-        $where[] = 'consent_id LIKE %s';
-        $args[]  = $like;
-    }
-    if ( isset( $methods[ $filter ] ) ) {
-        $where[] = 'method IN (' . implode( ',', array_fill( 0, count( $methods[ $filter ] ), '%s' ) ) . ')';
-        $args    = array_merge( $args, $methods[ $filter ] );
-    }
-    return array( $where ? 'WHERE ' . implode( ' AND ', $where ) : '', $args );
-}
-
 add_action( 'wp_ajax_cm_get_log', 'cm_ajax_get_log' );
 function cm_ajax_get_log() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );

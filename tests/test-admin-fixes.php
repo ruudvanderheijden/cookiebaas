@@ -129,14 +129,4 @@ cm_assert( 'privacy: regeleinde behouden, tags weg', $pv['pv_doorgifte'] === "A\
 cm_assert( 'privacy: ontbrekende checkbox krijgt default', $pv['pv_ap_tonen'] === cm_default_privacy()['pv_ap_tonen'] );
 cm_assert( 'paginacache geleegd na import', $GLOBALS['cm_test_purges'] > $purges );
 
-cm_test_group( 'Consent log: filter serverside' );
-list( $sql, $args ) = cm_log_where( '', 'accept-all' );
-cm_assert( 'akkoord telt embed-accept mee (zoals de statistiek)', $sql === 'WHERE method IN (%s,%s)' && $args === array( 'accept-all', 'embed-accept' ) );
-list( $sql, $args ) = cm_log_where( '%abc%', 'reject-all' );
-cm_assert( 'zoeken + filter combineren', $sql === 'WHERE consent_id LIKE %s AND method IN (%s)' && $args === array( '%abc%', 'reject-all' ) );
-list( $sql, $args ) = cm_log_where( '', 'all' );
-cm_assert( 'alles = geen WHERE', $sql === '' && $args === array() );
-list( $sql, $args ) = cm_log_where( '', "x' OR 1=1" );
-cm_assert( 'onbekend filter wordt genegeerd', $sql === '' && $args === array() );
-
 exit( cm_test_summary() );

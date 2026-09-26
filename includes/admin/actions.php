@@ -18,6 +18,8 @@ function cm_admin_notice_messages() {
         'cookie-list-cleared' => array( 'success', 'De cookielijst is leeggemaakt. De ingebouwde cookies blijven staan.' ),
         'scan-timer-reset'    => array( 'success', 'De timer is gereset. De volgende automatische scan is opnieuw ingepland.' ),
         'privacy-reset'       => array( 'success', 'De privacyverklaring is teruggezet naar de standaardtekst.' ),
+        'log-deleted'         => array( 'success', 'De geselecteerde registraties zijn verwijderd.' ),
+        'log-none-selected'   => array( 'info',    'Er is niets geselecteerd. Vink eerst de registraties aan die u wilt verwijderen.' ),
     );
 }
 

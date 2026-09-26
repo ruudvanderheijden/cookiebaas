@@ -147,6 +147,12 @@
     if (msg && !window.confirm(msg)) e.preventDefault();
   }, true);
 
+  /* Ook bij destructieve links, zoals "Verwijderen" in een tabelrij */
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest ? e.target.closest('a[data-cm-confirm]') : null;
+    if (a && !window.confirm(a.getAttribute('data-cm-confirm'))) e.preventDefault();
+  }, true);
+
   /* ---- Waarschuwing bij niet-opgeslagen wijzigingen ---- */
   var dirty = false;
   document.querySelectorAll('form.cm-form').forEach(function (form) {

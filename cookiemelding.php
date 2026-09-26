@@ -31,6 +31,7 @@ require_once CM_PLUGIN_DIR . 'includes/admin/page-cookies.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/ajax.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/page-privacy.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/page-overzicht.php';
+require_once CM_PLUGIN_DIR . 'includes/admin/page-log.php';
 require_once CM_PLUGIN_DIR . 'includes/frontend.php';
 require_once CM_PLUGIN_DIR . 'includes/privacy.php';
 require_once CM_PLUGIN_DIR . 'includes/license.php';
