@@ -2644,7 +2644,7 @@ Vervang de kop van het bestand door:
 ```php
 /* ================================================================
    ADMIN — menu en paginaframe. Topmenu "Cookiebaas" met zeven pagina's;
-   oude adressen (?page=cookiemelding…) verwijzen door.
+   oude adressen (cookiemelding…) verwijzen door.
 ================================================================ */
 ```
 
