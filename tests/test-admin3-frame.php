@@ -32,6 +32,7 @@ $files = array_merge(
     glob( CM_PLUGIN_ROOT . '/includes/admin/*.php' ),
     glob( CM_PLUGIN_ROOT . '/assets/js/admin-common.js' ) ?: array(),
     glob( CM_PLUGIN_ROOT . '/assets/js/admin-preview.js' ) ?: array(),
+    glob( CM_PLUGIN_ROOT . '/assets/js/admin-cookies.js' ) ?: array(),
     glob( CM_PLUGIN_ROOT . '/assets/css/admin-layout.css' ) ?: array()
 );
 foreach ( $files as $file ) {
@@ -55,5 +56,10 @@ cm_assert( 'eigen settings-groep', strpos( $h, '<!--group:cookiebaas_privacy-->'
 cm_assert( 'waarden uit de tab-callback', strpos( $h, 'value="uit-values"' ) !== false );
 ob_start(); cm_admin_render_form_tab( 'p', 't', array( 'sections' => array() ) ); $d = ob_get_clean();
 cm_assert( 'standaard: cookiebaas_settings', strpos( $d, '<!--group:cookiebaas_settings-->' ) !== false );
+
+cm_test_group( 'Scan-JS bestaat en gebruikt geen innerHTML met scandata' );
+$js = (string) @file_get_contents( CM_PLUGIN_ROOT . '/assets/js/admin-cookies.js' );
+cm_assert( 'admin-cookies.js bestaat', $js !== '' );
+cm_assert( 'geen innerHTML (scandata alleen via textContent)', strpos( $js, 'innerHTML' ) === false );
 
 exit( cm_test_summary() );

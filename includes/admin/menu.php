@@ -106,4 +106,15 @@ function cm_admin3_assets( $hook ) {
         wp_enqueue_media();
         if ( function_exists( 'cm_admin_preview_assets' ) ) cm_admin_preview_assets();
     }
+    if ( $page === 'cookiebaas-cookies' ) {
+        wp_enqueue_script( 'cm-admin-cookies', CM_PLUGIN_URL . 'assets/js/admin-cookies.js', array(), CM_VERSION, true );
+        wp_localize_script( 'cm-admin-cookies', 'CM_COOKIES', array(
+            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+            'nonces'  => array(
+                'scan'     => wp_create_nonce( 'cm_scan' ),
+                'scanAdd'  => wp_create_nonce( 'cm_scan_add' ),
+                'importDb' => wp_create_nonce( 'cm_import_cookie_db' ),
+            ),
+        ) );
+    }
 }

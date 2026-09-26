@@ -17,3 +17,5 @@
 #cm-preview-frame { border: 0; transform-origin: 0 0; display: block; }
 .cm-rows-table .cm-rows-actions { width: 90px; text-align: right; }
 .cm-rows-table td { vertical-align: middle; }
+#cm-scan-result progress { width: 100%; max-width: 480px; }
+#cm-scan-result table { margin-top: 8px; }
