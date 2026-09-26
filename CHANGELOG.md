@@ -1,5 +1,10 @@
 # Changelog — Cookiebaas
 
+## [2.4.4] - 2026-09-26
+
+### Opgelost
+- **De link "Cookievoorkeuren aanpassen" in de embed-placeholder stond altijd in het Nederlands.** De tekst was hardcoded in `cm_build_embed_placeholder()`, terwijl de taalafhankelijke `txt_embed_prefs` wel werd opgehaald maar nooit gebruikt. De placeholder toont nu `txt_embed_prefs` / `txt_embed_prefs_en`, zodat de link bij bannertaal Engels ook Engels is. De link opent de voorkeuren via de bestaande `.cm-embed-open-prefs`-handler in plaats van een inline `onclick`.
+
 ## [2.4.3] - 2026-09-24
 
 ### Opgelost

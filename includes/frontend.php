@@ -758,7 +758,7 @@ function cm_build_embed_placeholder( $original_tag, $src, $info ) {
     $html .= '<div class="cm-embed-title">' . esc_html( $title_txt ) . '</div>';
     $html .= '<div class="cm-embed-body">' . wp_kses( $body_txt, array( 'strong' => array(), 'em' => array() ) ) . '</div>';
     $html .= '<button type="button" class="cm-embed-accept-btn" data-cm-embed-cat="' . $cat . '">' . esc_html( cm_t('txt_embed_accept_btn') ) . '</button>';
-    $html .= '<div class="cm-embed-prefs-link"><a href="#" onclick="Cookiebaas.openPrefs();return false;">Cookievoorkeuren aanpassen</a></div>';
+    $html .= '<div class="cm-embed-prefs-link">' . wp_kses( $prefs_txt, array( 'a' => array( 'href' => array(), 'class' => array() ), 'strong' => array(), 'em' => array() ) ) . '</div>';
     $html .= '</div></div></div>';
     $html .= '<!--/cm-embed-placeholder-->';
 
