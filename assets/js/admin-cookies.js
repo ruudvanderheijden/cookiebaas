@@ -62,6 +62,7 @@
       return oa !== ob ? oa - ob : String(a.name).localeCompare(String(b.name));
     });
     result.textContent = '';
+    result.className = '';
     result.appendChild(el('p', pages + ' pagina’s gescand, ' + found.length + ' cookies gevonden.'));
     if (!found.length) {
       result.appendChild(el('p', 'Geen cookies gevonden. Kijk ook in uw browser via F12 › Applicatie › Cookies.', 'description'));
@@ -141,6 +142,7 @@
     scanBtn.disabled = true;
     found = [];
     result.textContent = '';
+    result.className = '';
     var label = el('p', 'Pagina’s ophalen…');
     var progress = el('progress');
     progress.max = 100;
