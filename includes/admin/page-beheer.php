@@ -108,34 +108,52 @@ function cm_import_backup( $raw ) {
     $data = is_string( $raw ) && $raw !== '' ? json_decode( $raw, true ) : null;
     $meta = is_array( $data ) && isset( $data['_meta'] ) && is_array( $data['_meta'] ) ? $data['_meta'] : array();
     if ( ! isset( $meta['plugin'] ) || ! in_array( $meta['plugin'], array( 'cookiebaas', 'cookiemelding' ), true ) ) {
-        return array( 'ok' => false, 'message' => 'Dit is geen backup van Cookiebaas. Er is niets gewijzigd.' );
+        return array( 'ok' => false, 'warning' => false, 'message' => 'Dit is geen backup van Cookiebaas. Er is niets gewijzigd.' );
     }
-    $has = function ( $k ) use ( $data ) { return isset( $data[ $k ] ) && is_array( $data[ $k ] ); };
-    if ( ! $has( 'settings' ) && ! $has( 'cookie_list' ) && ! $has( 'privacy' ) ) {
-        return array( 'ok' => false, 'message' => 'De backup bevat geen instellingen, cookielijst of privacyverklaring. Er is niets gewijzigd.' );
+    // De API-sleutel zit nooit in een backup: een sleutel (leeg of gevuld) in
+    // het bestand mag de huidige sleutel nooit overschrijven.
+    if ( isset( $data['settings'] ) && is_array( $data['settings'] ) ) {
+        unset( $data['settings']['api_key'] );
+    }
+    $has          = function ( $k ) use ( $data ) { return isset( $data[ $k ] ) && is_array( $data[ $k ] ); };
+    $has_settings = $has( 'settings' ) && $data['settings'];
+    $has_cookies  = $has( 'cookie_list' ); // een lege lijst is een geldige backup
+    $has_privacy  = $has( 'privacy' ) && $data['privacy'];
+    if ( ! $has_settings && ! $has_cookies && ! $has_privacy ) {
+        return array( 'ok' => false, 'warning' => false, 'message' => 'De backup bevat geen instellingen, cookielijst of privacyverklaring. Er is niets gewijzigd.' );
     }
 
-    $errors = count( get_settings_errors() );
+    // Eerst valideren, dan pas schrijven: een niet-lege cookielijst die na
+    // sanitizing leeg is (alleen rommelrijen) wijst op een corrupt bestand.
+    $cookie_list = array();
+    if ( $has_cookies ) {
+        $cookie_list = cm_sanitize_cookie_list( $data['cookie_list'] );
+        if ( $data['cookie_list'] && ! $cookie_list ) {
+            return array( 'ok' => false, 'warning' => false, 'message' => 'De cookielijst in de backup is ongeldig. Er is niets gewijzigd.' );
+        }
+    }
+
+    $errors = function_exists( 'get_settings_errors' ) ? count( get_settings_errors() ) : 0;
     $done   = array();
-    if ( $has( 'settings' ) ) {
+    if ( $has_settings ) {
         $base = array_merge( cm_default_settings(), array( 'api_key' => (string) cm_get( 'api_key' ) ) );
         update_option( 'cm_settings', cm_sanitize_settings( $data['settings'], $base ) );
         $done[] = 'instellingen';
     }
-    if ( $has( 'cookie_list' ) ) {
-        $list = cm_sanitize_cookie_list( $data['cookie_list'] );
-        update_option( 'cm_cookie_list', $list );
-        $done[] = count( $list ) === 1 ? '1 cookie' : count( $list ) . ' cookies';
+    if ( $has_cookies ) {
+        update_option( 'cm_cookie_list', $cookie_list );
+        $done[] = count( $cookie_list ) === 1 ? '1 cookie' : count( $cookie_list ) . ' cookies';
     }
-    if ( $has( 'privacy' ) ) {
+    if ( $has_privacy ) {
         update_option( 'cm_privacy', cm_sanitize_privacy( array_merge( cm_default_privacy(), $data['privacy'] ) ) );
         $done[] = 'privacyverklaring';
     }
     $message = 'Teruggezet: ' . implode( ', ', $done ) . '.';
-    if ( count( get_settings_errors() ) > $errors ) {
+    $warning = function_exists( 'get_settings_errors' ) && count( get_settings_errors() ) > $errors;
+    if ( $warning ) {
         $message .= ' Sommige waarden in de backup waren ongeldig; daar staat nu de standaardwaarde.';
     }
-    return array( 'ok' => true, 'message' => $message );
+    return array( 'ok' => true, 'warning' => $warning, 'message' => $message );
 }
 
 function cm_license_reset_local() {
@@ -213,7 +231,7 @@ if ( function_exists( 'cm_admin_register_action' ) ) {
             return '';
         }
         $r = cm_import_backup( (string) file_get_contents( $f['tmp_name'] ) );
-        cm_admin_flash( $r['ok'] ? ( strpos( $r['message'], 'ongeldig' ) !== false ? 'warning' : 'success' ) : 'error', $r['message'] );
+        cm_admin_flash( ! $r['ok'] ? 'error' : ( $r['warning'] ? 'warning' : 'success' ), $r['message'] );
         return '';
     } );
     cm_admin_register_action( 'reset_all', function () {

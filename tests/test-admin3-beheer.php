@@ -125,11 +125,13 @@ cm_assert( 'cookielijst en privacy gaan mee', array_key_exists( 'cookie_list', $
 cm_test_group( 'Ongeldig bestand wijzigt niets (Review Focus 2)' );
 $snap = $GLOBALS['cm_test_options'];
 $junk = array(
-    'leeg'            => '',
-    'geen JSON'       => 'geen json',
-    'zonder _meta'    => json_encode( array( 'settings' => array( 'gtm_container_id' => 'X' ) ) ),
-    'andere plugin'   => json_encode( array( '_meta' => array( 'plugin' => 'andere-plugin' ), 'settings' => array( 'gtm_container_id' => 'X' ) ) ),
-    'zonder inhoud'   => json_encode( array( '_meta' => array( 'plugin' => 'cookiebaas' ) ) ),
+    'leeg'                 => '',
+    'geen JSON'            => 'geen json',
+    'zonder _meta'         => json_encode( array( 'settings' => array( 'gtm_container_id' => 'X' ) ) ),
+    'andere plugin'        => json_encode( array( '_meta' => array( 'plugin' => 'andere-plugin' ), 'settings' => array( 'gtm_container_id' => 'X' ) ) ),
+    'zonder inhoud'        => json_encode( array( '_meta' => array( 'plugin' => 'cookiebaas' ) ) ),
+    'settings leeg'        => json_encode( array( '_meta' => array( 'plugin' => 'cookiebaas' ), 'settings' => array() ) ),
+    'cookie_list ongeldig' => json_encode( array( '_meta' => array( 'plugin' => 'cookiebaas' ), 'cookie_list' => array( 'a' => 1 ) ) ),
 );
 foreach ( $junk as $label => $raw ) {
     $r = cm_import_backup( $raw );
@@ -160,11 +162,21 @@ $pv = get_option( 'cm_privacy' );
 cm_assert( 'privacy: regeleinde behouden, tags weg', $pv['pv_doorgifte'] === "A\nB" && $pv['pv_bedrijfsnaam'] === 'X' );
 cm_assert( 'privacy: ontbrekende checkbox krijgt de standaard', $pv['pv_ap_tonen'] === cm_default_privacy()['pv_ap_tonen'] );
 cm_assert( 'paginacache geleegd na import', $GLOBALS['cm_test_purges'] > $purges );
+cm_assert( 'geen waarschuwing bij een schone import', $r['warning'] === false );
+
+cm_test_group( 'Backup kan de API-sleutel niet overschrijven (Important)' );
+update_option( 'cm_settings', array_merge( cm_default_settings(), array( 'api_key' => str_repeat( 'a', 40 ) ) ) );
+$r = cm_import_backup( json_encode( array( '_meta' => array( 'plugin' => 'cookiebaas' ), 'settings' => array( 'api_key' => '', 'gtm_container_id' => 'GTM-X' ) ) ) );
+cm_assert( 'import slaagt', $r['ok'] === true );
+$s = get_option( 'cm_settings' );
+cm_assert( 'API-sleutel blijft ondanks lege waarde in de backup', $s['api_key'] === str_repeat( 'a', 40 ) );
+cm_assert( 'andere instelling wordt wel overgenomen', $s['gtm_container_id'] === 'GTM-X' );
 
 cm_test_group( 'Ongeldige waarde in de backup → melding' );
 $GLOBALS['cm_test_errors'] = array();
 $r = cm_import_backup( json_encode( array( '_meta' => array( 'plugin' => 'cookiebaas' ), 'settings' => array( 'color_popup_bg' => 'rood' ) ) ) );
 cm_assert( 'import slaagt, met een waarschuwing', $r['ok'] === true && strpos( $r['message'], 'ongeldig' ) !== false );
+cm_assert( 'de waarschuwing staat in warning, niet alleen in de tekst', $r['warning'] === true );
 cm_assert( 'ongeldige kleur wordt de standaard', get_option( 'cm_settings' )['color_popup_bg'] === cm_default_settings()['color_popup_bg'] );
 
 cm_test_group( 'Alles resetten (Review Focus 4)' );
@@ -190,5 +202,11 @@ ob_start(); cm_render_beheer_backup(); $h = ob_get_clean();
 cm_assert( 'download en upload', strpos( $h, 'action=cm_export_backup' ) !== false && strpos( $h, 'enctype="multipart/form-data"' ) !== false && strpos( $h, 'name="cm_backup"' ) !== false );
 ob_start(); cm_render_beheer_reset(); $h = ob_get_clean();
 cm_assert( 'alles resetten en licentie wissen, met bevestiging', strpos( $h, 'value="cm_reset_all"' ) !== false && strpos( $h, 'value="cm_license_reset"' ) !== false && substr_count( $h, 'data-cm-confirm=' ) === 2 );
+
+cm_test_group( 'Acties geregistreerd (regressie 2.4.5)' );
+cm_assert( 'export_backup is geregistreerd', has_action( 'admin_post_cm_export_backup' ) );
+cm_assert( 'import_backup is geregistreerd', has_action( 'admin_post_cm_import_backup' ) );
+cm_assert( 'reset_all is geregistreerd', has_action( 'admin_post_cm_reset_all' ) );
+cm_assert( 'license_reset is geregistreerd', has_action( 'admin_post_cm_license_reset' ) );
 
 exit( cm_test_summary() );
