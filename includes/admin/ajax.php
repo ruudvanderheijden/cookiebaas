@@ -19,11 +19,16 @@ function cm_admin_verify_ajax( $action ) {
     wp_send_json_error( array( 'msg' => 'De sessie is verlopen. Herlaad de pagina en probeer het opnieuw.' ), 403 );
 }
 
-/** Scanresultaat (cm_scan_batch) → regel van de cookielijst. */
+/**
+ * Scanresultaat (cm_scan_batch) → regel van de cookielijst, of null als de
+ * naam ontbreekt of geen tekst is (bijv. een array) — anders levert
+ * (string)$ck['name'] de letterlijke rij "Array" op.
+ */
 function cm_scan_result_to_row( array $ck ) {
+    if ( ! isset( $ck['name'] ) || ! is_scalar( $ck['name'] ) || (string) $ck['name'] === '' ) return null;
     $type = isset( $ck['type'] ) ? (string) $ck['type'] : '';
     return array(
-        'name'     => isset( $ck['name'] ) ? (string) $ck['name'] : '',
+        'name'     => (string) $ck['name'],
         'provider' => isset( $ck['provider'] ) ? (string) $ck['provider'] : '',
         'purpose'  => isset( $ck['description'] ) ? (string) $ck['description'] : '',
         'duration' => isset( $ck['duration'] ) && (string) $ck['duration'] !== '' ? (string) $ck['duration'] : 'Sessie',
@@ -56,6 +61,9 @@ function cm_merge_cookie_list( array $existing, array $new ) {
 add_action( 'wp_ajax_cm_scan_add', 'cm_ajax_scan_add' );
 function cm_ajax_scan_add() {
     cm_admin_verify_ajax( 'scan_add' );
+    if ( isset( $_POST['cookies'] ) && ! is_string( $_POST['cookies'] ) ) {
+        wp_send_json_error( array( 'msg' => 'Ongeldige cookiegegevens ontvangen.' ) );
+    }
     $raw = isset( $_POST['cookies'] ) ? json_decode( wp_unslash( $_POST['cookies'] ), true ) : null;
     if ( ! is_array( $raw ) ) wp_send_json_error( array( 'msg' => 'Er zijn geen cookies ontvangen.' ) );
 

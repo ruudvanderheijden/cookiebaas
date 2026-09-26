@@ -61,5 +61,7 @@ cm_test_group( 'Scan-JS bestaat en gebruikt geen innerHTML met scandata' );
 $js = (string) @file_get_contents( CM_PLUGIN_ROOT . '/assets/js/admin-cookies.js' );
 cm_assert( 'admin-cookies.js bestaat', $js !== '' );
 cm_assert( 'geen innerHTML (scandata alleen via textContent)', strpos( $js, 'innerHTML' ) === false );
+cm_assert( 'melding bij deels mislukte scan', strpos( $js, 'konden niet worden gescand' ) !== false );
+cm_assert( 'melding bij volledig mislukte scan', strpos( $js, 'geen enkele pagina kon worden gescand' ) !== false );
 
 exit( cm_test_summary() );

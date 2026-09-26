@@ -141,11 +141,11 @@ function cm_privacy_sections() {
                 'placeholder' => "Eén veld per regel, bijvoorbeeld:\nFactuurnummer\nProjectnaam",
                 'description' => 'Optioneel: eigen veldnamen, één per regel. Ze worden vermeld in de verklaring.',
             ) ),
-            $p( 'pv_cf_grondslag', 'select', 'Rechtsgrondslag', array( 'options' => $bases, 'description' => 'Verplicht te vermelden (Art. 13 lid 1c AVG).' ) ),
+            $p( 'pv_cf_grondslag', 'select', 'Rechtsgrondslag', array( 'options' => $bases, 'context' => '2.1 Contactformulier', 'description' => 'Verplicht te vermelden (Art. 13 lid 1c AVG).' ) ),
         ) ),
         array( 'title' => '2.3 Nieuwsbrief en e-mailmarketing', 'fields' => array(
             $p( 'pv_nieuwsbrief_enabled', 'checkbox', 'Nieuwsbrief', array( 'checkbox_label' => 'Wij versturen een nieuwsbrief of marketing-e-mails' ) ),
-            $p( 'pv_nieuwsbrief_grondslag', 'select', 'Rechtsgrondslag', array( 'options' => $bases, 'show_if' => array( 'pv_nieuwsbrief_enabled' => '1' ) ) ),
+            $p( 'pv_nieuwsbrief_grondslag', 'select', 'Rechtsgrondslag', array( 'options' => $bases, 'context' => '2.3 Nieuwsbrief', 'show_if' => array( 'pv_nieuwsbrief_enabled' => '1' ) ) ),
             $p( 'pv_nieuwsbrief_afmelden', 'text', 'Afmeldpagina', array(
                 'optional'    => true,
                 'placeholder' => 'https://…',

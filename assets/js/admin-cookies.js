@@ -8,6 +8,7 @@
 
   var LABELS = { functional: 'Functioneel', analytics: 'Analytisch', marketing: 'Marketing', unknown: 'Onbekend' };
   var ORDER = { functional: 0, analytics: 1, marketing: 2, unknown: 3 };
+  var HOW_LABELS = { embed: 'Embed', server: 'HTTP-header' };
 
   function post(action, data) {
     var body = new URLSearchParams();
@@ -54,8 +55,24 @@
   var result = document.getElementById('cm-scan-result');
   if (!scanBtn || !result) return;
   var found = [];
+  var addStatus = null; // één hergebruikt statuselement: herhaalde mislukkingen vervangen elkaar i.p.v. te stapelen
 
-  function renderResults(pages) {
+  function showAddStatus(text, cls) {
+    if (!addStatus) {
+      addStatus = el('p', text, cls);
+      result.appendChild(addStatus);
+    } else {
+      addStatus.textContent = text;
+      addStatus.className = cls;
+    }
+  }
+
+  function renderResults(pages, failedPages) {
+    failedPages = failedPages || 0;
+    if (pages > 0 && failedPages === pages) {
+      notice(result, 'error', 'De scan is mislukt: geen enkele pagina kon worden gescand.');
+      return;
+    }
     found.sort(function (a, b) {
       var oa = ORDER[a.type] !== undefined ? ORDER[a.type] : 9;
       var ob = ORDER[b.type] !== undefined ? ORDER[b.type] : 9;
@@ -63,6 +80,11 @@
     });
     result.textContent = '';
     result.className = '';
+    if (failedPages > 0) {
+      var warn = el('div');
+      notice(warn, 'warning', failedPages + ' van ' + pages + ' pagina’s konden niet worden gescand.');
+      result.appendChild(warn);
+    }
     result.appendChild(el('p', pages + ' pagina’s gescand, ' + found.length + ' cookies gevonden.'));
     if (!found.length) {
       result.appendChild(el('p', 'Geen cookies gevonden. Kijk ook in uw browser via F12 › Applicatie › Cookies.', 'description'));
@@ -89,14 +111,14 @@
       tr.insertCell().textContent = ck.provider || '';
       tr.insertCell().textContent = ck.description || '—';
       tr.insertCell().textContent = ck.duration || '';
-      tr.insertCell().textContent = ck.how === 'server' ? 'HTTP-header' : 'Script';
+      tr.insertCell().textContent = HOW_LABELS[ck.how] || 'Script';
       var add = el('button', 'Toevoegen', 'button button-small cm-scan-add-one');
       add.type = 'button';
       add.setAttribute('data-i', String(i));
       tr.insertCell().appendChild(add);
     });
     result.appendChild(table);
-    result.appendChild(el('p', 'HTTP-header: gezet door de server. Script: afgeleid uit trackingscripts (de browser zet de cookie).', 'description'));
+    result.appendChild(el('p', 'HTTP-header: gezet door de server. Script: afgeleid uit trackingscripts (de browser zet de cookie). Embed: gezet door een ingesloten dienst (bijv. een video).', 'description'));
   }
 
   /* Serialiseer alle cm_scan_add-aanroepen achter elkaar: de server doet
@@ -118,6 +140,7 @@
       return (r.data.added || []).length;
     }).catch(function () {
       buttons.forEach(function (b) { b.disabled = false; });
+      showAddStatus('Toevoegen is mislukt. Probeer het opnieuw.', 'notice notice-error inline');
       return -1;
     });
     addQueue = job.catch(function () {}); // houd de wachtrij levend na een mislukking
@@ -132,15 +155,16 @@
     all.disabled = true;
     var buttons = Array.prototype.slice.call(result.querySelectorAll('.cm-scan-add-one:not([disabled])'));
     addCookies(buttons.map(function (b) { return found[+b.getAttribute('data-i')]; }), buttons).then(function (n) {
-      var msg = n > 0 ? ' ' + n + ' cookies toegevoegd.' : (n === 0 ? ' Alle cookies staan al in de lijst.' : ' Toevoegen is mislukt. Probeer het opnieuw.');
+      if (n < 0) { all.disabled = false; return; } // addCookies toont de foutmelding al via het statuselement
+      var msg = n > 0 ? ' ' + n + ' cookies toegevoegd.' : ' Alle cookies staan al in de lijst.';
       all.parentNode.appendChild(el('span', msg, 'description'));
-      if (n < 0) all.disabled = false;
     });
   });
 
   scanBtn.addEventListener('click', function () {
     scanBtn.disabled = true;
     found = [];
+    addStatus = null;
     result.textContent = '';
     result.className = '';
     var label = el('p', 'Pagina’s ophalen…');
@@ -151,28 +175,39 @@
     result.appendChild(progress);
 
     post('cm_scan_urls', { nonce: cfg.nonces.scan }).then(function (r) {
-      if (!r || !r.success) throw new Error((r && r.data && r.data.msg) || 'De pagina’s konden niet worden opgehaald.');
+      if (!r || !r.success) {
+        var e = new Error((r && r.data && r.data.msg) || 'De pagina’s konden niet worden opgehaald.');
+        e.cmKnown = true; // eigen melding van de server, geen JS-fout — zie de outer .catch
+        throw e;
+      }
       var urls = r.data.urls || [];
       var batches = [];
       for (var i = 0; i < urls.length; i += 5) batches.push(urls.slice(i, i + 5));
       var seen = {};
       var done = 0;
+      var failedPages = 0;
       function next(idx) {
         if (idx >= batches.length) return Promise.resolve();
         return post('cm_scan_batch', { nonce: cfg.nonces.scan, urls: batches[idx] }).then(function (b) {
-          if (b && b.success) (b.data.cookies || []).forEach(function (c) {
-            if (!seen[c.name]) { seen[c.name] = true; found.push(c); }
-          });
-        }).catch(function () { /* batch mislukt: overslaan en doorgaan */ }).then(function () {
+          if (b && b.success) {
+            (b.data.cookies || []).forEach(function (c) {
+              if (!seen[c.name]) { seen[c.name] = true; found.push(c); }
+            });
+          } else {
+            failedPages += batches[idx].length;
+          }
+        }).catch(function () {
+          failedPages += batches[idx].length; // batch mislukt: overslaan en doorgaan
+        }).then(function () {
           done += batches[idx].length;
           progress.value = Math.round((idx + 1) / batches.length * 100);
           label.textContent = done + ' van ' + urls.length + ' pagina’s gescand…';
           return next(idx + 1);
         });
       }
-      return next(0).then(function () { renderResults(urls.length); });
+      return next(0).then(function () { renderResults(urls.length, failedPages); });
     }).catch(function (err) {
-      notice(result, 'error', err && err.message ? err.message : 'De scan is mislukt.');
+      notice(result, 'error', err && err.cmKnown ? err.message : 'De scan is mislukt.');
     }).then(function () { scanBtn.disabled = false; });
   });
 })();

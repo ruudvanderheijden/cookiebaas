@@ -219,6 +219,13 @@ function cm_cookie_list_sanitize_callback( $input ) {
         $existing = get_option( 'cm_cookie_list', array() );
         return is_array( $existing ) ? $existing : array();
     }
+    // Formulier van de cookielijst-tab zonder sentinel: PHP (max_input_vars) heeft
+    // rijen afgekapt voordat ze de server bereikten. Niets opslaan, oude lijst houden.
+    if ( isset( $_POST['option_page'] ) && $_POST['option_page'] === 'cookiebaas_cookies' && ! isset( $_POST['cm_cookie_list_complete'] ) ) {
+        add_settings_error( 'cm_cookie_list', 'cm_cookie_list_truncated', 'De cookielijst is niet opgeslagen: de server ontving niet alle rijen (PHP max_input_vars is te laag). Verhoog max_input_vars of verwijder rijen.' );
+        $existing = get_option( 'cm_cookie_list' );
+        return is_array( $existing ) ? $existing : array();
+    }
     return is_array( $input ) ? cm_sanitize_cookie_list( array_values( $input ) ) : array();
 }
 

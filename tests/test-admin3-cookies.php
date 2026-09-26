@@ -23,6 +23,8 @@ class CM_Test_Json extends Exception { public $ok; public $data; function __cons
 function wp_send_json_error( $d = null, $code = null ) { throw new CM_Test_Json( false, $d ); }
 function wp_send_json_success( $d = null ) { throw new CM_Test_Json( true, $d ); }
 function wp_verify_nonce( $nonce, $action ) { return $nonce === 'nonce-' . $action; }
+$GLOBALS['cm_test_errors'] = array();
+function add_settings_error( $setting, $code, $message ) { $GLOBALS['cm_test_errors'][] = $message; }
 $GLOBALS['cm_test_can'] = true;
 function current_user_can() { return $GLOBALS['cm_test_can']; }
 $GLOBALS['cm_test_sched'] = array();
@@ -55,8 +57,27 @@ cm_assert( 'formulier naar options.php met groep cookiebaas_cookies', strpos( $h
 cm_assert( 'opgeslagen cookie als rij', strpos( $h, 'name="cm_cookie_list[0][name]" value="_ga"' ) !== false );
 cm_assert( 'categorie-keuze staat goed', preg_match( '/name="cm_cookie_list\[0\]\[category\]"[^>]*>.*?<option value="analytics" selected>/s', $h ) === 1 );
 cm_assert( 'ingebouwde cookies als alleen-lezen tabel', strpos( $h, 'Ingebouwde cookies' ) !== false && strpos( $h, '<code>cc_cm_consent</code>' ) !== false );
+cm_assert( 'sentinel tegen afgekapte POST (max_input_vars)', strpos( $h, 'name="cm_cookie_list_complete"' ) !== false );
 cm_assert( 'pagina Cookies staat in het menu', isset( cm_admin_pages()['cookiebaas-cookies'] ) );
 cm_assert( 'tab Cookielijst bestaat', isset( cm_tabs_cookies()['lijst'] ) );
+
+cm_test_group( 'Cookielijst: bescherming tegen afgekapte POST (max_input_vars)' );
+update_option( 'cm_cookie_list', array( array( 'name' => '_ga', 'provider' => '', 'purpose' => '', 'duration' => '', 'category' => 'analytics', 'builtin' => false ) ) );
+$_POST = array( 'option_page' => 'cookiebaas_cookies' );
+$out = cm_cookie_list_sanitize_callback( array( array( 'name' => '_afgekapt', 'category' => 'marketing' ) ) );
+cm_assert( 'zonder sentinel: bestaande lijst blijft ongewijzigd', count( $out ) === 1 && $out[0]['name'] === '_ga' );
+cm_assert( 'zonder sentinel: foutmelding getoond', ! empty( $GLOBALS['cm_test_errors'] ) && strpos( end( $GLOBALS['cm_test_errors'] ), 'max_input_vars' ) !== false );
+
+$GLOBALS['cm_test_errors'] = array();
+$_POST = array( 'option_page' => 'cookiebaas_cookies', 'cm_cookie_list_complete' => '1' );
+$out = cm_cookie_list_sanitize_callback( array( array( 'name' => '_compleet', 'category' => 'marketing' ) ) );
+cm_assert( 'met sentinel: nieuwe lijst wordt opgeslagen', count( $out ) === 1 && $out[0]['name'] === '_compleet' );
+cm_assert( 'met sentinel: geen foutmelding', empty( $GLOBALS['cm_test_errors'] ) );
+
+$_POST = array();
+$out = cm_cookie_list_sanitize_callback( array( array( 'name' => '_zonder_option_page', 'category' => 'marketing' ) ) );
+cm_assert( 'zonder option_page: huidig gedrag, gewoon opslaan', count( $out ) === 1 && $out[0]['name'] === '_zonder_option_page' );
+$_POST = array();
 
 cm_test_group( 'Plakken vanuit F12' );
 $now = strtotime( '2026-09-26 10:00:00 UTC' );
@@ -107,6 +128,8 @@ cm_test_group( 'Scanresultaat toevoegen (Review Focus 2 en 4)' );
 $r = cm_scan_result_to_row( array( 'name' => '_ga', 'type' => 'analytics', 'provider' => 'Google Analytics', 'description' => 'Meet', 'duration' => '2 jaar', 'how' => 'server' ) );
 cm_assert( 'scanvelden → lijstvelden', $r === array( 'name' => '_ga', 'provider' => 'Google Analytics', 'purpose' => 'Meet', 'duration' => '2 jaar', 'category' => 'analytics' ) );
 cm_assert( 'onbekend type wordt functioneel, lege looptijd "Sessie"', cm_scan_result_to_row( array( 'name' => 'x', 'type' => 'unknown' ) )['category'] === 'functional' && cm_scan_result_to_row( array( 'name' => 'x' ) )['duration'] === 'Sessie' );
+cm_assert( 'naam als array wordt overgeslagen (geen rij "Array")', cm_scan_result_to_row( array( 'name' => array( 'x' ) ) ) === null );
+cm_assert( 'lege of ontbrekende naam wordt overgeslagen', cm_scan_result_to_row( array( 'name' => '' ) ) === null && cm_scan_result_to_row( array() ) === null );
 $m = cm_merge_cookie_list( array( array( 'name' => '_ga', 'purpose' => 'eigen tekst' ) ), array( array( 'name' => '_ga', 'purpose' => 'scan' ), array( 'name' => '_fbp' ), array( 'name' => '_fbp' ), array( 'name' => '' ) ) );
 cm_assert( 'bestaande rij blijft ongewijzigd', $m['list'][0]['purpose'] === 'eigen tekst' );
 cm_assert( 'alleen nieuwe namen, zonder dubbelingen of lege namen', $m['added'] === array( '_fbp' ) && count( $m['list'] ) === 2 );
@@ -123,6 +146,23 @@ cm_assert( 'toevoegen slaagt en meldt alleen de nieuwe naam', $res && $res->ok &
 cm_assert( 'HTML uit de scan is weg', $list[1]['name'] === '_hjid' && strpos( $list[1]['purpose'], '<' ) === false );
 cm_assert( 'ingebouwde cookie niet dubbel in de lijst', ! in_array( 'cc_cm_consent', array_column( $list, 'name' ), true ) );
 cm_assert( 'bestaande _ga ongemoeid', $list[0]['purpose'] === 'eigen' && count( $list ) === 2 );
+
+cm_test_group( 'AJAX scan_add: robuust tegen ongeldige invoer' );
+update_option( 'cm_cookie_list', array() );
+$_POST = array( 'nonce' => 'nonce-cm_scan_add', 'cookies' => array( 'niet-een-string' ) );
+try { cm_ajax_scan_add(); $res = null; } catch ( CM_Test_Json $e ) { $res = $e; }
+cm_assert( 'cookies als array (geen string) geeft een nette foutmelding, geen TypeError', $res && ! $res->ok && ! empty( $res->data['msg'] ) );
+
+update_option( 'cm_cookie_list', array() );
+$_POST = array( 'nonce' => 'nonce-cm_scan_add', 'cookies' => addslashes( json_encode( array(
+    array( 'name' => array( 'niet-een-string' ), 'type' => 'analytics' ),
+    array( 'name' => '_geldig', 'type' => 'analytics' ),
+) ) ) );
+try { cm_ajax_scan_add(); $res = null; } catch ( CM_Test_Json $e ) { $res = $e; }
+$list = get_option( 'cm_cookie_list' );
+cm_assert( 'entry met naam als array levert nooit een rij "Array" op', ! in_array( 'Array', array_column( $list, 'name' ), true ) );
+cm_assert( 'de geldige rij wordt wel toegevoegd', in_array( '_geldig', array_column( $list, 'name' ), true ) );
+$_POST = array();
 
 cm_test_group( 'Automatische scan' );
 cm_assert( 'wijziging van modus of frequentie → opnieuw inplannen', cm_auto_scan_settings_changed( array( 'auto_scan_mode' => 'off', 'auto_scan_interval' => '30' ), array( 'auto_scan_mode' => 'auto', 'auto_scan_interval' => '30' ) ) );

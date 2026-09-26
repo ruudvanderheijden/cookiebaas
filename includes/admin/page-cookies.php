@@ -83,7 +83,7 @@ function cm_render_auto_scan_status() {
 
 function cm_render_scan_timer_reset() {
     if ( cm_get( 'auto_scan_mode' ) === 'off' ) return;
-    echo '<p>' . cm_admin_action_form( 'reset_scan_timer', 'Timer resetten' ) . ' <span class="description">Plant de volgende automatische scan opnieuw in, gerekend vanaf nu.</span></p>';
+    echo '<div>' . cm_admin_action_form( 'reset_scan_timer', 'Timer resetten' ) . ' <span class="description">Plant de volgende automatische scan opnieuw in, gerekend vanaf nu.</span></div>';
 }
 
 /** Herplan de scan-cron alleen als modus of frequentie echt veranderde. */
@@ -130,6 +130,8 @@ function cm_render_cookie_list_tab() {
     echo '<h2>Uw cookies</h2>';
     echo '<p>Deze lijst verschijnt in het voorkeurenvenster van de banner en in de cookietabel van de privacyverklaring.</p>';
     cm_admin_render_rows( 'cm_cookie_list', cm_cookie_list_columns(), is_array( $rows ) ? array_values( $rows ) : array(), 'Cookie toevoegen' );
+    // Sentinel: als deze ontbreekt in de POST heeft PHP (max_input_vars) rijen afgekapt.
+    echo '<input type="hidden" name="cm_cookie_list_complete" value="1">';
     submit_button( 'Cookielijst opslaan' );
     echo '</form>';
     cm_render_cookie_list_tools();
@@ -235,9 +237,9 @@ function cm_render_cookie_list_tools() {
     echo '<p><textarea id="cm-f12" name="cm_f12" rows="8" class="large-text code"></textarea></p>';
     echo '<p><button type="submit" class="button">Toevoegen aan de lijst</button></p>';
     echo '</form></div></details>';
-    echo '<p><a class="button" href="' . esc_url( cm_admin_action_url( 'export_cookies' ) ) . '">Exporteren als CSV</a> ';
+    echo '<div><a class="button" href="' . esc_url( cm_admin_action_url( 'export_cookies' ) ) . '">Exporteren als CSV</a> ';
     echo cm_admin_action_form( 'clear_cookie_list', 'Lijst leegmaken', array(), 'De cookielijst leegmaken? De ingebouwde cookies blijven staan.', 'button button-link-delete' );
-    echo '</p>';
+    echo '</div>';
 }
 
 if ( function_exists( 'cm_admin_register_action' ) ) {
@@ -252,7 +254,7 @@ if ( function_exists( 'cm_admin_register_action' ) ) {
         return 'f12-imported';
     } );
     cm_admin_register_action( 'export_cookies', function () {
-        cm_admin_send_csv( 'cookielijst-' . gmdate( 'Y-m-d' ) . '.csv', cm_cookie_list_csv_rows( cm_get_cookie_list() ) );
+        cm_admin_send_csv( 'cookielijst-' . wp_date( 'Y-m-d' ) . '.csv', cm_cookie_list_csv_rows( cm_get_cookie_list() ) );
     } );
     cm_admin_register_action( 'clear_cookie_list', function () {
         update_option( 'cm_cookie_list', array() );
