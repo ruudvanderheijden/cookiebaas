@@ -57,7 +57,7 @@
       var v = fieldValue(key + sfx);
       if (v === null) return;
       if (v === '' && sfx) v = fieldValue(key) || ''; // net als de frontend: lege EN valt terug op NL
-      if (key === 'txt_embed_body') v = v.replace('{service}', '<strong>YouTube</strong>');
+      if (key === 'txt_embed_body') v = v.split('{service}').join('<strong>YouTube</strong>');
       doc.querySelectorAll(t.sel).forEach(function (el) {
         if (key === 'txt_float_label' && el.querySelector('svg, img')) return; // icoonknop: tekst is alleen het label
         if (t.html) el.innerHTML = v; else el.textContent = v;

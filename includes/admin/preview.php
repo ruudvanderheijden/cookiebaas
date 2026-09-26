@@ -115,7 +115,7 @@ function cm_admin_render_preview( $tab ) {
     echo '<p class="description">Past zich direct aan terwijl u kiest. Het voorbeeld is niet klikbaar.</p>';
     echo '<template id="cm-preview-markup">';
     cm_banner_markup();
-    $info = array( 'service' => 'YouTube', 'category' => 'marketing', 'icon' => '▶' );
+    $info = array( 'service' => 'YouTube', 'category' => 'marketing' );
     $src  = 'https://www.youtube.com/embed/aqz-KE-bpKQ';
     echo '<div class="cm-stage-embed">' . cm_build_embed_placeholder( '<iframe src="' . esc_attr( $src ) . '" width="560" height="315"></iframe>', $src, $info ) . '</div>';
     echo '</template>';

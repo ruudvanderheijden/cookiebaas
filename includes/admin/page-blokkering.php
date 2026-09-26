@@ -45,6 +45,7 @@ function cm_tab_blokkering_google() {
                 echo '<li>Cookiebaas laadt de scripts zelf in, geblokkeerd tot de bezoeker toestemming geeft.</li>';
                 echo '<li>Na akkoord worden de scripts direct actief, zonder de pagina te herladen.</li>';
                 echo '</ol>';
+                echo '<p>Scripts die u hier invult worden automatisch geblokkeerd en vrijgegeven; verdere configuratie is niet nodig.</p>';
             } ),
             array(
                 'title'  => 'Google Analytics en Tag Manager',
@@ -55,7 +56,7 @@ function cm_tab_blokkering_google() {
                     cm_field( 'ua_tracking_id', 'text', 'Universal Analytics ID (verouderd)', array( 'placeholder' => 'UA-XXXXXXXXX-X', 'description' => 'Begint met <code>UA-</code>. Google heeft Universal Analytics stopgezet; gebruik bij voorkeur GA4. Beschikbaar voor sites die nog UA-code draaien.' ) ),
                     cm_field( 'google_consent_mode_advanced', 'checkbox', 'Consent Mode: advanced', array(
                         'checkbox_label' => 'Laad de Google-tag (GTM/GA4) altijd, ook vóór toestemming, zonder cookies tot er een keuze is',
-                        'description'    => 'De tag laadt direct met alle signalen op <code>denied</code>. Er worden geen cookies geplaatst, maar Google-tags versturen wel <strong>cookieloze pings</strong> voor modellering, ook vóór een keuze en na een weigering. Na akkoord vuren de tags direct volledig. Uit = <strong>basic</strong>: de tag wacht volledig op toestemming. Niet-Google tags in GTM (zoals Meta Pixel) kennen geen Consent Mode; zie "Niet-Google tags via GTM" hieronder.',
+                        'description'    => 'De tag laadt direct met alle signalen op <code>denied</code>. Er worden geen cookies geplaatst, maar Google-tags versturen wel <strong>cookieloze pings</strong> voor modellering, ook vóór een keuze en na een weigering. Na akkoord vuren de tags direct volledig. Uit = <strong>basic</strong>: de tag wacht volledig op toestemming. Niet-Google tags in GTM (zoals Meta Pixel) kennen geen Consent Mode; zie "Niet-Google tags via GTM" hieronder. Geldt niet voor Universal Analytics (verouderd, ondersteunt geen Consent Mode).',
                     ) ),
                     cm_field( 'google_url_passthrough', 'checkbox', 'URL passthrough', array(
                         'checkbox_label' => 'Geef meetinformatie door via de URL zolang cookies geweigerd zijn',
@@ -63,7 +64,7 @@ function cm_tab_blokkering_google() {
                     ) ),
                     cm_field( 'google_load_default', 'checkbox', 'Google-cookies direct laden', array(
                         'checkbox_label' => 'Laad Google-cookies direct bij het openen van de site, zonder toestemming',
-                        'notice'         => array( 'type' => 'warning', 'text' => '<strong>Dit is niet toegestaan volgens de AVG.</strong> Cookies die niet strikt noodzakelijk zijn, waaronder Google Analytics en Tag Manager, mogen pas laden nadat de bezoeker toestemming heeft gegeven. Zet dit alleen aan als u daar een geldige juridische basis voor heeft.' ),
+                        'notice'         => array( 'type' => 'warning', 'text' => '<strong>Dit is niet toegestaan volgens de AVG.</strong> Cookies die niet strikt noodzakelijk zijn, waaronder Google Analytics en Tag Manager, mogen pas laden nadat de bezoeker toestemming heeft gegeven. Doet u dit toch, dan riskeert u een boete van de Autoriteit Persoonsgegevens. Zet dit alleen aan als u hiervoor een geldige juridische basis heeft, of als u uitdrukkelijk afziet van AVG-compliance.' ),
                         'description'    => 'Staat dit aan, dan staan analytische cookies ook standaard aangevinkt (Banner › Gedrag).',
                     ) ),
                 ),

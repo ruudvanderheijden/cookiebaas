@@ -9,6 +9,8 @@
 function sanitize_text_field( $s ) { return is_scalar( $s ) ? trim( strip_tags( (string) $s ) ) : ''; }
 function get_pages() { return array( (object) array( 'ID' => 7, 'post_title' => 'Contact' ), (object) array( 'ID' => 12, 'post_title' => 'Bedankt' ) ); }
 function absint( $v ) { return abs( (int) $v ); }
+$GLOBALS['cm_test_errors'] = array();
+function add_settings_error( $setting, $code, $message ) { $GLOBALS['cm_test_errors'][] = $message; }
 
 /** Realistische wp_kses-stub: de bootstrap-stub laat alles door en zou de class-test zinloos maken. */
 function wp_kses( $s, $allowed = array() ) {
@@ -89,5 +91,23 @@ cm_assert( 'licht: lichte kleur en afronding terug', $l['color_title'] === cm_de
 cm_assert( 'licht: donker, actief thema en overige instellingen blijven', $l['dm_title'] === '#321321' && $l['color_theme'] === 'dark' && $l['gtm_container_id'] === 'GTM-X' );
 $d = cm_reset_theme_colors( $s, 'dark' );
 cm_assert( 'donker: alleen dm_* terug', $d['dm_title'] === cm_default_settings()['dm_title'] && $d['color_title'] === '#123123' );
+
+cm_test_group( 'Foutmelding noemt thema en sectie (licht/donker hebben dezelfde labels)' );
+$idx = cm_admin_field_index( 'cm_settings', array( 'cookiebaas-banner' => cm_tabs_banner() ) );
+$GLOBALS['cm_test_errors'] = array();
+cm_sanitize_field_value( $idx['dm_title'], 'geen-kleur', '#111111' );
+cm_assert( 'dm_title: melding bevat "Donker thema › Venster"', strpos( end( $GLOBALS['cm_test_errors'] ), 'Donker thema › Venster' ) !== false );
+$GLOBALS['cm_test_errors'] = array();
+cm_sanitize_field_value( $idx['color_title'], 'geen-kleur', '#111111' );
+cm_assert( 'color_title: melding bevat "Licht thema › Venster"', strpos( end( $GLOBALS['cm_test_errors'] ), 'Licht thema › Venster' ) !== false );
+$GLOBALS['cm_test_errors'] = array();
+cm_sanitize_field_value( $idx['banner_width_bottom_center'], 'abc', '760' );
+cm_assert( 'breedte onderaan-midden: melding bevat de context', strpos( end( $GLOBALS['cm_test_errors'] ), 'Onderaan in het midden' ) !== false );
+$GLOBALS['cm_test_errors'] = array();
+cm_sanitize_field_value( $idx['banner_width_center'], 'abc', '620' );
+cm_assert( 'breedte midden-scherm: melding bevat de context', strpos( end( $GLOBALS['cm_test_errors'] ), 'In het midden van het scherm' ) !== false );
+$GLOBALS['cm_test_errors'] = array();
+cm_sanitize_field_value( $idx['banner_width_compact'], 'abc', '420' );
+cm_assert( 'breedte links/rechtsonder: melding bevat de context', strpos( end( $GLOBALS['cm_test_errors'] ), 'Linksonder/rechtsonder' ) !== false );
 
 exit( cm_test_summary() );

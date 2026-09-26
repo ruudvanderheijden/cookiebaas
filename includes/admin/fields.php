@@ -204,7 +204,7 @@ function cm_admin_render_control( array $f, $id, $name, $value ) {
             $valid = preg_match( '/^#[0-9a-fA-F]{6}$/', $v ) === 1;
             echo '<span class="cm-color' . ( $valid ? '' : ' cm-color-empty' ) . '">';
             echo '<input type="color"' . ( $valid ? ' value="' . esc_attr( strtolower( $v ) ) . '"' : '' ) . ' aria-label="' . esc_attr( 'Kleurkiezer: ' . $f['label'] ) . '">';
-            echo '<input type="text"' . $attr . ' class="code cm-hex" value="' . esc_attr( $v ) . '" maxlength="7" size="8" spellcheck="false" autocomplete="off"' . $ph . '>';
+            echo '<input type="text"' . $attr . ' class="code cm-hex" value="' . esc_attr( $v ) . '" size="8" spellcheck="false" autocomplete="off"' . $ph . '>';
             if ( $f['type'] === 'color_optional' ) {
                 echo ' <button type="button" class="button-link cm-color-clear"' . ( $v === '' ? ' hidden' : '' ) . '>Wissen</button>';
             }

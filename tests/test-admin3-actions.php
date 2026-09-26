@@ -39,4 +39,12 @@ cm_test_group( 'Meldingen' );
 cm_assert( 'bekende code → succesmelding', strpos( cm_admin_notice_html( 'theme-reset-light' ), 'notice notice-success is-dismissible' ) !== false );
 cm_assert( 'onbekende code → niets', cm_admin_notice_html( 'bestaat-niet' ) === '' );
 
+cm_test_group( 'Melding niet herhaald na de volgende opslag' );
+$_GET = array( 'cm_notice' => 'theme-reset-light', 'settings-updated' => 'true' );
+ob_start(); cm_admin_render_notices(); $out = ob_get_clean();
+cm_assert( 'settings-updated erbij → geen actie-melding meer (voorkomt herhaling na opslaan/F5)', $out === '' );
+$_GET = array( 'cm_notice' => 'theme-reset-light' );
+ob_start(); cm_admin_render_notices(); $out = ob_get_clean();
+cm_assert( 'alleen cm_notice → melding verschijnt gewoon', strpos( $out, 'notice notice-success is-dismissible' ) !== false );
+
 exit( cm_test_summary() );

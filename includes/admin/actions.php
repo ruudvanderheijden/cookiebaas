@@ -23,9 +23,16 @@ function cm_admin_notice_html( $code ) {
 }
 
 function cm_admin_render_notices() {
-    if ( empty( $_GET['cm_notice'] ) ) return;
+    if ( empty( $_GET['cm_notice'] ) || isset( $_GET['settings-updated'] ) ) return;
     echo cm_admin_notice_html( sanitize_key( wp_unslash( $_GET['cm_notice'] ) ) );
 }
+
+/** Haal cm_notice uit de adresbalk na een opslag, zodat hij niet in de referer
+ *  van het volgende formulier belandt en dan herhaald wordt (zie boven). */
+add_filter( 'removable_query_args', function ( $args ) {
+    $args[] = 'cm_notice';
+    return $args;
+} );
 
 /** Een knop die als eigen formulier naar admin-post.php post. */
 function cm_admin_action_form( $action, $label, array $args = array(), $confirm = '', $class = 'button' ) {

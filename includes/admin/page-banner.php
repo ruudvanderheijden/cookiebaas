@@ -19,7 +19,8 @@ function cm_tabs_banner() {
 /** Schakelaar "Bewerken voor: A | B" (zie admin-common.js). */
 function cm_render_switch( $name, array $options, $current, $prefix ) {
     echo '<ul class="subsubsub cm-switch" data-cm-switch="' . esc_attr( $name ) . '"><li>' . esc_html( $prefix ) . ' </li>';
-    $last = array_key_last( $options );
+    $keys = array_keys( $options );
+    $last = end( $keys );
     foreach ( $options as $value => $label ) {
         $on = (string) $value === (string) $current;
         echo '<li><a href="#" data-cm-switch-to="' . esc_attr( $value ) . '"' . ( $on ? ' class="current" aria-current="true"' : '' ) . '>' . esc_html( $label ) . '</a>' . ( $value === $last ? '' : ' |' ) . '</li>';
@@ -29,12 +30,13 @@ function cm_render_switch( $name, array $options, $current, $prefix ) {
 
 /** Kleurgroepen voor één thema. Licht: color_*, radius_*, overlay_opacity. Donker: dm_*. */
 function cm_color_sections( $theme ) {
-    $p    = $theme === 'dark' ? 'dm_' : 'color_';
-    $r    = $theme === 'dark' ? 'dm_' : '';
-    $pane = array( 'data-cm-pane' => 'theme:' . $theme, 'class' => 'postbox' );
-    $c    = function ( $key, $label, array $extra = array() ) use ( $p ) { return cm_field( $p . $key, 'color', $label, $extra ); };
-    $o    = function ( $key, $label, $ph ) use ( $p ) { return cm_field( $p . $key, 'color_optional', $label, array( 'placeholder' => $ph ) ); };
-    return array(
+    $p     = $theme === 'dark' ? 'dm_' : 'color_';
+    $r     = $theme === 'dark' ? 'dm_' : '';
+    $theme_label = $theme === 'dark' ? 'Donker thema' : 'Licht thema';
+    $pane  = array( 'data-cm-pane' => 'theme:' . $theme, 'class' => 'postbox' );
+    $c     = function ( $key, $label, array $extra = array() ) use ( $p ) { return cm_field( $p . $key, 'color', $label, $extra ); };
+    $o     = function ( $key, $label, $ph ) use ( $p ) { return cm_field( $p . $key, 'color_optional', $label, array( 'placeholder' => $ph ) ); };
+    $sections = array(
         array( 'title' => 'Venster', 'collapsible' => true, 'open' => true, 'attrs' => $pane, 'fields' => array(
             $c( 'popup_bg', 'Achtergrond' ),
             $c( 'title', 'Titels' ),
@@ -117,6 +119,15 @@ function cm_color_sections( $theme ) {
             $c( 'embed_btn_hover_text', 'Knop — tekst bij hover' ),
         ) ),
     );
+    // Context erbij zodat de foutmelding onderscheid maakt: licht/donker hebben dezelfde labels.
+    foreach ( $sections as &$section ) {
+        foreach ( $section['fields'] as &$field ) {
+            $field['context'] = $theme_label . ' › ' . $section['title'];
+        }
+        unset( $field );
+    }
+    unset( $section );
+    return $sections;
 }
 
 function cm_tab_banner_vormgeving() {
@@ -192,7 +203,7 @@ function cm_text_sections( $lang ) {
         ) ),
     );
     foreach ( $cats as $i => $title ) {
-        $sections[] = array( 'title' => $title, 'attrs' => $pane, 'collapsible' => true, 'fields' => array(
+        $sections[] = array( 'title' => $title, 'attrs' => $pane, 'fields' => array(
             cm_field( "txt_cat{$i}_name{$s}", 'text', 'Naam' ),
             cm_field( "txt_cat{$i}_short{$s}", 'text', 'Korte omschrijving' ),
             cm_field( "txt_cat{$i}_long{$s}", 'textarea', 'Uitgebreide omschrijving' ),
@@ -266,9 +277,9 @@ function cm_tab_banner_weergave() {
                         ),
                         'description' => 'Alleen de plek verandert; de werking blijft gelijk.',
                     ) ),
-                    cm_field( 'banner_width_bottom_center', 'number', 'Breedte', array( 'min' => 400, 'max' => 1200, 'unit' => 'px', 'description' => 'Standaard 760 px.', 'show_if' => array( 'banner_position' => 'bottom-center' ) ) ),
-                    cm_field( 'banner_width_center', 'number', 'Breedte', array( 'min' => 400, 'max' => 1000, 'unit' => 'px', 'description' => 'Standaard 620 px.', 'show_if' => array( 'banner_position' => 'center' ) ) ),
-                    cm_field( 'banner_width_compact', 'number', 'Breedte', array( 'min' => 300, 'max' => 600, 'unit' => 'px', 'description' => 'Standaard 420 px.', 'show_if' => array( 'banner_position' => array( 'bottom-left', 'bottom-right' ) ) ) ),
+                    cm_field( 'banner_width_bottom_center', 'number', 'Breedte', array( 'min' => 400, 'max' => 1200, 'unit' => 'px', 'description' => 'Standaard 760 px.', 'show_if' => array( 'banner_position' => 'bottom-center' ), 'context' => 'Onderaan in het midden' ) ),
+                    cm_field( 'banner_width_center', 'number', 'Breedte', array( 'min' => 400, 'max' => 1000, 'unit' => 'px', 'description' => 'Standaard 620 px.', 'show_if' => array( 'banner_position' => 'center' ), 'context' => 'In het midden van het scherm' ) ),
+                    cm_field( 'banner_width_compact', 'number', 'Breedte', array( 'min' => 300, 'max' => 600, 'unit' => 'px', 'description' => 'Standaard 420 px.', 'show_if' => array( 'banner_position' => array( 'bottom-left', 'bottom-right' ) ), 'context' => 'Linksonder/rechtsonder' ) ),
                     cm_field( 'banner_mobile_padding', 'checkbox', 'Mobiel', array(
                         'checkbox_label' => 'Ruimte rond de banner op kleine schermen',
                         'description'    => 'Uit: de banner loopt tot de schermranden. Aan: een kleine marge, zodat de banner zweeft.',

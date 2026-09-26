@@ -42,7 +42,8 @@ function cm_normalize_hex( $v ) {
 /** Meld een ongeldige waarde; de vorige waarde blijft staan. */
 function cm_sanitize_reject( array $f, $current ) {
     if ( function_exists( 'add_settings_error' ) ) {
-        add_settings_error( 'cm_settings', 'cm-invalid-' . $f['key'], sprintf( 'Ongeldige waarde bij "%s". De vorige waarde is behouden.', $f['label'] ) );
+        $label = ! empty( $f['context'] ) ? $f['context'] . ' › ' . $f['label'] : $f['label'];
+        add_settings_error( 'cm_settings', 'cm-invalid-' . $f['key'], sprintf( 'Ongeldige waarde bij "%s". De vorige waarde is behouden.', $label ) );
     }
     return (string) $current;
 }
