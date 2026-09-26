@@ -95,10 +95,18 @@ function cm_auto_scan_settings_changed( $old, $new ) {
     }
     return false;
 }
+/** Herplan de scan-cron na een wijziging van de scan-instellingen. */
+function cm_auto_scan_reschedule( $old = null, $new = null ) {
+    if ( ! cm_auto_scan_settings_changed( $old, $new ) ) return;
+    // Aan/uit en eerste inplanning
+    if ( function_exists( 'cm_maybe_schedule_auto_scan_cron' ) ) cm_maybe_schedule_auto_scan_cron();
+    // Andere frequentie: bestaande cron vervangen, gerekend vanaf nu (doet niets als de modus uit staat)
+    $a = is_array( $old ) && isset( $old['auto_scan_interval'] ) ? (string) $old['auto_scan_interval'] : '';
+    $b = is_array( $new ) && isset( $new['auto_scan_interval'] ) ? (string) $new['auto_scan_interval'] : '';
+    if ( $a !== $b && function_exists( 'cm_force_reset_auto_scan_cron' ) ) cm_force_reset_auto_scan_cron();
+}
 // Prioriteit 20: na cm_get_flush (10), zodat de cron de nieuwe waarden leest.
-add_action( 'update_option_cm_settings', function ( $old = null, $new = null ) {
-    if ( cm_auto_scan_settings_changed( $old, $new ) && function_exists( 'cm_maybe_schedule_auto_scan_cron' ) ) cm_maybe_schedule_auto_scan_cron();
-}, 20, 2 );
+add_action( 'update_option_cm_settings', 'cm_auto_scan_reschedule', 20, 2 );
 
 /** Kolommen van de cookielijst-editor (sleutels = opgeslagen formaat). */
 function cm_cookie_list_columns() {

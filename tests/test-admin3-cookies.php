@@ -25,6 +25,9 @@ function wp_send_json_success( $d = null ) { throw new CM_Test_Json( true, $d );
 function wp_verify_nonce( $nonce, $action ) { return $nonce === 'nonce-' . $action; }
 $GLOBALS['cm_test_can'] = true;
 function current_user_can() { return $GLOBALS['cm_test_can']; }
+$GLOBALS['cm_test_sched'] = array();
+function cm_maybe_schedule_auto_scan_cron() { $GLOBALS['cm_test_sched'][] = 'maybe'; }
+function cm_force_reset_auto_scan_cron() { $GLOBALS['cm_test_sched'][] = 'force'; }
 
 require __DIR__ . '/bootstrap.php';
 require CM_PLUGIN_ROOT . '/includes/defaults.php';
@@ -124,6 +127,19 @@ cm_assert( 'bestaande _ga ongemoeid', $list[0]['purpose'] === 'eigen' && count( 
 cm_test_group( 'Automatische scan' );
 cm_assert( 'wijziging van modus of frequentie → opnieuw inplannen', cm_auto_scan_settings_changed( array( 'auto_scan_mode' => 'off', 'auto_scan_interval' => '30' ), array( 'auto_scan_mode' => 'auto', 'auto_scan_interval' => '30' ) ) );
 cm_assert( 'alleen het e-mailadres gewijzigd → niet opnieuw inplannen', ! cm_auto_scan_settings_changed( array( 'auto_scan_mode' => 'notify', 'auto_scan_interval' => '30', 'auto_scan_email' => 'a@b.nl' ), array( 'auto_scan_mode' => 'notify', 'auto_scan_interval' => '30', 'auto_scan_email' => 'c@d.nl' ) ) );
+
+$GLOBALS['cm_test_sched'] = array();
+do_action( 'update_option_cm_settings', array( 'auto_scan_mode' => 'auto', 'auto_scan_interval' => '180' ), array( 'auto_scan_mode' => 'auto', 'auto_scan_interval' => '10' ) );
+cm_assert( 'andere frequentie → opnieuw ingepland vanaf nu', $GLOBALS['cm_test_sched'] === array( 'maybe', 'force' ) );
+
+$GLOBALS['cm_test_sched'] = array();
+do_action( 'update_option_cm_settings', array( 'auto_scan_mode' => 'off', 'auto_scan_interval' => '30' ), array( 'auto_scan_mode' => 'auto', 'auto_scan_interval' => '30' ) );
+cm_assert( 'alleen modus gewijzigd → alleen inplannen', $GLOBALS['cm_test_sched'] === array( 'maybe' ) );
+
+$GLOBALS['cm_test_sched'] = array();
+do_action( 'update_option_cm_settings', array( 'auto_scan_mode' => 'notify', 'auto_scan_interval' => '30', 'auto_scan_email' => 'a@b.nl' ), array( 'auto_scan_mode' => 'notify', 'auto_scan_interval' => '30', 'auto_scan_email' => 'c@d.nl' ) );
+cm_assert( 'alleen e-mailadres gewijzigd → niets herplannen', $GLOBALS['cm_test_sched'] === array() );
+
 $scan = cm_tabs_cookies()['scannen'];
 $keys = array();
 foreach ( $scan['sections'] as $s ) foreach ( isset( $s['fields'] ) ? $s['fields'] : array() as $f ) $keys[] = $f['key'];
