@@ -103,4 +103,11 @@ cm_assert( 'secties in de volgorde van de uitvoer (11 vóór 12)', $pos( '1. Inl
 cm_assert( 'tabelkleuren onderaan, niet tussen 4 en 5', end( $titles ) === 'Weergave van de cookietabellen' );
 cm_assert( 'land is nu te bewerken', in_array( 'pv_land', array_column( cm_admin_field_list( 'cm_privacy' ), 'key' ), true ) );
 
+cm_test_group( 'Ontbrekend tekstveld houdt zijn waarde (oude admin post niet elk veld)' );
+$existing_land = array_merge( $base, array( 'pv_land' => 'België' ) );
+$input_no_land = $existing_land;
+unset( $input_no_land['pv_land'] );
+$kept = cm_sanitize_privacy( $input_no_land, $existing_land );
+cm_assert( 'pv_land blijft België als het veld ontbreekt in de invoer', $kept['pv_land'] === 'België' );
+
 exit( cm_test_summary() );

@@ -427,7 +427,7 @@ function cm_ajax_save_privacy() {
  * kent als kleur, keuzelijst, rijtabel of checkbox gaan type-bewust
  * (cm_sanitize_field_value), met de bestaande waarde als terugval; de rest
  * zoals voorheen. Een ontbrekende checkbox zonder registerveld telt als uit;
- * ontbrekende tekstvelden krijgen de default.
+ * ontbrekende tekstvelden houden hun bestaande waarde.
  */
 function cm_sanitize_privacy( array $input, array $existing = array(), $index = null ) {
     if ( $index === null ) $index = function_exists( 'cm_admin_field_index' ) ? cm_admin_field_index( 'cm_privacy' ) : array();
@@ -442,12 +442,12 @@ function cm_sanitize_privacy( array $input, array $existing = array(), $index = 
             $privacy[ $key ] = isset( $input[ $key ] ) ? cm_sanitize_field_value( $index[ $key ], $input[ $key ], $current ) : (string) $current;
         } elseif ( in_array( $key, $textareas, true ) ) {
             // Incl. de JSON-velden: komen als geëncodeerde string binnen
-            $privacy[ $key ] = isset( $input[ $key ] ) ? sanitize_textarea_field( $input[ $key ] ) : $default;
+            $privacy[ $key ] = isset( $input[ $key ] ) ? sanitize_textarea_field( $input[ $key ] ) : $current;
         } elseif ( ( strpos( $key, 'pv_cf_' ) === 0 && $key !== 'pv_cf_grondslag' ) || in_array( $key, array('pv_gtm','pv_ap_tonen','pv_nieuwsbrief_enabled','pv_profilering_enabled'), true ) ) {
             // Checkboxes: 1 of 0
             $privacy[ $key ] = isset( $input[ $key ] ) && (string) $input[ $key ] === '1' ? '1' : '0';
         } else {
-            $privacy[ $key ] = isset( $input[ $key ] ) ? sanitize_text_field( $input[ $key ] ) : $default;
+            $privacy[ $key ] = isset( $input[ $key ] ) ? sanitize_text_field( $input[ $key ] ) : $current;
         }
     }
 
