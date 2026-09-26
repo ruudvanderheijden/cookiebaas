@@ -18,8 +18,7 @@ require CM_PLUGIN_ROOT . '/includes/defaults.php';
 foreach ( glob( CM_PLUGIN_ROOT . '/includes/admin/*.php' ) as $file ) require $file;
 
 $no_ui   = array( 'txt_embed_btn', 'txt_embed_btn_en', 'color_always_on_bg' );          // dood, sleutel blijft voor de data
-$pending = array( 'auto_scan_mode', 'auto_scan_interval', 'auto_scan_email',             // plan 2: Cookies › Scannen
-                  'log_retention_months',                                                 // plan 3: Consent log
+$pending = array( 'log_retention_months',                                                 // plan 3: Consent log
                   'api_key' );                                                            // plan 3: Beheer › Geavanceerd
 
 cm_test_group( 'Elke instelling precies één keer' );

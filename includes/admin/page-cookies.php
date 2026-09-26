@@ -9,9 +9,96 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 function cm_tabs_cookies() {
     return array(
-        'lijst' => array( 'label' => 'Cookielijst', 'render' => 'cm_render_cookie_list_tab' ),
+        'lijst'   => array( 'label' => 'Cookielijst', 'render' => 'cm_render_cookie_list_tab' ),
+        'scannen' => cm_tab_cookies_scannen(),
     );
 }
+
+function cm_tab_cookies_scannen() {
+    return array(
+        'label'      => 'Scannen',
+        'sections'   => array(
+            array( 'title' => 'Handmatige scan', 'content' => 'cm_render_manual_scan' ),
+            array( 'title' => 'Cookiedatabase', 'content' => 'cm_render_cookie_db_status' ),
+            array(
+                'title'   => 'Automatische scan',
+                'intro'   => 'Bekijkt periodiek de homepage op nieuwe cookies. Vereist een actieve licentie; zonder licentie slaat Cookiebaas de automatische scan over.',
+                'content' => 'cm_render_auto_scan_status',
+                'fields'  => array(
+                    cm_field( 'auto_scan_mode', 'radio', 'Werkwijze', array( 'options' => array(
+                        'off'    => 'Handmatig: alleen scannen via de knop hierboven',
+                        'auto'   => 'Automatisch toevoegen: nieuw gevonden cookies komen direct in de cookielijst',
+                        'notify' => 'Melding per e-mail: een bericht als er nieuwe cookies zijn gevonden',
+                    ) ) ),
+                    cm_field( 'auto_scan_interval', 'select', 'Frequentie', array(
+                        'options' => array( '10' => 'Elke 10 dagen', '30' => 'Elke maand (30 dagen)', '180' => 'Elk half jaar (180 dagen)' ),
+                        'show_if' => array( 'auto_scan_mode' => array( 'auto', 'notify' ) ),
+                    ) ),
+                    cm_field( 'auto_scan_email', 'text', 'E-mailadres', array(
+                        'placeholder' => (string) get_option( 'admin_email' ),
+                        'sanitize'    => function ( $raw ) { return sanitize_email( is_scalar( $raw ) ? (string) $raw : '' ); },
+                        'description' => 'Leeg = het beheerdersadres van WordPress.',
+                        'show_if'     => array( 'auto_scan_mode' => 'notify' ),
+                    ) ),
+                ),
+            ),
+        ),
+        'after_form' => 'cm_render_scan_timer_reset',
+    );
+}
+
+function cm_render_manual_scan() {
+    if ( cm_scan_requires_license() ) {
+        echo '<div class="notice notice-warning inline"><p>De cookiescan is een premium-functie en vereist een actieve licentie. De cookiebanner en -blokkering werken gewoon door. <a href="' . esc_url( admin_url( 'admin.php?page=cookiemelding-beheer#tab=licentie' ) ) . '">Licentie beheren</a></p></div>';
+        return;
+    }
+    echo '<p><button type="button" class="button button-primary" id="cm-scan-start">Cookies scannen</button> <span class="description">Doorloopt alle gepubliceerde pagina’s en herkent cookies via HTTP-headers en scripts.</span></p>';
+    echo '<div id="cm-scan-result" aria-live="polite"></div>';
+}
+
+function cm_render_cookie_db_status() {
+    $count   = (int) get_option( 'cm_cookie_db_count', 0 );
+    $updated = (string) get_option( 'cm_cookie_db_updated', '' );
+    if ( $count > 0 ) {
+        $when = $updated !== '' ? ', bijgewerkt op ' . mysql2date( get_option( 'date_format' ), $updated ) : '';
+        echo '<p>' . esc_html( number_format_i18n( $count ) . ' cookies geladen' . $when . '.' ) . '</p>';
+    } else {
+        echo '<p>De database is nog niet geladen.</p>';
+    }
+    echo '<p><button type="button" class="button" id="cm-cookie-db-import">' . esc_html( $count > 0 ? 'Database bijwerken' : 'Database laden' ) . '</button></p>';
+    echo '<div id="cm-cookie-db-status" aria-live="polite" hidden></div>';
+    echo '<p class="description">De <a href="https://github.com/jkwakman/Open-Cookie-Database" target="_blank" rel="noopener">Open Cookie Database</a> (Apache 2.0, ruim 2.200 cookies) helpt de scan om cookies te herkennen en te omschrijven.</p>';
+}
+
+function cm_render_auto_scan_status() {
+    $fmt  = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
+    $last = (string) get_option( 'cm_auto_scan_last', '' );
+    $next = (string) get_option( 'cm_auto_scan_next', '' );
+    $bits = array();
+    // Beide staan als UTC opgeslagen (gmdate) — wp_date zet ze om naar de tijdzone van de site
+    if ( $last !== '' ) $bits[] = 'Laatste automatische scan: ' . wp_date( $fmt, strtotime( $last . ' UTC' ) ) . '.';
+    if ( $next !== '' && cm_get( 'auto_scan_mode' ) !== 'off' ) $bits[] = 'Volgende scan: ' . wp_date( $fmt, strtotime( $next . ' UTC' ) ) . '.';
+    if ( $bits ) echo '<p class="description">' . esc_html( implode( ' ', $bits ) ) . '</p>';
+}
+
+function cm_render_scan_timer_reset() {
+    if ( cm_get( 'auto_scan_mode' ) === 'off' ) return;
+    echo '<p>' . cm_admin_action_form( 'reset_scan_timer', 'Timer resetten' ) . ' <span class="description">Plant de volgende automatische scan opnieuw in, gerekend vanaf nu.</span></p>';
+}
+
+/** Herplan de scan-cron alleen als modus of frequentie echt veranderde. */
+function cm_auto_scan_settings_changed( $old, $new ) {
+    foreach ( array( 'auto_scan_mode', 'auto_scan_interval' ) as $k ) {
+        $a = is_array( $old ) && isset( $old[ $k ] ) ? (string) $old[ $k ] : '';
+        $b = is_array( $new ) && isset( $new[ $k ] ) ? (string) $new[ $k ] : '';
+        if ( $a !== $b ) return true;
+    }
+    return false;
+}
+// Prioriteit 20: na cm_get_flush (10), zodat de cron de nieuwe waarden leest.
+add_action( 'update_option_cm_settings', function ( $old = null, $new = null ) {
+    if ( cm_auto_scan_settings_changed( $old, $new ) && function_exists( 'cm_maybe_schedule_auto_scan_cron' ) ) cm_maybe_schedule_auto_scan_cron();
+}, 20, 2 );
 
 /** Kolommen van de cookielijst-editor (sleutels = opgeslagen formaat). */
 function cm_cookie_list_columns() {
@@ -162,5 +249,9 @@ if ( function_exists( 'cm_admin_register_action' ) ) {
     cm_admin_register_action( 'clear_cookie_list', function () {
         update_option( 'cm_cookie_list', array() );
         return 'cookie-list-cleared';
+    } );
+    cm_admin_register_action( 'reset_scan_timer', function () {
+        if ( function_exists( 'cm_force_reset_auto_scan_cron' ) ) cm_force_reset_auto_scan_cron();
+        return 'scan-timer-reset';
     } );
 }

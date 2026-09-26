@@ -19,6 +19,12 @@ function add_query_arg( $a, $b = null, $c = null ) {
     foreach ( $args as $k => $v ) $url .= ( strpos( $url, '?' ) === false ? '?' : '&' ) . rawurlencode( $k ) . '=' . rawurlencode( $v );
     return $url;
 }
+class CM_Test_Json extends Exception { public $ok; public $data; function __construct( $ok, $data ) { $this->ok = $ok; $this->data = $data; parent::__construct( 'json' ); } }
+function wp_send_json_error( $d = null, $code = null ) { throw new CM_Test_Json( false, $d ); }
+function wp_send_json_success( $d = null ) { throw new CM_Test_Json( true, $d ); }
+function wp_verify_nonce( $nonce, $action ) { return $nonce === 'nonce-' . $action; }
+$GLOBALS['cm_test_can'] = true;
+function current_user_can() { return $GLOBALS['cm_test_can']; }
 
 require __DIR__ . '/bootstrap.php';
 require CM_PLUGIN_ROOT . '/includes/defaults.php';
@@ -28,6 +34,7 @@ require CM_PLUGIN_ROOT . '/includes/admin/settings.php';
 require CM_PLUGIN_ROOT . '/includes/admin/actions.php';
 require CM_PLUGIN_ROOT . '/includes/admin.php';
 require CM_PLUGIN_ROOT . '/includes/admin/page-cookies.php';
+require CM_PLUGIN_ROOT . '/includes/admin/ajax.php';
 
 cm_test_group( 'Cookielijst opslaan via de Settings API' );
 update_option( 'cm_cookie_list', array( array( 'name' => '_ga', 'provider' => 'Google Analytics', 'purpose' => 'Meet bezoek', 'duration' => '2 jaar', 'category' => 'analytics', 'builtin' => false ) ) );
@@ -80,5 +87,47 @@ cm_assert( 'F12-formulier post naar admin-post met eigen nonce', strpos( $t, 'na
 cm_assert( 'exportlink met eigen nonce', strpos( $t, 'action=cm_export_cookies' ) !== false && strpos( $t, 'nonce-cm_export_cookies' ) !== false );
 cm_assert( 'leegmaken vraagt om bevestiging', strpos( $t, 'value="cm_clear_cookie_list"' ) !== false && strpos( $t, 'data-cm-confirm=' ) !== false );
 cm_assert( 'meldingen bestaan', cm_admin_notice_html( 'f12-imported' ) !== '' && cm_admin_notice_html( 'f12-none' ) !== '' && cm_admin_notice_html( 'cookie-list-cleared' ) !== '' );
+
+cm_test_group( 'AJAX-controle: rechten en nonce per actie' );
+function verify_result( $nonce ) {
+    $_POST = array( 'nonce' => $nonce );
+    try { cm_admin_verify_ajax( 'scan' ); return 'ok'; } catch ( CM_Test_Json $e ) { return 'fout'; }
+}
+cm_assert( 'eigen nonce (cm_scan) wordt geaccepteerd', verify_result( 'nonce-cm_scan' ) === 'ok' );
+cm_assert( 'gedeelde nonce van de oude admin wordt nog geaccepteerd', verify_result( 'nonce-cm_save_settings' ) === 'ok' );
+cm_assert( 'andere nonce wordt geweigerd', verify_result( 'nonce-cm_scan_add' ) === 'fout' && verify_result( '' ) === 'fout' );
+$GLOBALS['cm_test_can'] = false;
+cm_assert( 'zonder rechten geweigerd, ook met geldige nonce', verify_result( 'nonce-cm_scan' ) === 'fout' );
+$GLOBALS['cm_test_can'] = true;
+
+cm_test_group( 'Scanresultaat toevoegen (Review Focus 2 en 4)' );
+$r = cm_scan_result_to_row( array( 'name' => '_ga', 'type' => 'analytics', 'provider' => 'Google Analytics', 'description' => 'Meet', 'duration' => '2 jaar', 'how' => 'server' ) );
+cm_assert( 'scanvelden → lijstvelden', $r === array( 'name' => '_ga', 'provider' => 'Google Analytics', 'purpose' => 'Meet', 'duration' => '2 jaar', 'category' => 'analytics' ) );
+cm_assert( 'onbekend type wordt functioneel, lege looptijd "Sessie"', cm_scan_result_to_row( array( 'name' => 'x', 'type' => 'unknown' ) )['category'] === 'functional' && cm_scan_result_to_row( array( 'name' => 'x' ) )['duration'] === 'Sessie' );
+$m = cm_merge_cookie_list( array( array( 'name' => '_ga', 'purpose' => 'eigen tekst' ) ), array( array( 'name' => '_ga', 'purpose' => 'scan' ), array( 'name' => '_fbp' ), array( 'name' => '_fbp' ), array( 'name' => '' ) ) );
+cm_assert( 'bestaande rij blijft ongewijzigd', $m['list'][0]['purpose'] === 'eigen tekst' );
+cm_assert( 'alleen nieuwe namen, zonder dubbelingen of lege namen', $m['added'] === array( '_fbp' ) && count( $m['list'] ) === 2 );
+
+update_option( 'cm_cookie_list', array( array( 'name' => '_ga', 'provider' => 'Google Analytics', 'purpose' => 'eigen', 'duration' => '2 jaar', 'category' => 'analytics', 'builtin' => false ) ) );
+$_POST = array( 'nonce' => 'nonce-cm_scan_add', 'cookies' => addslashes( json_encode( array(
+    array( 'name' => '<img src=x onerror=alert(1)>_hjid', 'type' => 'analytics', 'description' => '<script>x</script>Hotjar' ),
+    array( 'name' => 'cc_cm_consent', 'type' => 'functional' ),
+    array( 'name' => '_ga', 'type' => 'analytics' ),
+) ) ) );
+try { cm_ajax_scan_add(); $res = null; } catch ( CM_Test_Json $e ) { $res = $e; }
+$list = get_option( 'cm_cookie_list' );
+cm_assert( 'toevoegen slaagt en meldt alleen de nieuwe naam', $res && $res->ok && $res->data['added'] === array( '_hjid' ) );
+cm_assert( 'HTML uit de scan is weg', $list[1]['name'] === '_hjid' && strpos( $list[1]['purpose'], '<' ) === false );
+cm_assert( 'ingebouwde cookie niet dubbel in de lijst', ! in_array( 'cc_cm_consent', array_column( $list, 'name' ), true ) );
+cm_assert( 'bestaande _ga ongemoeid', $list[0]['purpose'] === 'eigen' && count( $list ) === 2 );
+
+cm_test_group( 'Automatische scan' );
+cm_assert( 'wijziging van modus of frequentie → opnieuw inplannen', cm_auto_scan_settings_changed( array( 'auto_scan_mode' => 'off', 'auto_scan_interval' => '30' ), array( 'auto_scan_mode' => 'auto', 'auto_scan_interval' => '30' ) ) );
+cm_assert( 'alleen het e-mailadres gewijzigd → niet opnieuw inplannen', ! cm_auto_scan_settings_changed( array( 'auto_scan_mode' => 'notify', 'auto_scan_interval' => '30', 'auto_scan_email' => 'a@b.nl' ), array( 'auto_scan_mode' => 'notify', 'auto_scan_interval' => '30', 'auto_scan_email' => 'c@d.nl' ) ) );
+$scan = cm_tabs_cookies()['scannen'];
+$keys = array();
+foreach ( $scan['sections'] as $s ) foreach ( isset( $s['fields'] ) ? $s['fields'] : array() as $f ) $keys[] = $f['key'];
+cm_assert( 'tab Scannen bevat de drie scan-instellingen', $keys === array( 'auto_scan_mode', 'auto_scan_interval', 'auto_scan_email' ) );
+cm_assert( 'melding timer resetten bestaat', cm_admin_notice_html( 'scan-timer-reset' ) !== '' );
 
 exit( cm_test_summary() );

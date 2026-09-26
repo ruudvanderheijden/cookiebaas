@@ -16,6 +16,7 @@ function cm_admin_notice_messages() {
         'f12-imported'        => array( 'success', 'De geplakte cookies zijn toegevoegd aan de lijst. Vul waar nodig provider en doel aan.' ),
         'f12-none'            => array( 'info',    'Er zijn geen nieuwe cookies herkend. Plak de tabel uit de ontwikkelaarstools (F12 › Applicatie › Cookies).' ),
         'cookie-list-cleared' => array( 'success', 'De cookielijst is leeggemaakt. De ingebouwde cookies blijven staan.' ),
+        'scan-timer-reset'    => array( 'success', 'De timer is gereset. De volgende automatische scan is opnieuw ingepland.' ),
     );
 }
 

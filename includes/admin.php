@@ -155,8 +155,7 @@ function cm_ajax_save_settings() {
 ================================================================ */
 add_action( 'wp_ajax_cm_import_cookie_db', 'cm_ajax_import_cookie_db' );
 function cm_ajax_import_cookie_db() {
-    check_ajax_referer( 'cm_save_settings', 'nonce' );
-    if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
+    cm_admin_verify_ajax( 'import_cookie_db' );
 
     global $wpdb;
     $table = $wpdb->prefix . 'cm_cookie_db';
@@ -302,8 +301,7 @@ add_action( 'wp_ajax_cm_scan_urls', 'cm_ajax_scan_urls' );
  * Stap 1: Geeft alle te scannen URLs terug.
  */
 function cm_ajax_scan_urls() {
-    check_ajax_referer( 'cm_save_settings', 'nonce' );
-    if ( ! current_user_can( 'manage_options' ) ) wp_die();
+    cm_admin_verify_ajax( 'scan' );
     if ( cm_scan_requires_license() ) {
         wp_send_json_error( array( 'msg' => 'De cookiescan vereist een actieve licentie. De cookiebanner en -blokkering werken gewoon door.' ) );
     }
@@ -337,8 +335,7 @@ add_action( 'wp_ajax_cm_scan_batch', 'cm_ajax_scan_batch' );
  * Stap 2: Scant een batch van URLs en geeft gevonden cookies terug.
  */
 function cm_ajax_scan_batch() {
-    check_ajax_referer( 'cm_save_settings', 'nonce' );
-    if ( ! current_user_can( 'manage_options' ) ) wp_die();
+    cm_admin_verify_ajax( 'scan' );
     if ( cm_scan_requires_license() ) {
         wp_send_json_error( array( 'msg' => 'De cookiescan vereist een actieve licentie.' ) );
     }
