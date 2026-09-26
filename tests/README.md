@@ -30,7 +30,9 @@ php tests/test-cache-safety.php
 | `test-admin3-actions.php` | Acties via admin-post.php: formulier, nonce, redirect met één melding. |
 | `test-admin3-banner.php` | Pagina Banner: juiste instellingen per tab, kleuren herstellen per thema, pagina-uitsluiting. |
 | `test-admin3-preview.php` | Preview: banner-markup gelijk aan de frontend, CSS-variabelen gelijk aan de frontend (licht/donker), sandbox-iframe. |
-| `test-admin3-registry.php` | **Belangrijkste van de herindeling:** elke instelling staat op precies één tab; defaults zijn idempotent; embed-diensten. |
+| `test-admin3-registry.php` | **Belangrijkste van de herindeling:** elke instelling staat op precies één tab; defaults zijn idempotent; embed-diensten; ook de privacy-instellingen. |
+| `test-admin3-cookies.php` | Pagina Cookies: cookielijst via de Settings API (alles verwijderen = leeg), F12-import, CSV, AJAX-nonces, scanresultaten samenvoegen zonder overschrijven. |
+| `test-admin3-privacy.php` | Privacyverklaring: rijtabellen blijven JSON, oude admin blijft werken, oude grondslag behouden, verwerkingsregister, sectievolgorde. |
 | `test-cache-safety.php` | **Belangrijkste.** De HTML is identiek voor elke bezoeker — geen consent-status in de server-side output (privacylek-fix v1.7.7). Advanced én basic mode. |
 | `test-consent-mode.php` | Consent Mode v2 head-injectie: advanced laadt altijd, client-side cookie-lezer, `url_passthrough` optioneel, JS-delay-bescherming. |
 | `test-cookie-scan.php` | Kennisbank, prefix-matcher (`_` én `-`), Google-cookies op google.com, omgevingsdetectie (login, reacties, wachtwoordposts, WooCommerce, LiteSpeed). |

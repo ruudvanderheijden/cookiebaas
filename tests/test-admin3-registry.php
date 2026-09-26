@@ -16,6 +16,7 @@ function absint( $v ) { return abs( (int) $v ); }
 require __DIR__ . '/bootstrap.php';
 require CM_PLUGIN_ROOT . '/includes/defaults.php';
 foreach ( glob( CM_PLUGIN_ROOT . '/includes/admin/*.php' ) as $file ) require $file;
+require CM_PLUGIN_ROOT . '/includes/privacy.php';
 
 $no_ui   = array( 'txt_embed_btn', 'txt_embed_btn_en', 'color_always_on_bg' );          // dood, sleutel blijft voor de data
 $pending = array( 'log_retention_months',                                                 // plan 3: Consent log
@@ -52,5 +53,22 @@ cm_assert( 'reCAPTCHA (functioneel) staat niet in de lijst', ! in_array( 'reCAPT
 cm_test_group( 'Blokkering-tabs' );
 $tabs = cm_tabs_blokkering();
 cm_assert( 'tabs Google, Scripts, Embeds', array_keys( $tabs ) === array( 'google', 'scripts', 'embeds' ) );
+
+cm_test_group( 'Privacyverklaring: elke instelling precies één keer' );
+$pkeys    = array_map( function ( $f ) { return $f['key']; }, cm_admin_field_list( 'cm_privacy' ) );
+$pdups    = array_keys( array_filter( array_count_values( $pkeys ), function ( $n ) { return $n > 1; } ) );
+cm_assert( 'geen privacy-sleutel dubbel' . ( $pdups ? ' — dubbel: ' . implode( ', ', $pdups ) : '' ), ! $pdups );
+$pmissing = array_diff( array_keys( cm_default_privacy() ), $pkeys );
+cm_assert( 'elke privacy-instelling heeft een plek' . ( $pmissing ? ' — ontbreekt: ' . implode( ', ', $pmissing ) : '' ), ! $pmissing );
+$punknown = array_diff( $pkeys, array_keys( cm_default_privacy() ) );
+cm_assert( 'geen privacyveld zonder default' . ( $punknown ? ' — onbekend: ' . implode( ', ', $punknown ) : '' ), ! $punknown );
+$pd   = cm_default_privacy();
+$pout = cm_sanitize_privacy( $pd, $pd );
+$pdif = array();
+foreach ( $pd as $k => $v ) {
+    $same = in_array( $k, array( 'pv_doeleinden', 'pv_optout_links', 'pv_ontvangers' ), true ) ? json_decode( $pout[ $k ], true ) === json_decode( $v, true ) : (string) $pout[ $k ] === (string) $v;
+    if ( ! $same ) $pdif[] = $k;
+}
+cm_assert( 'de privacy-defaults komen ongewijzigd door de sanitizer' . ( $pdif ? ' — veranderd: ' . implode( ', ', $pdif ) : '' ), ! $pdif );
 
 exit( cm_test_summary() );

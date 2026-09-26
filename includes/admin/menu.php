@@ -14,6 +14,7 @@ function cm_admin_pages() {
         'cookiebaas-banner'     => 'Banner',
         'cookiebaas-blokkering' => 'Blokkering',
         'cookiebaas-cookies'    => 'Cookies',
+        'cookiebaas-privacy'    => 'Privacyverklaring',
     );
 }
 

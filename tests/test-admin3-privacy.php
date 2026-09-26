@@ -94,4 +94,13 @@ $pv['pv_dpo_enabled'] = '1'; $pv['pv_dpo_naam'] = 'Jan';
 cm_assert( 'wel een DPO-rij als die aan staat', in_array( 'Functionaris Gegevensbescherming (DPO)', array_column( cm_register_csv_rows( $pv, 0, 'x' ), 0 ), true ) );
 cm_assert( 'melding herstellen bestaat', cm_admin_notice_html( 'privacy-reset' ) !== '' );
 
+cm_test_group( 'Pagina Privacyverklaring' );
+$tab = cm_tabs_privacy()['verklaring'];
+cm_assert( 'eigen settings-groep en waarden', $tab['group'] === 'cookiebaas_privacy' && is_callable( $tab['values'] ) && isset( call_user_func( $tab['values'] )['pv_bedrijfsnaam'] ) );
+$titles = array_map( function ( $s ) { return isset( $s['title'] ) ? $s['title'] : ''; }, $tab['sections'] );
+$pos    = function ( $t ) use ( $titles ) { $i = array_search( $t, $titles, true ); return $i === false ? -1 : $i; };
+cm_assert( 'secties in de volgorde van de uitvoer (11 vóór 12)', $pos( '1. Inleiding' ) < $pos( '2.1 Contactformulier' ) && $pos( '11. Wijzigingen' ) < $pos( '12. Geautomatiseerde besluitvorming' ) && $pos( '11. Wijzigingen' ) > 0 );
+cm_assert( 'tabelkleuren onderaan, niet tussen 4 en 5', end( $titles ) === 'Weergave van de cookietabellen' );
+cm_assert( 'land is nu te bewerken', in_array( 'pv_land', array_column( cm_admin_field_list( 'cm_privacy' ), 'key' ), true ) );
+
 exit( cm_test_summary() );
