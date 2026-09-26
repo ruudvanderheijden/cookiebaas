@@ -1,5 +1,53 @@
 # Changelog — Cookiebaas
 
+## [3.0.0] - 2026-09-26
+
+De admin is opnieuw gebouwd: WordPress-native, zonder eigen kleuren of zelfgebouwde onderdelen, en per onderwerp ingedeeld. Uw instellingen, cookielijst, privacyverklaring en consent log blijven precies zoals ze waren; de banner en de blokkering op uw website veranderen niet.
+
+### Waar staat wat?
+
+| In 2.4 | In 3.0 |
+|---|---|
+| Instellingen › Vormgeving | Banner › Vormgeving |
+| Instellingen › Teksten (ook de teksten van de video-placeholder) | Banner › Teksten |
+| Instellingen › Layout (positie, breedte, voorkeurenvenster, zweefknop) | Banner › Weergave |
+| Instellingen › Algemeen (standaardkeuzes, geldigheid, geo, uitzonderingen, subdomeinen) | Banner › Gedrag |
+| Instellingen › Algemeen › Log retentie | Consent log › Bewaren en opnieuw vragen |
+| Instellingen › Algemeen › REST API | Beheer › Geavanceerd |
+| Instellingen › Google (ook de blokkeerpatronen) | Blokkering › Google en Blokkering › Scripts |
+| Instellingen › Embeds | Blokkering › Embeds |
+| Cookies & scan | Cookies › Cookielijst en Cookies › Scannen |
+| Privacyverklaring | Privacyverklaring |
+| Consent log | Consent log › Registraties |
+| Beheer › Compliance | Overzicht |
+| Beheer › Export / Import: backup | Beheer › Backup |
+| Beheer › Export / Import: verwerkingsregister | Privacyverklaring (knop naast de titel) |
+| Beheer › Export / Import: cookielijst (CSV) | Cookies › Cookielijst |
+| Beheer › Reset: kleuren, cookielijst, privacyverklaring, consent log, consent data | Bij het onderdeel zelf: Banner › Vormgeving, Cookies › Cookielijst, Privacyverklaring, Consent log › Bewaren en opnieuw vragen |
+| Beheer › Reset: alles resetten, licentie | Beheer › Reset |
+| Beheer › Licentie | Beheer › Licentie |
+| Beheer › Info | Beheer › Info |
+
+Oude links en bladwijzers (`?page=cookiemelding…`) verwijzen automatisch door.
+
+### Nieuw
+- **Overzicht** met de status van licentie, cookies, toestemmingen en consent-versie, en de compliance-check met een directe link naar de plek waar u iets oplost.
+- **Consent log** als WordPress-lijst: filters met aantallen, zoeken, bulk verwijderen, een bewijs per registratie (af te drukken of op te slaan als pdf) en een CSV-export met datumbereik.
+- **De versiegeschiedenis** van "iedereen opnieuw laten kiezen" is zichtbaar, met de reden.
+- **Engelse teksten** voor de placeholder van geblokkeerde video's zijn in te vullen.
+- **Kleuren** kiest u met het kleurvlak of plakt u als hexcode; beide blijven zichtbaar.
+
+### Veranderd
+- **Opslaan** gaat via de standaardformulieren van WordPress; acties (exports, resets, licentie, API-sleutel) via gewone knoppen met een duidelijke melding. Een ongeldige waarde houdt de oude waarde en geeft een melding per veld.
+- **De API-sleutel** wordt op de server gemaakt en ingetrokken, en staat niet meer in de JavaScript van de admin.
+- **De licentiemelding** staat alleen nog op de pagina's van Cookiebaas.
+- **De backup** heet `cookiebaas-backup-JJJJ-MM-DD.json`. Terugzetten behoudt uw API-sleutel.
+
+### Verwijderd
+- Het veld "knoptekst" bij de video-placeholder had geen effect en is uit de admin gehaald.
+- "Google IDs wissen" (maak de velden onder Blokkering › Google leeg) en de selectieve reset (elk onderdeel heeft nu een eigen knop).
+- De oude admin-code (`includes/admin.php`, `assets/js/admin.js`, `assets/css/admin.css`).
+
 ## [2.4.6] - 2026-09-26
 
 ### Opgelost

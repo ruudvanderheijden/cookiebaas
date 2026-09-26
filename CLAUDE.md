@@ -24,8 +24,9 @@ This is a traditional WordPress plugin with no build system:
 |------|---------|
 | `cookiemelding.php` | Bootstrap: constants, includes, activation/deactivation hooks, DB table creation, version migrations, cron scheduling, REST API endpoints |
 | `includes/defaults.php` | All default settings (100+ keys), helper functions (`cm_get()`, `cm_get_settings()`), pre-defined cookie database, service/category mapping |
-| `includes/frontend.php` | Banner HTML rendering, inline CSS injection, Google Consent Mode v2 script, script/embed blocking via output buffering, AJAX consent logging |
-| `includes/admin.php` | All 5 admin pages + AJAX handlers: Settings, Cookies & Scan, Privacy Statement, Consent Log, Manage |
+| `includes/frontend.php` | Banner HTML rendering, inline CSS injection, Google Consent Mode v2 script, script/embed blocking via output buffering |
+| `includes/admin/*.php` | The WordPress-native admin: `menu.php` (menu, page frame, old-slug redirects), `fields.php` (field registry and renderer), `settings.php` (Settings API and type-aware sanitizers), `actions.php` (admin-post actions and notices), and one `page-*.php` per menu item: overzicht, banner, blokkering, cookies, privacy, log, beheer. Also `preview.php`, `ajax.php` (AJAX for scan, cookie DB and scan-add), `scan.php` (scan AJAX and knowledge base) and `class-cm-log-list-table.php` |
+| `includes/consent.php` | Frontend AJAX: `cm_log_consent` (consent logging) and `cm_geo_check` |
 | `includes/privacy.php` | `[cookiebaas_privacy]` shortcode — renders full GDPR/AVG privacy statement from stored options |
 | `includes/license.php` | License validation against `cookiebaas.nl` API, caching, 7-day cron refresh |
 | `includes/updater.php` | `CM_GitHub_Updater` class — hooks into WordPress update system to pull releases from GitHub |
@@ -81,5 +82,5 @@ All cron events are unscheduled on plugin deactivation (`uninstall.php` drops ta
 - **Version migrations**: Handled in `cookiemelding.php` via `cm_version` option comparison — add new migration blocks there when changing DB schema or option structure
 - **Cookie category mapping**: `cm_map_category()` in `defaults.php` translates internal slugs (`analytics`, `marketing`, `functional`) to display labels
 - **Embed domain mapping**: `cm_get_embed_domains()` maps service names to domains for the script blocker — extend this when adding new service support
-- **Admin AJAX handlers**: All registered with `wp_ajax_cm_*` prefix; corresponding JS in `assets/js/admin.js` calls them via `jQuery.ajax()`
+- **Admin saving and actions**: Settings saving goes through the WordPress Settings API (`options.php`); one-off actions go through `admin-post.php`, registered via `cm_admin_register_action()`, with a nonce per action (`cm_<action>`); AJAX remains only for the scan batches, cookie database import and "scan result toevoegen", called by `assets/js/admin-cookies.js` with a nonce per action. Shared admin JS lives in `assets/js/admin-common.js`; there is no jQuery
 - **Frontend consent state**: Stored in browser cookie `cc_cm_consent` (JSON, keys `v/sv/ts/exp/analytics/marketing/method/services`); read/written by the **inline script** rendered by `cm_render_frontend()` in `includes/frontend.php` — there is NO separate frontend .js file, all frontend JS is inline in that function. Fires `cm_consent_accepted` / `cm_consent_rejected` / `cm_consent_saved` / `cm_analytics_enabled` / `cm_marketing_enabled` custom events and pushes `cm_consent_update` to the GTM dataLayer
