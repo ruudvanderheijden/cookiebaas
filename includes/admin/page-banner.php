@@ -9,8 +9,83 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 function cm_tabs_banner() {
     return array(
+        'teksten'  => cm_tab_banner_teksten(),
         'weergave' => cm_tab_banner_weergave(),
         'gedrag'   => cm_tab_banner_gedrag(),
+    );
+}
+
+/** Schakelaar "Bewerken voor: A | B" (zie admin-common.js). */
+function cm_render_switch( $name, array $options, $current, $prefix ) {
+    echo '<ul class="subsubsub cm-switch" data-cm-switch="' . esc_attr( $name ) . '"><li>' . esc_html( $prefix ) . ' </li>';
+    $last = array_key_last( $options );
+    foreach ( $options as $value => $label ) {
+        $on = (string) $value === (string) $current;
+        echo '<li><a href="#" data-cm-switch-to="' . esc_attr( $value ) . '"' . ( $on ? ' class="current" aria-current="true"' : '' ) . '>' . esc_html( $label ) . '</a>' . ( $value === $last ? '' : ' |' ) . '</li>';
+    }
+    echo '</ul>';
+}
+
+/** Tekstsecties voor één taal; bij 'en' krijgen de sleutels het achtervoegsel _en. */
+function cm_text_sections( $lang ) {
+    $s      = $lang === 'en' ? '_en' : '';
+    $pane   = array( 'data-cm-pane' => 'lang:' . $lang );
+    $html   = 'Toegestane HTML: <code>&lt;a href=""&gt;</code>, <code>&lt;strong&gt;</code>, <code>&lt;em&gt;</code>.';
+    $cats   = array( 1 => 'Functionele cookies (categorie 1)', 2 => 'Analytische cookies (categorie 2)', 3 => 'Marketingcookies (categorie 3)' );
+    $sections = array(
+        array( 'title' => 'Hoofdbanner', 'attrs' => $pane, 'fields' => array(
+            cm_field( 'txt_banner_title' . $s, 'text', 'Titel' ),
+            cm_field( 'txt_banner_body' . $s, 'html', 'Tekst', array( 'description' => $html ) ),
+            cm_field( 'txt_btn_prefs' . $s, 'text', 'Knop "Cookie voorkeuren"' ),
+            cm_field( 'txt_btn_reject' . $s, 'text', 'Knop "Weigeren"' ),
+            cm_field( 'txt_btn_accept' . $s, 'text', 'Knop "Akkoord"' ),
+        ) ),
+        array( 'title' => 'Voorkeurenvenster', 'attrs' => $pane, 'fields' => array(
+            cm_field( 'txt_prefs_title' . $s, 'text', 'Titel' ),
+            cm_field( 'txt_prefs_body' . $s, 'html', 'Tekst', array( 'description' => $html ) ),
+            cm_field( 'txt_btn_allowall' . $s, 'text', 'Knop "Alles toestaan"' ),
+            cm_field( 'txt_btn_rejectall' . $s, 'text', 'Knop "Alles afwijzen"' ),
+            cm_field( 'txt_btn_save' . $s, 'text', 'Knop "Keuzes opslaan"' ),
+        ) ),
+    );
+    foreach ( $cats as $i => $title ) {
+        $sections[] = array( 'title' => $title, 'attrs' => $pane, 'collapsible' => true, 'fields' => array(
+            cm_field( "txt_cat{$i}_name{$s}", 'text', 'Naam' ),
+            cm_field( "txt_cat{$i}_short{$s}", 'text', 'Korte omschrijving' ),
+            cm_field( "txt_cat{$i}_long{$s}", 'textarea', 'Uitgebreide omschrijving' ),
+        ) );
+    }
+    $sections[] = array( 'title' => 'Zweefknop', 'attrs' => $pane, 'fields' => array(
+        cm_field( 'txt_float_label' . $s, 'text', 'Tekst', array( 'description' => 'De tekst van de tekstknop, en het schermlezerlabel van het icoon.' ) ),
+    ) );
+    $sections[] = array( 'title' => 'Placeholder voor geblokkeerde video\'s', 'attrs' => $pane, 'fields' => array(
+        cm_field( 'txt_embed_title' . $s, 'text', 'Titel' ),
+        cm_field( 'txt_embed_body' . $s, 'html', 'Tekst', array( 'description' => 'Gebruik <code>{service}</code> voor de naam van de dienst, bijvoorbeeld YouTube.' ) ),
+        cm_field( 'txt_embed_accept_btn' . $s, 'text', 'Knop "Cookies accepteren"' ),
+        cm_field( 'txt_embed_prefs' . $s, 'html', 'Link naar voorkeuren', array(
+            'allowed'     => array( 'a' => array( 'href' => array(), 'class' => array() ), 'strong' => array(), 'em' => array() ),
+            'description' => 'Houd de link <code>&lt;a href="#" class="cm-embed-open-prefs"&gt;…&lt;/a&gt;</code> intact: die opent het voorkeurenvenster.',
+        ) ),
+    ) );
+    return $sections;
+}
+
+function cm_tab_banner_teksten() {
+    $sections = array(
+        array( 'title' => 'Taal', 'fields' => array(
+            cm_field( 'banner_language', 'radio', 'Taal van de banner', array(
+                'options'     => array( 'nl' => 'Nederlands', 'en' => 'English' ),
+                'description' => 'In welke taal bezoekers de banner zien, los van de taal van de site. Gebruikt u een vertaalplugin zoals TranslatePress, laat dit dan op de standaardtaal van de site staan en vertaal via die plugin.',
+            ) ),
+        ) ),
+        array( 'title' => 'Teksten', 'content' => function () {
+            cm_render_switch( 'lang', array( 'nl' => 'Nederlands', 'en' => 'English' ), cm_detect_lang(), 'Bewerken voor:' );
+        } ),
+    );
+    return array(
+        'label'    => 'Teksten',
+        'preview'  => true,
+        'sections' => array_merge( $sections, cm_text_sections( 'nl' ), cm_text_sections( 'en' ) ),
     );
 }
 
