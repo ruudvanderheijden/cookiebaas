@@ -25,3 +25,8 @@
   #adminmenumain, #wpadminbar, #wpfooter, .nav-tab-wrapper, .notice, .cm-no-print { display: none !important; }
   #wpcontent, #wpbody-content { margin-left: 0; padding-left: 0; }
 }
+
+/* Overzicht: kaartenraster en statuskolom */
+.cm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin: 16px 0 24px; }
+.cm-cards .card { margin: 0; max-width: none; }
+.cm-checks .cm-check-status { width: 160px; white-space: nowrap; }

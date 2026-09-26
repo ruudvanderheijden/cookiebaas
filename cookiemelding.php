@@ -128,6 +128,9 @@ add_action( 'plugins_loaded', function() {
     // Versie-upgrade: nieuwe instellingen toevoegen zonder bestaande te overschrijven
     $stored_version = get_option( 'cm_version', '0' );
     if ( version_compare( $stored_version, CM_VERSION, '<' ) ) {
+        // 3.0: eenmalig laten zien dat de admin een nieuwe indeling heeft
+        if ( function_exists( 'cm_flag_admin3_notice' ) ) cm_flag_admin3_notice( $stored_version );
+
         // Tabellen aanmaken/upgraden — alleen bij versie-wissel, niet op elke
         // pageload (dbDelta + INFORMATION_SCHEMA query zijn relatief duur)
         cm_create_log_table();

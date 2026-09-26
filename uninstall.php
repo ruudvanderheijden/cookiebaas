@@ -24,6 +24,7 @@ delete_option( 'cm_auto_scan_next' );
 delete_option( 'cm_auto_scan_last' );
 delete_option( 'cm_auto_scan_last_added' );
 delete_option( 'cm_auto_scan_last_found' );
+delete_option( 'cm_show_admin3_notice' );
 
 // Verwijder transients (GitHub release cache, CSS cache, rate limits)
 $wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '\_transient\_cm\_%' OR option_name LIKE '\_transient\_timeout\_cm\_%'" );
