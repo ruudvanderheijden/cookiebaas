@@ -278,13 +278,14 @@ function cm_render_beheer_info() {
     echo '<tr><th scope="row">Versie</th><td>' . esc_html( CM_VERSION ) . '</td></tr>';
     echo '<tr><th scope="row">Gemaakt door</th><td><a href="https://www.cookiebaas.nl/" target="_blank" rel="noopener">Ruud van der Heijden</a></td></tr>';
     echo '<tr><th scope="row">Naam van de toestemmingscookie</th><td><code>cc_cm_consent</code></td></tr>';
+    echo '<tr><th scope="row">AVG-compliant</th><td>Ja — opt-in, geen vooraf aangevinkte marketingcookies</td></tr>';
     echo '</tbody></table>';
 
     echo '<h2>Snel aan de slag</h2><ol>';
     foreach ( array(
         'Vul onder Blokkering › Google uw GA4- of GTM-ID in.',
         'Pas onder Banner de kleuren, teksten en weergave aan naar uw huisstijl.',
-        'Laad onder Cookies › Scannen de cookiedatabase en voer een scan uit.',
+        'Laad onder Cookies › Scannen de Open Cookie Database en voer een scan uit.',
         'Vul de Privacyverklaring in en plaats de shortcode [cookiebaas_privacy] op uw privacypagina.',
         'Test: verwijder de cookie cc_cm_consent en controleer met de ontwikkelaarstools (F12) dat cookies pas na akkoord verschijnen.',
     ) as $step ) {

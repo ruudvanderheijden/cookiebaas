@@ -198,7 +198,7 @@ cm_assert( 'mislukte log → gemeld, niet "alles gelukt"', cm_reset_everything()
 $wpdb->result = 0;
 
 cm_test_group( 'Tabs Backup en Reset' );
-cm_assert( 'volgorde Licentie, Backup, Reset', array_keys( cm_tabs_beheer() ) === array( 'licentie', 'backup', 'geavanceerd', 'reset', 'info' ) );
+cm_assert( 'volgorde van de tabs', array_keys( cm_tabs_beheer() ) === array( 'licentie', 'backup', 'geavanceerd', 'reset', 'info' ) );
 ob_start(); cm_render_beheer_backup(); $h = ob_get_clean();
 cm_assert( 'download en upload', strpos( $h, 'action=cm_export_backup' ) !== false && strpos( $h, 'enctype="multipart/form-data"' ) !== false && strpos( $h, 'name="cm_backup"' ) !== false );
 ob_start(); cm_render_beheer_reset(); $h = ob_get_clean();
@@ -237,7 +237,7 @@ cm_test_group( 'Tab Info' );
 cm_assert( 'volgorde van de tabs zoals in de spec', array_keys( cm_tabs_beheer() ) === array( 'licentie', 'backup', 'geavanceerd', 'reset', 'info' ) );
 ob_start(); cm_render_beheer_info(); $h = ob_get_clean();
 cm_assert( 'alle shortcodes', strpos( $h, '[cookiebaas_privacy]' ) !== false && strpos( $h, '[cookiebaas_cookies]' ) !== false && strpos( $h, '[cookiebaas_voorkeuren]' ) !== false );
-cm_assert( 'versie, disclaimer en contact', strpos( $h, CM_VERSION ) !== false && strpos( $h, 'Disclaimer' ) !== false && strpos( $h, 'cookiebaas.nl' ) !== false );
+cm_assert( 'versie, disclaimer en contact', strpos( $h, CM_VERSION ) !== false && strpos( $h, 'Disclaimer' ) !== false && strpos( $h, 'cookiebaas.nl' ) !== false && strpos( $h, 'AVG-compliant' ) !== false );
 cm_assert( 'snel aan de slag noemt de nieuwe menu’s', strpos( $h, 'Blokkering › Google' ) !== false && strpos( $h, 'Cookies &amp; scan' ) === false && strpos( $h, 'Instellingen' ) === false );
 
 exit( cm_test_summary() );
