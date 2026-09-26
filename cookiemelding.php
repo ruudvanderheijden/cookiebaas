@@ -23,6 +23,7 @@ require_once CM_PLUGIN_DIR . 'includes/admin.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/menu.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/fields.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/settings.php';
+require_once CM_PLUGIN_DIR . 'includes/admin/actions.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/page-overzicht.php';
 require_once CM_PLUGIN_DIR . 'includes/frontend.php';
 require_once CM_PLUGIN_DIR . 'includes/privacy.php';
