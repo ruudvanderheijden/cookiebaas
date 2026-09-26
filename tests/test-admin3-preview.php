@@ -42,9 +42,15 @@ function frontend_vars() {
     return $vars;
 }
 
-foreach ( array( 'light', 'dark' ) as $theme ) {
-    cm_test_group( "CSS-variabelen preview == frontend ($theme)" );
-    cm_test_set_settings( array_merge( cm_default_settings(), array( 'color_theme' => $theme, 'color_accept_border' => '', 'dm_reject_border' => '#445566' ) ) );
+// Donker met 0: de frontend maakt daar via `?:` 75 / 18px / 6px van; de preview moet hetzelfde tonen.
+$scenarios = array(
+    'light'           => array( 'light', array() ),
+    'dark'            => array( 'dark', array() ),
+    'dark, waarden 0' => array( 'dark', array( 'dm_radius_btn' => '0', 'dm_radius_popup' => '0', 'dm_overlay_opacity' => '0' ) ),
+);
+foreach ( $scenarios as $label => list( $theme, $extra ) ) {
+    cm_test_group( "CSS-variabelen preview == frontend ($label)" );
+    cm_test_set_settings( array_merge( cm_default_settings(), array( 'color_theme' => $theme, 'color_accept_border' => '', 'dm_reject_border' => '#445566' ), $extra ) );
     $front = frontend_vars();
     $prev  = cm_preview_vars( cm_get_settings(), $theme );
     $diff  = array();

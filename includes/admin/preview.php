@@ -8,16 +8,16 @@ if ( ! defined( 'ABSPATH' ) ) exit;
    tegen de echte frontend-output (tests/test-admin3-preview.php).
 ================================================================ */
 
-/** [licht-sleutel, donker-sleutel|null, css-var, eenheid, waarde-als-leeg] */
+/** [licht-sleutel, donker-sleutel|null, css-var, eenheid, waarde-als-leeg, donker-standaard-bij-0|null] */
 function cm_preview_var_map() {
     $m = array(
-        array( 'overlay_opacity', 'dm_overlay_opacity', '--cm-overlay-alpha', 'alpha', '' ),
-        array( 'radius_popup', 'dm_radius_popup', '--cm-popup-radius', 'px', '' ),
-        array( 'radius_btn', 'dm_radius_btn', '--cm-btn-radius', 'px', '' ),
-        array( 'banner_width_bottom_center', null, '--cm-banner-w-bottom', 'px', '' ),
-        array( 'banner_width_center', null, '--cm-banner-w-center', 'px', '' ),
-        array( 'banner_width_compact', null, '--cm-banner-w-compact', 'px', '' ),
-        array( 'color_always_on_bg', null, '--cm-always-on-bg', '', '' ),
+        array( 'overlay_opacity', 'dm_overlay_opacity', '--cm-overlay-alpha', 'alpha', '', 75 ),
+        array( 'radius_popup', 'dm_radius_popup', '--cm-popup-radius', 'px', '', 18 ),
+        array( 'radius_btn', 'dm_radius_btn', '--cm-btn-radius', 'px', '', 6 ),
+        array( 'banner_width_bottom_center', null, '--cm-banner-w-bottom', 'px', '', null ),
+        array( 'banner_width_center', null, '--cm-banner-w-center', 'px', '', null ),
+        array( 'banner_width_compact', null, '--cm-banner-w-compact', 'px', '', null ),
+        array( 'color_always_on_bg', null, '--cm-always-on-bg', '', '', null ),
     );
     // Kleuren waarvan de variabelenaam het achtervoegsel volgt: color_<x> / dm_<x> → --cm-<var>
     $colours = array(
@@ -40,11 +40,11 @@ function cm_preview_var_map() {
         'embed_btn_bg' => 'embed-btn-bg', 'embed_btn_text' => 'embed-btn-text', 'embed_btn_hover_bg' => 'embed-btn-hover-bg', 'embed_btn_hover_text' => 'embed-btn-hover-text',
     );
     foreach ( $colours as $suffix => $var ) {
-        $m[] = array( 'color_' . $suffix, 'dm_' . $suffix, '--cm-' . $var, '', '' );
+        $m[] = array( 'color_' . $suffix, 'dm_' . $suffix, '--cm-' . $var, '', '', null );
     }
     // Optionele randen/achtergrond: leeg = transparant (zelfde als de frontend)
     foreach ( array( 'accept_border' => 'accept-border', 'reject_border' => 'reject-border', 'allowall_border' => 'allowall-border', 'outline_hover_bg' => 'outline-hover-bg' ) as $suffix => $var ) {
-        $m[] = array( 'color_' . $suffix, 'dm_' . $suffix, '--cm-' . $var, '', 'transparent' );
+        $m[] = array( 'color_' . $suffix, 'dm_' . $suffix, '--cm-' . $var, '', 'transparent', null );
     }
     return $m;
 }
@@ -60,9 +60,12 @@ function cm_preview_format( $v, $unit, $empty ) {
 function cm_preview_vars( array $s, $theme ) {
     $vars = array();
     foreach ( cm_preview_var_map() as $row ) {
-        list( $light, $dark, $var, $unit, $empty ) = $row;
+        list( $light, $dark, $var, $unit, $empty, $dark_default ) = $row;
         $key = ( $theme === 'dark' && $dark ) ? $dark : $light;
-        $vars[ $var ] = cm_preview_format( isset( $s[ $key ] ) ? $s[ $key ] : '', $unit, $empty );
+        $v   = isset( $s[ $key ] ) ? $s[ $key ] : '';
+        // Spiegelt de `?:` van de frontend (donker 0 of leeg wordt de standaard), zodat de preview de site toont; weg zodra de frontend dat niet meer doet.
+        if ( $theme === 'dark' && $dark_default !== null && ! $v ) $v = $dark_default;
+        $vars[ $var ] = cm_preview_format( $v, $unit, $empty );
     }
     return $vars;
 }
