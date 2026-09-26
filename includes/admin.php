@@ -869,39 +869,10 @@ function cm_ajax_export_cookies_csv() {
     if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
 
     $cookies   = cm_get_cookie_list();
-    $cat_labels = array(
-        'functional' => 'Functioneel',
-        'analytics'  => 'Analytisch',
-        'marketing'  => 'Marketing',
-    );
-    $grondslagen = array(
-        'functional' => 'Strikt noodzakelijk / Gerechtvaardigd belang',
-        'analytics'  => 'Toestemming',
-        'marketing'  => 'Toestemming',
-    );
-
     $escape = function( $v ) { return '"' . str_replace( '"', '""', (string) $v ) . '"'; };
-
-    $rows   = array();
-    $rows[] = implode( ',', array_map( $escape, array(
-        'Cookie naam', 'Aanbieder', 'Categorie', 'Grondslag', 'Doel', 'Looptijd', 'Domein', 'Wildcard',
-    ) ) );
-
-    foreach ( $cookies as $ck ) {
-        $cat     = $ck['category'] ?? 'functional';
-        $rows[]  = implode( ',', array_map( $escape, array(
-            $ck['name']     ?? '',
-            $ck['provider'] ?? '',
-            $cat_labels[ $cat ] ?? $cat,
-            $grondslagen[ $cat ] ?? '',
-            $ck['purpose']  ?? '',
-            $ck['duration'] ?? '',
-            $ck['domain']   ?? '',
-            ! empty( $ck['wildcard'] ) ? 'Ja' : 'Nee',
-        ) ) );
-    }
-
-    $csv      = implode( "\r\n", $rows );
+    $lines  = array();
+    foreach ( cm_cookie_list_csv_rows( $cookies ) as $r ) $lines[] = implode( ',', array_map( $escape, $r ) );
+    $csv    = implode( "\r\n", $lines );
     $filename = 'cookielijst-' . date( 'Y-m-d' ) . '.csv';
     wp_send_json_success( array( 'csv' => $csv, 'filename' => $filename, 'count' => count( $cookies ) ) );
 }

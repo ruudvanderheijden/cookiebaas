@@ -13,6 +13,9 @@ function cm_admin_notice_messages() {
         'theme-reset-light' => array( 'success', 'De standaardkleuren van het lichte thema zijn hersteld.' ),
         'theme-reset-dark'  => array( 'success', 'De standaardkleuren van het donkere thema zijn hersteld.' ),
         'action-failed'     => array( 'error',   'De actie is mislukt. Probeer het opnieuw.' ),
+        'f12-imported'        => array( 'success', 'De geplakte cookies zijn toegevoegd aan de lijst. Vul waar nodig provider en doel aan.' ),
+        'f12-none'            => array( 'info',    'Er zijn geen nieuwe cookies herkend. Plak de tabel uit de ontwikkelaarstools (F12 › Applicatie › Cookies).' ),
+        'cookie-list-cleared' => array( 'success', 'De cookielijst is leeggemaakt. De ingebouwde cookies blijven staan.' ),
     );
 }
 
@@ -51,6 +54,18 @@ function cm_admin_action_form( $action, $label, array $args = array(), $confirm 
 function cm_admin_action_url( $action, array $args = array() ) {
     $url = add_query_arg( array_merge( array( 'action' => 'cm_' . $action ), $args ), admin_url( 'admin-post.php' ) );
     return wp_nonce_url( $url, 'cm_' . $action );
+}
+
+/** Stuur rijen als CSV-download (met BOM, zodat Excel UTF-8 herkent) en stop. */
+function cm_admin_send_csv( $filename, array $rows ) {
+    nocache_headers();
+    header( 'Content-Type: text/csv; charset=utf-8' );
+    header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $filename ) . '"' );
+    $out = fopen( 'php://output', 'w' );
+    fputs( $out, "\xEF\xBB\xBF" );
+    foreach ( $rows as $row ) fputcsv( $out, $row );
+    fclose( $out );
+    exit;
 }
 
 /** Registreer een actie: rechten + nonce controleren, callback uitvoeren, terug met melding. */
