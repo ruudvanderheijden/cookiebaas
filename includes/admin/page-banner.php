@@ -9,9 +9,10 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 function cm_tabs_banner() {
     return array(
-        'teksten'  => cm_tab_banner_teksten(),
-        'weergave' => cm_tab_banner_weergave(),
-        'gedrag'   => cm_tab_banner_gedrag(),
+        'vormgeving' => cm_tab_banner_vormgeving(),
+        'teksten'    => cm_tab_banner_teksten(),
+        'weergave'   => cm_tab_banner_weergave(),
+        'gedrag'     => cm_tab_banner_gedrag(),
     );
 }
 
@@ -24,6 +25,148 @@ function cm_render_switch( $name, array $options, $current, $prefix ) {
         echo '<li><a href="#" data-cm-switch-to="' . esc_attr( $value ) . '"' . ( $on ? ' class="current" aria-current="true"' : '' ) . '>' . esc_html( $label ) . '</a>' . ( $value === $last ? '' : ' |' ) . '</li>';
     }
     echo '</ul>';
+}
+
+/** Kleurgroepen voor één thema. Licht: color_*, radius_*, overlay_opacity. Donker: dm_*. */
+function cm_color_sections( $theme ) {
+    $p    = $theme === 'dark' ? 'dm_' : 'color_';
+    $r    = $theme === 'dark' ? 'dm_' : '';
+    $pane = array( 'data-cm-pane' => 'theme:' . $theme, 'class' => 'postbox' );
+    $c    = function ( $key, $label, array $extra = array() ) use ( $p ) { return cm_field( $p . $key, 'color', $label, $extra ); };
+    $o    = function ( $key, $label, $ph ) use ( $p ) { return cm_field( $p . $key, 'color_optional', $label, array( 'placeholder' => $ph ) ); };
+    return array(
+        array( 'title' => 'Venster', 'collapsible' => true, 'open' => true, 'attrs' => $pane, 'fields' => array(
+            $c( 'popup_bg', 'Achtergrond' ),
+            $c( 'title', 'Titels' ),
+            $c( 'body', 'Tekst' ),
+            $c( 'link', 'Links' ),
+            cm_field( $r . 'radius_popup', 'number', 'Hoekafronding venster', array( 'min' => 0, 'max' => 60, 'unit' => 'px' ) ),
+            cm_field( $r . 'overlay_opacity', 'number', 'Donkerte achtergrond', array( 'min' => 0, 'max' => 90, 'unit' => '%', 'description' => 'Hoe donker de pagina achter het venster wordt.' ) ),
+        ) ),
+        array( 'title' => 'Knoppen', 'collapsible' => true, 'attrs' => $pane, 'fields' => array(
+            $c( 'accept_bg', 'Akkoord — achtergrond' ),
+            $c( 'accept_text', 'Akkoord — tekst' ),
+            $c( 'accept_hover_bg', 'Akkoord — achtergrond bij hover' ),
+            $c( 'accept_hover_text', 'Akkoord — tekst bij hover' ),
+            $o( 'accept_border', 'Akkoord — rand', 'Geen rand' ),
+            $c( 'reject_bg', 'Weigeren — achtergrond' ),
+            $c( 'reject_text', 'Weigeren — tekst' ),
+            $c( 'reject_hover_bg', 'Weigeren — achtergrond bij hover' ),
+            $c( 'reject_hover_text', 'Weigeren — tekst bij hover' ),
+            $o( 'reject_border', 'Weigeren — rand', 'Geen rand' ),
+            $c( 'prefs_border', 'Cookie voorkeuren — rand' ),
+            $c( 'prefs_text', 'Cookie voorkeuren — tekst' ),
+            $c( 'prefs_hover_border', 'Cookie voorkeuren — rand bij hover' ),
+            $c( 'prefs_hover_text', 'Cookie voorkeuren — tekst bij hover' ),
+            $c( 'allowall_bg', 'Alles toestaan — achtergrond' ),
+            $c( 'allowall_text', 'Alles toestaan — tekst' ),
+            $c( 'allowall_hover_bg', 'Alles toestaan — achtergrond bij hover' ),
+            $c( 'allowall_hover_text', 'Alles toestaan — tekst bij hover' ),
+            $o( 'allowall_border', 'Alles toestaan — rand', 'Geen rand' ),
+            $c( 'outline_border', 'Alles afwijzen — rand' ),
+            $c( 'outline_text', 'Alles afwijzen — tekst' ),
+            $c( 'outline_hover_border', 'Alles afwijzen — rand bij hover' ),
+            $c( 'outline_hover_text', 'Alles afwijzen — tekst bij hover' ),
+            $o( 'outline_hover_bg', 'Alles afwijzen — achtergrond bij hover', 'Geen achtergrond' ),
+            cm_field( $r . 'radius_btn', 'number', 'Hoekafronding knoppen', array( 'min' => 0, 'max' => 60, 'unit' => 'px', 'description' => 'Geldt voor alle knoppen.' ) ),
+        ) ),
+        array( 'title' => 'Voorkeurenvenster en cookielijst', 'collapsible' => true, 'attrs' => $pane, 'fields' => array(
+            $c( 'close_bg', 'Sluitknop — achtergrond' ),
+            $c( 'close_hover_bg', 'Sluitknop — achtergrond bij hover' ),
+            $c( 'close_icon', 'Sluitknop — kruisje' ),
+            $c( 'toggle_on', 'Schakelaar aan' ),
+            $c( 'toggle_off', 'Schakelaar uit' ),
+            $c( 'always_bg', '"Altijd actief" — achtergrond' ),
+            $c( 'always_on_color', '"Altijd actief" — tekst' ),
+            $c( 'expand_bg', 'Uitklapicoon — achtergrond' ),
+            $c( 'expand_icon', 'Uitklapicoon — icoon' ),
+            $c( 'expand_open_bg', 'Uitklapicoon open — achtergrond' ),
+            $c( 'expand_open_icon', 'Uitklapicoon open — icoon' ),
+            $c( 'cat_header_hover', 'Categorie — achtergrond bij hover' ),
+            $c( 'cat_desc', 'Categorie — omschrijving' ),
+            $c( 'cat_detail', 'Detailtekst' ),
+            $c( 'cookie_name', 'Cookienaam' ),
+            $c( 'cookie_meta', 'Cookiegegevens' ),
+            $c( 'cat_border', 'Randen', array( 'description' => 'Rand om categorieën, diensten en cookies.' ) ),
+            $c( 'service_bg', 'Dienst — achtergrond' ),
+            $c( 'service_name', 'Dienst — naam' ),
+            $c( 'cookie_item_bg', 'Cookierij — achtergrond' ),
+            $c( 'cookie_empty', 'Tekst bij lege cookielijst' ),
+            $c( 'badge_text', 'Badge derde partij — tekst' ),
+            $c( 'badge_bg', 'Badge derde partij — achtergrond' ),
+            $c( 'badge_border', 'Badge derde partij — rand' ),
+        ) ),
+        array( 'title' => 'Zweefknop', 'collapsible' => true, 'attrs' => $pane, 'fields' => array(
+            $c( 'float_icon_bg', 'Icoon — achtergrond' ),
+            $c( 'float_icon_color', 'Icoon — kleur' ),
+            $c( 'float_icon_hover_bg', 'Icoon — achtergrond bij hover' ),
+            $c( 'float_icon_hover_color', 'Icoon — kleur bij hover' ),
+            $c( 'float_text_bg', 'Tekstknop — achtergrond' ),
+            $c( 'float_text_color', 'Tekstknop — tekst' ),
+            $c( 'float_text_border', 'Tekstknop — rand' ),
+            $c( 'float_text_hover_bg', 'Tekstknop — achtergrond bij hover' ),
+            $c( 'float_text_hover_color', 'Tekstknop — tekst bij hover' ),
+        ) ),
+        array( 'title' => 'Placeholder voor geblokkeerde video\'s', 'collapsible' => true, 'attrs' => $pane, 'fields' => array(
+            $c( 'embed_bg', 'Achtergrond' ),
+            $c( 'embed_title', 'Titel' ),
+            $c( 'embed_body', 'Tekst' ),
+            $c( 'embed_btn_bg', 'Knop — achtergrond' ),
+            $c( 'embed_btn_text', 'Knop — tekst' ),
+            $c( 'embed_btn_hover_bg', 'Knop — achtergrond bij hover' ),
+            $c( 'embed_btn_hover_text', 'Knop — tekst bij hover' ),
+        ) ),
+    );
+}
+
+function cm_tab_banner_vormgeving() {
+    $head = array(
+        array( 'title' => 'Thema', 'fields' => array(
+            cm_field( 'color_theme', 'radio', 'Actief thema', array(
+                'options'     => array( 'light' => 'Licht', 'dark' => 'Donker' ),
+                'description' => 'Welk kleurenschema bezoekers zien.',
+            ) ),
+        ) ),
+        array( 'title' => 'Kleuren', 'content' => function () {
+            cm_render_switch( 'theme', array( 'light' => 'Licht', 'dark' => 'Donker' ), cm_get( 'color_theme' ) === 'dark' ? 'dark' : 'light', 'Bewerken voor:' );
+        } ),
+    );
+    return array(
+        'label'      => 'Vormgeving',
+        'preview'    => true,
+        'sections'   => array_merge( $head, cm_color_sections( 'light' ), cm_color_sections( 'dark' ) ),
+        'after_form' => function () {
+            echo '<p>Standaardkleuren herstellen: ';
+            echo cm_admin_action_form( 'reset_theme', 'Licht', array( 'theme' => 'light' ), 'De kleuren van het lichte thema teruggezet naar de standaard?', 'button button-small' );
+            echo ' ';
+            echo cm_admin_action_form( 'reset_theme', 'Donker', array( 'theme' => 'dark' ), 'De kleuren van het donkere thema teruggezet naar de standaard?', 'button button-small' );
+            echo '</p>';
+        },
+    );
+}
+
+/** Zet de kleuren (en afronding/overlay) van één thema terug naar de defaults. */
+function cm_reset_theme_colors( array $settings, $theme ) {
+    foreach ( cm_default_settings() as $key => $val ) {
+        if ( $theme === 'dark' ) {
+            if ( strpos( $key, 'dm_' ) === 0 ) $settings[ $key ] = $val;
+            continue;
+        }
+        if ( $key === 'color_theme' ) continue;
+        if ( strpos( $key, 'color_' ) === 0 || strpos( $key, 'radius_' ) === 0 || $key === 'overlay_opacity' ) {
+            $settings[ $key ] = $val;
+        }
+    }
+    return $settings;
+}
+
+if ( function_exists( 'cm_admin_register_action' ) ) {
+    cm_admin_register_action( 'reset_theme', function () {
+        $theme = ( isset( $_POST['theme'] ) && $_POST['theme'] === 'dark' ) ? 'dark' : 'light';
+        $saved = get_option( 'cm_settings', array() );
+        update_option( 'cm_settings', cm_reset_theme_colors( is_array( $saved ) ? $saved : array(), $theme ) );
+        return 'theme-reset-' . $theme;
+    } );
 }
 
 /** Tekstsecties voor één taal; bij 'en' krijgen de sleutels het achtervoegsel _en. */

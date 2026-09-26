@@ -10,3 +10,4 @@
 .cm-details-body { padding: 0 12px 8px; }
 .cm-media-img { max-width: 64px; max-height: 64px; vertical-align: middle; }
 .cm-switch { float: none; margin: 0 0 12px; }
+.cm-action-form { display: inline; }

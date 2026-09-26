@@ -66,4 +66,28 @@ cm_assert( 'embed-voorkeurenlink behoudt class (opent het venster)', strpos( cm_
 cm_assert( 'embed-tekst behoudt <strong>', cm_sanitize_field_value( $idx['txt_embed_body'], 'Voor <strong>{service}</strong>', '' ) === 'Voor <strong>{service}</strong>' );
 cm_assert( 'embed-tekst: link wordt verwijderd (de site toont geen links)', cm_sanitize_field_value( $idx['txt_embed_body'], 'Zie <a href="/p">beleid</a> voor <strong>x</strong>', '' ) === 'Zie beleid voor <strong>x</strong>' );
 
+cm_test_group( 'Banner › Vormgeving' );
+$v = tab_keys( 'vormgeving' );
+cm_assert( 'Vormgeving is de eerste tab', array_keys( cm_tabs_banner() )[0] === 'vormgeving' );
+cm_assert( 'actief thema staat op Vormgeving', in_array( 'color_theme', $v, true ) );
+$missing = array();
+foreach ( array_keys( cm_default_settings() ) as $k ) {
+    $is_colour = ( strpos( $k, 'color_' ) === 0 && ! in_array( $k, array( 'color_theme', 'color_always_on_bg' ), true ) ) || strpos( $k, 'dm_' ) === 0
+        || in_array( $k, array( 'radius_popup', 'radius_btn', 'overlay_opacity' ), true );
+    if ( $is_colour && ! in_array( $k, $v, true ) ) $missing[] = $k;
+}
+cm_assert( 'elke kleur, afronding en overlay van beide thema\'s staat erop' . ( $missing ? ' — ontbreekt: ' . implode( ', ', $missing ) : '' ), ! $missing );
+$idx = cm_admin_field_index( 'cm_settings', array( 'cookiebaas-banner' => cm_tabs_banner() ) );
+foreach ( array( 'accept_border', 'reject_border', 'allowall_border', 'outline_hover_bg' ) as $o ) {
+    cm_assert( "color_$o en dm_$o zijn optioneel", $idx[ 'color_' . $o ]['type'] === 'color_optional' && $idx[ 'dm_' . $o ]['type'] === 'color_optional' );
+}
+
+cm_test_group( 'Standaardkleuren herstellen' );
+$s = array_merge( cm_default_settings(), array( 'color_title' => '#123123', 'dm_title' => '#321321', 'color_theme' => 'dark', 'radius_btn' => 30, 'gtm_container_id' => 'GTM-X' ) );
+$l = cm_reset_theme_colors( $s, 'light' );
+cm_assert( 'licht: lichte kleur en afronding terug', $l['color_title'] === cm_default_settings()['color_title'] && $l['radius_btn'] === cm_default_settings()['radius_btn'] );
+cm_assert( 'licht: donker, actief thema en overige instellingen blijven', $l['dm_title'] === '#321321' && $l['color_theme'] === 'dark' && $l['gtm_container_id'] === 'GTM-X' );
+$d = cm_reset_theme_colors( $s, 'dark' );
+cm_assert( 'donker: alleen dm_* terug', $d['dm_title'] === cm_default_settings()['dm_title'] && $d['color_title'] === '#123123' );
+
 exit( cm_test_summary() );

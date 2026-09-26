@@ -79,32 +79,10 @@ function cm_ajax_reset_theme_defaults() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );
     if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
 
-    $theme    = isset( $_POST['theme'] ) ? sanitize_text_field( $_POST['theme'] ) : 'light';
-    $defaults = cm_default_settings();
+    $theme    = isset( $_POST['theme'] ) && $_POST['theme'] === 'dark' ? 'dark' : 'light';
     $existing = (array) get_option( 'cm_settings', array() );
-
-    if ( $theme === 'dark' ) {
-        // Reset alleen de dm_* keys
-        foreach ( $defaults as $key => $val ) {
-            if ( strpos( $key, 'dm_' ) === 0 ) {
-                $existing[ $key ] = $val;
-            }
-        }
-    } else {
-        // Reset alle light-kleur keys (color_* en radius/overlay, maar NIET dm_* en NIET color_theme)
-        $skip = array( 'color_theme' );
-        foreach ( $defaults as $key => $val ) {
-            if ( in_array( $key, $skip, true ) ) continue;
-            if ( strpos( $key, 'dm_' ) === 0 ) continue;
-            // Alleen kleur- en stijl-instellingen, geen teksten/gedrag
-            if ( strpos( $key, 'color_' ) === 0 || strpos( $key, 'radius_' ) === 0 || $key === 'overlay_opacity' ) {
-                $existing[ $key ] = $val;
-            }
-        }
-    }
-
-    update_option( 'cm_settings', $existing );
-    wp_send_json_success( array( 'defaults' => $defaults, 'theme' => $theme ) );
+    update_option( 'cm_settings', cm_reset_theme_colors( $existing, $theme ) );
+    wp_send_json_success( array( 'defaults' => cm_default_settings(), 'theme' => $theme ) );
 }
 
 add_action( 'wp_ajax_cm_reset_license', 'cm_ajax_reset_license' );
