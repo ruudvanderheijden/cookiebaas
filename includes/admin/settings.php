@@ -14,6 +14,11 @@ function cm_admin_register_settings() {
         'sanitize_callback' => 'cm_settings_sanitize_callback',
         'show_in_rest'      => false,
     ) );
+    register_setting( 'cookiebaas_cookies', 'cm_cookie_list', array(
+        'type'              => 'array',
+        'sanitize_callback' => 'cm_cookie_list_sanitize_callback',
+        'show_in_rest'      => false,
+    ) );
 }
 
 /**
@@ -197,6 +202,19 @@ function cm_sanitize_cookie_list( array $raw ) {
         );
     }
     return $clean;
+}
+
+/**
+ * Sanitize-callback van cm_cookie_list. null = de option ontbrak in de POST
+ * (niets wissen); een lege string = het formulier met alle rijen verwijderd
+ * (lijst leeg); een array = de rijen uit de editor of een update_option-aanroep.
+ */
+function cm_cookie_list_sanitize_callback( $input ) {
+    if ( $input === null ) {
+        $existing = get_option( 'cm_cookie_list', array() );
+        return is_array( $existing ) ? $existing : array();
+    }
+    return is_array( $input ) ? cm_sanitize_cookie_list( array_values( $input ) ) : array();
 }
 
 /* ---- Paginacache legen op één plek: elke inhoudswijziging, uit elke bron ---- */

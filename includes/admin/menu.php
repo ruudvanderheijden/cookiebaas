@@ -13,6 +13,7 @@ function cm_admin_pages() {
         'cookiebaas'            => 'Overzicht',
         'cookiebaas-banner'     => 'Banner',
         'cookiebaas-blokkering' => 'Blokkering',
+        'cookiebaas-cookies'    => 'Cookies',
     );
 }
 
