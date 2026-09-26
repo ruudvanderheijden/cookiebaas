@@ -19,6 +19,11 @@ function cm_admin_register_settings() {
         'sanitize_callback' => 'cm_cookie_list_sanitize_callback',
         'show_in_rest'      => false,
     ) );
+    register_setting( 'cookiebaas_privacy', 'cm_privacy', array(
+        'type'              => 'array',
+        'sanitize_callback' => 'cm_privacy_sanitize_callback',
+        'show_in_rest'      => false,
+    ) );
 }
 
 /**
@@ -215,6 +220,17 @@ function cm_cookie_list_sanitize_callback( $input ) {
         return is_array( $existing ) ? $existing : array();
     }
     return is_array( $input ) ? cm_sanitize_cookie_list( array_values( $input ) ) : array();
+}
+
+/**
+ * Sanitize-callback van cm_privacy. Start altijd vanaf de bestaande waarden,
+ * zodat een gedeeltelijke invoer niets wist; null laat alles staan.
+ */
+function cm_privacy_sanitize_callback( $input ) {
+    $existing = get_option( 'cm_privacy', array() );
+    $existing = is_array( $existing ) ? $existing : array();
+    if ( ! is_array( $input ) ) return $existing;
+    return cm_sanitize_privacy( array_merge( cm_default_privacy(), $existing, $input ), $existing );
 }
 
 /* ---- Paginacache legen op één plek: elke inhoudswijziging, uit elke bron ---- */

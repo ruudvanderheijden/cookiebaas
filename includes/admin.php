@@ -780,83 +780,10 @@ function cm_ajax_export_register() {
     if ( ! wp_verify_nonce( $nonce, 'cm_save_settings' ) ) wp_die('Ongeldige nonce');
     if ( ! current_user_can('manage_options') ) wp_die('Geen toegang');
 
-    $pv  = array_merge( cm_default_privacy(), (array) get_option('cm_privacy', array()) );
-    $pvf = function($k) use ($pv) { return isset($pv[$k]) ? $pv[$k] : ''; };
-
-    nocache_headers();
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="verwerkingsregister-' . date('Y-m-d') . '.csv"');
-
-    $out = fopen('php://output', 'w');
-    fputs($out, "\xEF\xBB\xBF"); // BOM voor Excel
-
-    // Header conform AVG art. 30
-    fputcsv($out, array(
-        'Verwerkingsregister — ' . $pvf('pv_bedrijfsnaam'),
-        'Gegenereerd door Cookiebaas', 'Datum: ' . date('d-m-Y'), '', '', '', ''
-    ));
-    fputcsv($out, array('', '', '', '', '', '', ''));
-    fputcsv($out, array(
-        'Verwerkingsactiviteit', 'Categorie betrokkenen', 'Doel', 'Rechtsgrondslag',
-        'Ontvangers / Verwerkers', 'Bewaartermijn', 'Internationale doorgifte'
-    ));
-
-    // Verwerkingen uit privacyverklaring
-    $doeleinden = json_decode($pvf('pv_doeleinden'), true);
-    $ontvangers_raw = json_decode($pvf('pv_ontvangers'), true);
-    $ontvangers_str = '';
-    if ( is_array($ontvangers_raw) ) {
-        foreach ($ontvangers_raw as $o) {
-            if (!empty($o['partij'])) $ontvangers_str .= $o['partij'] . ' (' . ($o['locatie'] ?? '') . '); ';
-        }
-    }
-    $doorgifte = $pvf('pv_doorgifte') ?: 'Nee / Niet van toepassing';
-
-    if ( is_array($doeleinden) ) {
-        foreach ($doeleinden as $d) {
-            fputcsv($out, array(
-                $d['doel']       ?? '',
-                $d['categorie']  ?? 'Websitebezoekers',
-                $d['doel']       ?? '',
-                $d['grondslag']  ?? '',
-                $ontvangers_str ?: '—',
-                '—',
-                $doorgifte,
-            ));
-        }
-    }
-
-    // Cookiemelding consent log als aparte verwerkingsactiviteit
-    $ret = intval(cm_get('log_retention_months'));
-    fputcsv($out, array(
-        'Cookietoestemming registratie',
-        'Websitebezoekers',
-        'Vastleggen en bewaren van toestemming voor cookies (AVG art. 7 verantwoordingsplicht)',
-        'Wettelijke verplichting (AVG art. 7 lid 1)',
-        'Cookiebaas plugin / ' . $pvf('pv_bedrijfsnaam'),
-        $ret > 0 ? $ret . ' maanden' : 'Niet ingesteld',
-        'Nee — opslag op eigen server',
-    ));
-
-    // Contactformulier
-    fputcsv($out, array(
-        'Contactformulier',
-        'Contactpersonen / Klanten',
-        'Beantwoorden van contactverzoeken',
-        'Gerechtvaardigd belang / Toestemming',
-        $pvf('pv_bedrijfsnaam'),
-        $pvf('pv_bewaar_contact') ?: '—',
-        'Nee',
-    ));
-
-    fputcsv($out, array('', '', '', '', '', '', ''));
-    fputcsv($out, array('Verwerkingsverantwoordelijke', $pvf('pv_bedrijfsnaam'), $pvf('pv_straat'), $pvf('pv_postcode_plaats'), 'E-mail: ' . $pvf('pv_email'), '', ''));
-    if (!empty($pv['pv_dpo_enabled']) && $pv['pv_dpo_enabled'] === '1') {
-        fputcsv($out, array('Functionaris Gegevensbescherming (DPO)', $pvf('pv_dpo_naam'), $pvf('pv_dpo_email'), $pvf('pv_dpo_telefoon'), '', '', ''));
-    }
-
-    fclose($out);
-    exit;
+    cm_admin_send_csv(
+        'verwerkingsregister-' . date( 'Y-m-d' ) . '.csv',
+        cm_register_csv_rows( (array) get_option( 'cm_privacy', array() ), cm_get( 'log_retention_months' ), date( 'd-m-Y' ) )
+    );
 }
 
 

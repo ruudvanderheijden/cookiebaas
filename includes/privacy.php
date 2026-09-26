@@ -417,21 +417,30 @@ function cm_ajax_save_privacy() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );
     if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
 
-    update_option( 'cm_privacy', cm_sanitize_privacy( wp_unslash( $_POST ) ) );
+    $existing = get_option( 'cm_privacy', array() );
+    update_option( 'cm_privacy', cm_sanitize_privacy( wp_unslash( $_POST ), is_array( $existing ) ? $existing : array() ) );
     wp_send_json_success( array( 'message' => 'Privacyverklaring opgeslagen.' ) );
 }
 
 /**
- * Sanitize de privacyverklaring (opslaan en import). Een ontbrekende checkbox
- * telt als uitgevinkt; ontbrekende tekstvelden krijgen de default.
+ * Sanitize de privacyverklaring (opslaan en import). Velden die het register
+ * kent als kleur, keuzelijst, rijtabel of checkbox gaan type-bewust
+ * (cm_sanitize_field_value), met de bestaande waarde als terugval; de rest
+ * zoals voorheen. Een ontbrekende checkbox zonder registerveld telt als uit;
+ * ontbrekende tekstvelden krijgen de default.
  */
-function cm_sanitize_privacy( array $input ) {
+function cm_sanitize_privacy( array $input, array $existing = array(), $index = null ) {
+    if ( $index === null ) $index = function_exists( 'cm_admin_field_index' ) ? cm_admin_field_index( 'cm_privacy' ) : array();
     // Tekstvakken waarvan de regeleinden er toe doen (nl2br / één item per regel)
     $textareas = array( 'pv_doeleinden', 'pv_optout_links', 'pv_ontvangers', 'pv_cf_extra', 'pv_doorgifte', 'pv_profilering_tekst', 'pv_wijzigingen_extra' );
+    $typed     = array( 'color', 'select', 'rows', 'checkbox' );
     $privacy   = array();
 
     foreach ( cm_default_privacy() as $key => $default ) {
-        if ( in_array( $key, $textareas, true ) ) {
+        $current = isset( $existing[ $key ] ) ? $existing[ $key ] : $default;
+        if ( isset( $index[ $key ] ) && in_array( $index[ $key ]['type'], $typed, true ) ) {
+            $privacy[ $key ] = isset( $input[ $key ] ) ? cm_sanitize_field_value( $index[ $key ], $input[ $key ], $current ) : (string) $current;
+        } elseif ( in_array( $key, $textareas, true ) ) {
             // Incl. de JSON-velden: komen als geëncodeerde string binnen
             $privacy[ $key ] = isset( $input[ $key ] ) ? sanitize_textarea_field( $input[ $key ] ) : $default;
         } elseif ( ( strpos( $key, 'pv_cf_' ) === 0 && $key !== 'pv_cf_grondslag' ) || in_array( $key, array('pv_gtm','pv_ap_tonen','pv_nieuwsbrief_enabled','pv_profilering_enabled'), true ) ) {
