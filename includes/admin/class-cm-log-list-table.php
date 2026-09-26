@@ -26,6 +26,15 @@ class CM_Log_List_Table extends WP_List_Table {
         return array( 'cm_delete' => 'Verwijderen' );
     }
 
+    protected function extra_tablenav( $which ) {
+        if ( $which !== 'top' ) return;
+        echo '<div class="alignleft actions">';
+        echo '<label for="cm-log-from">Van</label> <input type="date" id="cm-log-from" name="from" form="cm-log-export"> ';
+        echo '<label for="cm-log-to">tot en met</label> <input type="date" id="cm-log-to" name="to" form="cm-log-export"> ';
+        echo '<button type="submit" class="button" form="cm-log-export">CSV exporteren</button>';
+        echo '</div>';
+    }
+
     protected function get_views() {
         $current = cm_log_current_filter();
         $counts  = cm_log_counts();

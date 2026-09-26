@@ -28,6 +28,7 @@ if ( ! defined( 'MINUTE_IN_SECONDS' ) ) define( 'MINUTE_IN_SECONDS', 60 );
 if ( ! defined( 'HOUR_IN_SECONDS' ) )   define( 'HOUR_IN_SECONDS', 3600 );
 if ( ! defined( 'DAY_IN_SECONDS' ) )    define( 'DAY_IN_SECONDS', 86400 );
 if ( ! defined( 'WEEK_IN_SECONDS' ) )   define( 'WEEK_IN_SECONDS', 604800 );
+if ( ! defined( 'ARRAY_A' ) )         define( 'ARRAY_A', 'ARRAY_A' );
 
 // ---------------------------------------------------------------------------
 // Configureerbare testtoestand (per test aan te passen vóór het requiren van

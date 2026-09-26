@@ -153,6 +153,11 @@
     if (a && !window.confirm(a.getAttribute('data-cm-confirm'))) e.preventDefault();
   }, true);
 
+  /* Afdrukken (bewijs van toestemming) */
+  document.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('[data-cm-print]')) window.print();
+  });
+
   /* ---- Waarschuwing bij niet-opgeslagen wijzigingen ---- */
   var dirty = false;
   document.querySelectorAll('form.cm-form').forEach(function (form) {

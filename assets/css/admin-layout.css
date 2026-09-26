@@ -19,3 +19,9 @@
 .cm-rows-table td { vertical-align: middle; }
 #cm-scan-result progress { width: 100%; max-width: 480px; }
 #cm-scan-result table { margin-top: 8px; }
+
+/* Bewijs van toestemming afdrukken: alleen de inhoud */
+@media print {
+  #adminmenumain, #wpadminbar, #wpfooter, .nav-tab-wrapper, .notice, .cm-no-print { display: none !important; }
+  #wpcontent, #wpbody-content { margin-left: 0; padding-left: 0; }
+}
