@@ -60,7 +60,10 @@ function cm_text_sections( $lang ) {
     ) );
     $sections[] = array( 'title' => 'Placeholder voor geblokkeerde video\'s', 'attrs' => $pane, 'fields' => array(
         cm_field( 'txt_embed_title' . $s, 'text', 'Titel' ),
-        cm_field( 'txt_embed_body' . $s, 'html', 'Tekst', array( 'description' => 'Gebruik <code>{service}</code> voor de naam van de dienst, bijvoorbeeld YouTube.' ) ),
+        cm_field( 'txt_embed_body' . $s, 'html', 'Tekst', array(
+            'allowed'     => array( 'strong' => array(), 'em' => array() ),
+            'description' => 'Gebruik <code>{service}</code> voor de naam van de dienst, bijvoorbeeld YouTube. Toegestane HTML: <code>&lt;strong&gt;</code>, <code>&lt;em&gt;</code>.',
+        ) ),
         cm_field( 'txt_embed_accept_btn' . $s, 'text', 'Knop "Cookies accepteren"' ),
         cm_field( 'txt_embed_prefs' . $s, 'html', 'Link naar voorkeuren', array(
             'allowed'     => array( 'a' => array( 'href' => array(), 'class' => array() ), 'strong' => array(), 'em' => array() ),

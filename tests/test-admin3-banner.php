@@ -64,5 +64,6 @@ cm_assert( 'txt_embed_btn heeft geen UI (had geen effect)', ! in_array( 'txt_emb
 $idx = cm_admin_field_index( 'cm_settings', array( 'cookiebaas-banner' => cm_tabs_banner() ) );
 cm_assert( 'embed-voorkeurenlink behoudt class (opent het venster)', strpos( cm_sanitize_field_value( $idx['txt_embed_prefs'], 'Of pas uw <a href="#" class="cm-embed-open-prefs">voorkeuren</a> aan.', '' ), 'class="cm-embed-open-prefs"' ) !== false );
 cm_assert( 'embed-tekst behoudt <strong>', cm_sanitize_field_value( $idx['txt_embed_body'], 'Voor <strong>{service}</strong>', '' ) === 'Voor <strong>{service}</strong>' );
+cm_assert( 'embed-tekst: link wordt verwijderd (de site toont geen links)', cm_sanitize_field_value( $idx['txt_embed_body'], 'Zie <a href="/p">beleid</a> voor <strong>x</strong>', '' ) === 'Zie beleid voor <strong>x</strong>' );
 
 exit( cm_test_summary() );
