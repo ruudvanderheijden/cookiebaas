@@ -1,5 +1,10 @@
 # Changelog — Cookiebaas
 
+## [2.4.6] - 2026-09-26
+
+### Opgelost
+- **In het donkere thema kon je knoppen en popup niet haaks maken en de overlay niet uitzetten.** De waarde 0 voor `dm_radius_btn`, `dm_radius_popup` en `dm_overlay_opacity` werd op de site stil 6px, 18px en 75%, omdat de frontend een `?:`-terugval gebruikte. Het donkere thema behandelt deze waarden nu net als het lichte: 0 blijft 0.
+
 ## [2.4.5] - 2026-09-26
 
 ### Opgelost

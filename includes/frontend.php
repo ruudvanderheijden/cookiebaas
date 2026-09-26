@@ -128,9 +128,10 @@ function cm_output_inline_css() {
         $dm_olb_hb     = cm_get('dm_outline_hover_border') ?: '#888888';
         $dm_olb_ht     = cm_get('dm_outline_hover_text')   ?: '#f2f2f2';
         $dm_olb_hbg    = cm_get('dm_outline_hover_bg')     ?: 'transparent';
-        $dm_op  = intval( cm_get('dm_overlay_opacity') ?: 75 ) / 100;
-        $dm_rp  = intval( cm_get('dm_radius_popup') ?: 18 ) . 'px';
-        $dm_rb2 = intval( cm_get('dm_radius_btn')   ?: 6  ) . 'px';
+        // Zelfde als het lichte thema: 0 is een geldige waarde (geen `?:`-terugval)
+        $dm_op  = intval( cm_get('dm_overlay_opacity') ) / 100;
+        $dm_rp  = intval( cm_get('dm_radius_popup') ) . 'px';
+        $dm_rb2 = intval( cm_get('dm_radius_btn') )   . 'px';
 
         echo '<style id="cm-vars-dark">:root{';
         echo '--cm-overlay-alpha:'         . esc_attr( $dm_op )                                              . ';';
