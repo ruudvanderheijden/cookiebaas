@@ -42,7 +42,7 @@ function frontend_vars() {
     return $vars;
 }
 
-// Donker met 0: de frontend maakt daar via `?:` 75 / 18px / 6px van; de preview moet hetzelfde tonen.
+// Donker met 0: 0 blijft 0 (sinds 2.4.6), in de frontend én de preview.
 $scenarios = array(
     'light'           => array( 'light', array() ),
     'dark'            => array( 'dark', array() ),

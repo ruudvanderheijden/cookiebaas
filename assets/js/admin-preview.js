@@ -43,8 +43,6 @@
     cfg.vars.forEach(function (m) {
       var key = state.theme === 'dark' && m[1] ? m[1] : m[0];
       var v = fieldValue(key);
-      // Net als de frontend (`?:`): donker 0 of leeg wordt de standaardwaarde, zodat de preview de site toont.
-      if (state.theme === 'dark' && m[5] != null && v !== null && (v === '' || parseInt(v, 10) === 0)) v = String(m[5]);
       var out = fmt(v, m[3], m[4]);
       if (out) root.style.setProperty(m[2], out);
     });
