@@ -124,6 +124,7 @@ if ( ! function_exists( 'get_transient' ) )  { function get_transient( $k ) { re
 if ( ! function_exists( 'set_transient' ) )  { function set_transient( $k, $v, $e = 0 ) { return true; } }
 if ( ! function_exists( 'delete_transient' ) ){ function delete_transient( $k ) { return true; } }
 if ( ! function_exists( 'is_ssl' ) )         { function is_ssl() { return true; } }
+if ( ! function_exists( 'get_current_user_id' ) ) { function get_current_user_id() { return 1; } }
 // Licentie-stub. Een test die de échte includes/license.php wil laden (om de
 // licentielogica zelf te testen) definieert vooraf CM_TEST_REAL_LICENSE.
 if ( ! defined( 'CM_TEST_REAL_LICENSE' ) && ! function_exists( 'cm_license_is_valid' ) ) {

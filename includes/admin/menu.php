@@ -16,6 +16,7 @@ function cm_admin_pages() {
         'cookiebaas-cookies'    => 'Cookies',
         'cookiebaas-privacy'    => 'Privacyverklaring',
         'cookiebaas-log'        => 'Consent log',
+        'cookiebaas-beheer'     => 'Beheer',
     );
 }
 
@@ -48,6 +49,12 @@ function cm_admin_page_url( $page, $tab = '', array $args = array() ) {
     $query = array( 'page' => $page );
     if ( $tab !== '' ) $query['tab'] = $tab;
     return add_query_arg( array_merge( $query, $args ), admin_url( 'admin.php' ) );
+}
+
+/** Is dit scherm een pagina van Cookiebaas? (voor meldingen die alleen daar horen) */
+function cm_admin_is_own_screen( $screen_id ) {
+    $hooks = isset( $GLOBALS['cm_admin_hooks'] ) ? (array) $GLOBALS['cm_admin_hooks'] : array();
+    return in_array( (string) $screen_id, $hooks, true );
 }
 
 /** Tabs van één pagina uit het register (Taak 2). */

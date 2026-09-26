@@ -49,7 +49,7 @@ function cm_tab_cookies_scannen() {
 
 function cm_render_manual_scan() {
     if ( cm_scan_requires_license() ) {
-        echo '<div class="notice notice-warning inline"><p>De cookiescan is een premium-functie en vereist een actieve licentie. De cookiebanner en -blokkering werken gewoon door. <a href="' . esc_url( admin_url( 'admin.php?page=cookiemelding-beheer#tab=licentie' ) ) . '">Licentie beheren</a></p></div>';
+        echo '<div class="notice notice-warning inline"><p>De cookiescan is een premium-functie en vereist een actieve licentie. De cookiebanner en -blokkering werken gewoon door. <a href="' . esc_url( cm_admin_page_url( 'cookiebaas-beheer', 'licentie' ) ) . '">Licentie beheren</a></p></div>';
         return;
     }
     echo '<p><button type="button" class="button button-primary" id="cm-scan-start">Cookies scannen</button> <span class="description">Doorloopt alle gepubliceerde pagina’s en herkent cookies via HTTP-headers en scripts.</span></p>';

@@ -31,7 +31,19 @@ function cm_admin_notice_html( $code ) {
     return '<div class="notice notice-' . esc_attr( $messages[ $code ][0] ) . ' is-dismissible"><p>' . esc_html( $messages[ $code ][1] ) . '</p></div>';
 }
 
+/** Eenmalige melding met eigen tekst, bijvoorbeeld het antwoord van de licentieserver. */
+function cm_admin_flash( $type, $text ) {
+    $type = in_array( $type, array( 'success', 'info', 'warning', 'error' ), true ) ? $type : 'info';
+    set_transient( 'cm_flash_' . get_current_user_id(), array( $type, (string) $text ), 5 * MINUTE_IN_SECONDS );
+}
+
 function cm_admin_render_notices() {
+    $key   = 'cm_flash_' . get_current_user_id();
+    $flash = get_transient( $key );
+    if ( is_array( $flash ) && count( $flash ) === 2 ) {
+        delete_transient( $key );
+        echo '<div class="notice notice-' . esc_attr( $flash[0] ) . ' is-dismissible"><p>' . esc_html( $flash[1] ) . '</p></div>';
+    }
     if ( empty( $_GET['cm_notice'] ) || isset( $_GET['settings-updated'] ) ) return;
     echo cm_admin_notice_html( sanitize_key( wp_unslash( $_GET['cm_notice'] ) ) );
 }

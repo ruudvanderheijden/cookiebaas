@@ -253,21 +253,3 @@ function cm_ajax_license_check() {
         'status' => $lic['status'],
     ) );
 }
-
-/* ================================================================
-   ADMIN NOTICE — waarschuwing bij ongeldige licentie
-   ================================================================ */
-add_action( 'admin_notices', 'cm_license_admin_notice' );
-function cm_license_admin_notice() {
-    $lic  = cm_license_get();
-    $link = ' <a href="' . admin_url('admin.php?page=cookiemelding-beheer#tab=licentie') . '" onclick="var t=jQuery(\'.cm-nav-tabs .nav-tab[data-tab=licentie]\');if(t.length){t.click();window.scrollTo(0,0);return false;}">';
-
-    if ( empty( $lic['key'] ) ) {
-        echo '<div class="notice notice-warning"><p><strong>Cookiebaas:</strong> Geen licentie geactiveerd. De cookiebanner en -blokkering werken gewoon door; alleen de <strong>cookiescan</strong> is gepauzeerd.' . $link . 'Licentie activeren &rarr;</a></p></div>';
-        return;
-    }
-    if ( ! cm_license_is_valid() ) {
-        $reason = $lic['status'] === 'expired' ? 'verlopen' : 'ongeldig';
-        echo '<div class="notice notice-warning"><p><strong>Cookiebaas:</strong> Uw licentie is ' . esc_html($reason) . '. De cookiebanner en -blokkering blijven werken; alleen de <strong>cookiescan</strong> is gepauzeerd tot u de licentie verlengt.' . $link . 'Licentie beheren &rarr;</a></p></div>';
-    }
-}
