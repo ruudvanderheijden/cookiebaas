@@ -2151,3 +2151,23 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - de nog gebruikte handlers en kennisbank (scan, cookiedatabase, `cm_fallback_cookies`, `cm_cookie_prefix_match`, en de frontend-AJAX `cm_geo_check`/`cm_log_consent`) verhuizen naar `includes/admin/` of `includes/`;
   - de terugval op de gedeelde nonce in `cm_admin_verify_ajax()` verwijderen;
   - de licentielink op Scannen naar de nieuwe Beheer-pagina zetten.
+
+## Uitkomst van plan 2 (26 september 2026)
+
+Uitgevoerd via subagent-driven development: 7 taken, elk met review (T4 en T6 op opus), plus een eindreview (opus) met één fixronde. Commits `e25adb5`..`96c9b4f` op `main`, niet gepusht, versie blijft 2.4.5. Alle 17 testsuites groen.
+
+**Uit de eindreview meegenomen in plan 2:**
+- de scan meldt nu mislukte pagina's (en "mislukt" als niets gescand kon worden) in plaats van een vals "0 cookies";
+- de cookielijst is beschermd tegen een door `max_input_vars` afgekapte POST (sentinel `cm_cookie_list_complete`; ontbreekt die, dan blijft de opgeslagen lijst staan met een melding);
+- `pv_land` wordt niet meer teruggezet door opslaan in de oude admin (ontbrekende tekstvelden houden hun waarde);
+- `cm_ajax_scan_add` weigert niet-string-invoer en maakt geen rij "Array" meer.
+
+**Voor plan 3:**
+- de privacypagina linkt naar Beheer › Info voor de shortcode (spec §3.1) zodra Beheer bestaat;
+- de nieuwe import geeft sanitizer-meldingen terug aan de gebruiker (spec §7); de oude import vervangt een oude vrije-tekst-grondslag stil door de default;
+- test op idempotentie bij een dubbele pass van `cm_privacy_sanitize_callback` (spec §5.3; nu alleen defaults → defaults getest);
+- een render-assertie voor `title_actions` en een test voor de F12-invoer zonder tabs (lijst met alleen namen);
+- verdwijnt met de oude admin: `date()` in de oude exports, de dubbele grondslaglijst in `includes/admin.php`;
+- kleinigheden: `<form>`-nesting is opgelost; `addQueue = job.catch(...)` is overbodig; variabele `table` in de rijen-JS heet eigenlijk de wrapper; een grondslag-melding kan bij de allereerste `add_option` twee keer verschijnen.
+
+**Handmatig te checken (Ruud):** rijen-editor toevoegen/verwijderen, F12-import, CSV-exports openen in Excel, scan + "Alles toevoegen", DPO-velden live tonen/verbergen, herstellen van de privacyverklaring.
