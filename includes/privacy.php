@@ -418,8 +418,6 @@ function cm_ajax_save_privacy() {
     if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
 
     update_option( 'cm_privacy', cm_sanitize_privacy( wp_unslash( $_POST ) ) );
-    // De verklaring en cookietabel staan in gecachte pagina's
-    cm_purge_page_caches();
     wp_send_json_success( array( 'message' => 'Privacyverklaring opgeslagen.' ) );
 }
 

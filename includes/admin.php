@@ -71,7 +71,6 @@ function cm_ajax_reset_settings() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );
     if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
     update_option( 'cm_settings', cm_default_settings() );
-    cm_purge_page_caches();
     wp_send_json_success();
 }
 
@@ -122,7 +121,6 @@ function cm_ajax_reset_cookielist() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );
     if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
     update_option( 'cm_cookie_list', array() );
-    cm_purge_page_caches();
     wp_send_json_success();
 }
 
@@ -131,7 +129,6 @@ function cm_ajax_reset_privacy() {
     check_ajax_referer( 'cm_save_settings', 'nonce' );
     if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
     update_option( 'cm_privacy', cm_default_privacy() );
-    cm_purge_page_caches();
     wp_send_json_success();
 }
 
@@ -156,61 +153,7 @@ function cm_ajax_bump_consent_version() {
     if ( count($changelog) > 50 ) $changelog = array_slice($changelog, -50);
     update_option( 'cm_consent_changelog', $changelog );
 
-    // De consent-versie staat in de gecachte HTML — zonder purge krijgen
-    // bezoekers pas opnieuw de banner als de paginacache verloopt
-    cm_purge_page_caches();
-
     wp_send_json_success( array( 'version' => $new_v ) );
-}
-
-/**
- * Sanitize instellingen tegen de defaults (die dienen als whitelist).
- * Gedeeld door opslaan en import, zodat import de sanitizing niet omzeilt.
- *
- * @param array $input    Ongeslashte invoer (POST of geïmporteerde JSON).
- * @param array $existing Basis: velden die niet in $input zitten blijven hieruit staan.
- */
-function cm_sanitize_settings( array $input, array $existing ) {
-    $defaults = cm_default_settings();
-
-    // Zorg dat alle defaultkeys als fallback aanwezig zijn
-    $settings = $existing;
-    foreach ( $defaults as $key => $default ) {
-        if ( ! array_key_exists( $key, $settings ) ) {
-            $settings[ $key ] = $default;
-        }
-    }
-
-    // Verwerk alleen de velden die daadwerkelijk in de invoer zitten
-    // Checkboxes komen als 0 mee als ze uitgevinkt zijn (JS stuurt altijd de waarde)
-    // Velden van andere pagina's ontbreken → bestaande waarde blijft intact
-    $html_fields = array( 'txt_banner_body', 'txt_prefs_body', 'txt_banner_body_en', 'txt_prefs_body_en' );
-    foreach ( $defaults as $key => $default ) {
-        if ( ! isset( $input[ $key ] ) ) continue;
-
-        if ( in_array( $key, $html_fields, true ) ) {
-            // Velden die HTML mogen bevatten (alle taalvarianten van body-teksten)
-            $settings[ $key ] = wp_kses( (string) $input[ $key ], array(
-                'a' => array( 'href' => array(), 'target' => array() ),
-                'strong' => array(),
-                'em'     => array(),
-            ));
-        } elseif ( $key === 'float_icon_custom_svg' ) {
-            // Ongefilterd bewaren — frontend.php sanitized met een strikte tag/attribuut-whitelist bij het renderen
-            $settings[ $key ] = is_string( $input[ $key ] ) ? $input[ $key ] : '';
-        } elseif ( $key === 'float_icon_image_url' ) {
-            $settings[ $key ] = esc_url_raw( (string) $input[ $key ] );
-        } else {
-            $settings[ $key ] = sanitize_text_field( $input[ $key ] );
-        }
-    }
-
-    // Als google_load_default aanstaat, moet analytics_default ook aanstaan
-    if ( ! empty( $settings['google_load_default'] ) ) {
-        $settings['analytics_default'] = 1;
-    }
-
-    return $settings;
 }
 
 function cm_ajax_save_settings() {
@@ -225,10 +168,6 @@ function cm_ajax_save_settings() {
 
     // Cron herplannen als retentie is gewijzigd
     cm_maybe_schedule_retention_cron();
-
-    // Instellingen zitten in de gecachte HTML (blokkering, Consent Mode) —
-    // paginacache legen zodat bezoekers de nieuwe versie krijgen
-    if ( function_exists('cm_purge_page_caches') ) cm_purge_page_caches();
 
     wp_send_json_success( array( 'message' => 'Opgeslagen.' ) );
 }
@@ -1051,8 +990,6 @@ function cm_ajax_import_settings() {
         $imported[] = 'privacyverklaring';
     }
 
-    if ( $imported ) cm_purge_page_caches();
-
     wp_send_json_success( array(
         'msg'      => 'Import geslaagd: ' . implode( ', ', $imported ) . '.',
         'version'  => $data['_meta']['version'] ?? '?',
@@ -1406,36 +1343,7 @@ function cm_ajax_save_cookie_list() {
 
     // Altijd opslaan — ook als $clean leeg is (gebruiker heeft alle cookies verwijderd)
     update_option( 'cm_cookie_list', $clean );
-    // De cookielijst staat in het voorkeurenvenster van elke (gecachte) pagina
-    cm_purge_page_caches();
     wp_send_json_success( array( 'count' => count($clean) ) );
-}
-
-/**
- * Sanitize een cookielijst (opslaan, import en automatische scan).
- */
-function cm_sanitize_cookie_list( array $raw ) {
-    $clean = array();
-    foreach ( $raw as $ck ) {
-        if ( ! is_array( $ck ) ) continue;
-        $name = sanitize_text_field( isset($ck['name']) ? $ck['name'] : '' );
-        if ( ! $name ) continue;
-        $cat = sanitize_text_field( isset($ck['category']) ? $ck['category'] : 'functional' );
-        if ( ! in_array($cat, array('functional','analytics','marketing')) ) $cat = 'functional';
-        // Normaliseer provider via centrale service-mapping
-        $raw_provider = sanitize_text_field( isset($ck['provider']) ? $ck['provider'] : '' );
-        $svc = cm_service_for_cookie( $name );
-        $provider = $svc ? $svc['service'] : $raw_provider;
-        $clean[] = array(
-            'name'     => $name,
-            'provider' => $provider,
-            'purpose'  => sanitize_text_field( isset($ck['purpose'])   ? $ck['purpose']   : '' ),
-            'duration' => sanitize_text_field( isset($ck['duration'])  ? $ck['duration']  : 'Sessie' ),
-            'category' => $cat,
-            'builtin'  => false,
-        );
-    }
-    return $clean;
 }
 
 add_action( 'wp_ajax_cm_get_cookie_list', 'cm_ajax_get_cookie_list' );
