@@ -2822,3 +2822,23 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 - Cookiebaas 3.0.0 is klaar voor release. De uitgebrachte versie blijft 2.4.6 tot Ruud 3.0.0 uitbrengt.
 - 2.4.x-hotfixes: via `release/2.4.x`, daarna overnemen in `main`.
+
+## Uitkomst van plan 3 (26 september 2026)
+
+Uitgevoerd via subagent-driven development: 10 taken, elk met review (T5 en T8 op opus), plus een eindreview (opus) met één fixronde. Commits `bc8f9c8`..`de57571` op `main`, niet gepusht, niet getagd. Versie op `main` is 3.0.0; de uitgebrachte versie blijft 2.4.6 (`release/2.4.x`). Alle 22 testsuites groen.
+
+**Uit de reviews meegenomen:**
+- een backup kan de API-sleutel niet meer overschrijven of wissen; lege of ongeldige onderdelen wijzigen niets;
+- Info toont weer de regel "AVG-compliant" en de naam Open Cookie Database;
+- "Status controleren" en "Deactiveren" melden een onbereikbare licentieserver eerlijk, in plaats van "gelukt";
+- bulk verwijderen vraagt om bevestiging en kan niet meer per ongeluk via Enter in het zoekvak;
+- "Log leegmaken" valt terug op `DELETE` als `TRUNCATE` niet mag; paginering blijft binnen het aantal pagina's; checkboxes hebben een label.
+
+**Nog open (klein, kan na de release):**
+- geen test die `cm_ajax_log_consent` echt aanroept (verhuizing is byte-identiek bewezen);
+- schrijffouten van `update_option`/`delete_option` worden niet apart gedetecteerd;
+- oude logrijen zonder consent-ID (van vóór die kolom) zijn niet los te openen of te verwijderen, net als in 2.4.
+
+**Bij de release (na akkoord van Ruud):**
+- de datum in de changelog op de releasedag zetten;
+- zip bouwen met alleen `CHANGELOG.md`, `assets`, `cookiemelding.php`, `includes` en `uninstall.php` (zoals bij 2.4.x), taggen `v3.0.0`, GitHub-release met de zip.
