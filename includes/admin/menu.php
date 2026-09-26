@@ -2,12 +2,11 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 /* ================================================================
-   NIEUWE ADMIN (3.0) — menu en paginaframe
-   Draait tijdens de bouw naast het oude menu (cookiemelding). Beide
-   schrijven naar dezelfde options; plan 3 verwijdert het oude menu.
+   ADMIN — menu en paginaframe. Topmenu "Cookiebaas" met zeven pagina's;
+   oude adressen (cookiemelding…) verwijzen door.
 ================================================================ */
 
-/** Menupagina's van de nieuwe admin: slug → titel. Plan 2 en 3 vullen aan. */
+/** Menupagina's: slug → titel, in de volgorde van het menu. */
 function cm_admin_pages() {
     return array(
         'cookiebaas'            => 'Overzicht',
@@ -24,8 +23,8 @@ add_action( 'admin_menu', 'cm_admin3_register_menu' );
 function cm_admin3_register_menu() {
     $GLOBALS['cm_admin_hooks'] = array();
     $GLOBALS['cm_admin_hooks'][] = add_menu_page(
-        'Cookiebaas', 'Cookiebaas 3', 'manage_options', 'cookiebaas',
-        'cm_admin_render_page', 'dashicons-privacy', 82
+        'Cookiebaas', 'Cookiebaas', 'manage_options', 'cookiebaas',
+        'cm_admin_render_page', 'dashicons-privacy', 81
     );
     foreach ( cm_admin_pages() as $slug => $title ) {
         $hook = add_submenu_page(
@@ -35,6 +34,32 @@ function cm_admin3_register_menu() {
         // Bulkacties van de lijsttabel verwerken vóór er output is
         if ( $slug === 'cookiebaas-log' && function_exists( 'cm_log_handle_bulk' ) ) add_action( 'load-' . $hook, 'cm_log_handle_bulk' );
     }
+}
+
+/** Oude slug (2.x) → nieuwe slug, of '' als het geen oude slug is. */
+function cm_admin_old_slug_target( $page ) {
+    $map = array(
+        'cookiemelding'         => 'cookiebaas',
+        'cookiemelding-cookies' => 'cookiebaas-cookies',
+        'cookiemelding-privacy' => 'cookiebaas-privacy',
+        'cookiemelding-log'     => 'cookiebaas-log',
+        'cookiemelding-beheer'  => 'cookiebaas-beheer',
+    );
+    return isset( $map[ $page ] ) ? $map[ $page ] : '';
+}
+
+/*
+ * WordPress controleert de toegang tot ?page= al in wp-admin/menu.php, vóór
+ * admin_init; een onbekende slug eindigt daar in "Je hebt geen toestemming".
+ * Deze hook vuurt vlak daarvoor, dus hier doorverwijzen (bladwijzers, scanmails).
+ */
+add_action( 'admin_page_access_denied', 'cm_admin_redirect_old_slug' );
+function cm_admin_redirect_old_slug() {
+    $page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+    $to   = cm_admin_old_slug_target( $page );
+    if ( $to === '' || ! current_user_can( 'manage_options' ) ) return;
+    wp_safe_redirect( cm_admin_page_url( $to ) );
+    exit;
 }
 
 /** De gevraagde tab als die bestaat, anders de eerste tab van de pagina. */
@@ -123,7 +148,9 @@ function cm_admin3_assets( $hook ) {
     $page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
     if ( $page === 'cookiebaas-banner' ) {
         wp_enqueue_media();
-        if ( function_exists( 'cm_admin_preview_assets' ) ) cm_admin_preview_assets();
+        // De preview staat alleen op Vormgeving en Teksten
+        $tab = cm_admin_current_tab( cm_admin_page_tabs( $page ), isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '' );
+        if ( in_array( $tab, array( 'vormgeving', 'teksten' ), true ) && function_exists( 'cm_admin_preview_assets' ) ) cm_admin_preview_assets();
     }
     if ( $page === 'cookiebaas-cookies' ) {
         wp_enqueue_script( 'cm-admin-cookies', CM_PLUGIN_URL . 'assets/js/admin-cookies.js', array(), CM_VERSION, true );

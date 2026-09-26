@@ -7,6 +7,9 @@
  * geo-check) bestaan nog, met dezelfde actienamen.
  */
 
+function add_menu_page( $page_title, $menu_title, $cap, $slug, $cb, $icon, $pos ) { $GLOBALS['cm_test_menu'] = array( $menu_title, $slug, $icon, $pos ); return 'toplevel_page_' . $slug; }
+function add_submenu_page( $parent, $page_title, $menu_title, $cap, $slug, $cb ) { $GLOBALS['cm_test_sub'][] = $slug; return 'cookiebaas_page_' . $slug; }
+
 require __DIR__ . '/bootstrap.php';
 require CM_PLUGIN_ROOT . '/includes/defaults.php';
 
@@ -34,5 +37,27 @@ foreach ( array( 'wp_ajax_cm_scan_urls', 'wp_ajax_cm_scan_batch', 'wp_ajax_cm_im
 $main = file_get_contents( CM_PLUGIN_ROOT . '/cookiemelding.php' );
 cm_assert( 'de scanmail linkt naar de nieuwe cookielijst (Review Focus 3)', strpos( $main, "page=cookiebaas-cookies&tab=lijst" ) !== false );
 cm_assert( 'cookiemelding.php laadt consent.php en scan.php', strpos( $main, "includes/consent.php" ) !== false && strpos( $main, "includes/admin/scan.php" ) !== false );
+
+cm_test_group( 'Menu' );
+require CM_PLUGIN_ROOT . '/includes/admin/menu.php';
+require CM_PLUGIN_ROOT . '/includes/admin/actions.php';
+require CM_PLUGIN_ROOT . '/includes/admin/page-log.php';
+$GLOBALS['cm_test_sub'] = array();
+cm_admin3_register_menu();
+cm_assert( 'topmenu Cookiebaas op 81 met dashicons-privacy', $GLOBALS['cm_test_menu'] === array( 'Cookiebaas', 'cookiebaas', 'dashicons-privacy', 81 ) );
+cm_assert( 'zeven pagina’s in de volgorde van de spec', $GLOBALS['cm_test_sub'] === array( 'cookiebaas', 'cookiebaas-banner', 'cookiebaas-blokkering', 'cookiebaas-cookies', 'cookiebaas-privacy', 'cookiebaas-log', 'cookiebaas-beheer' ) );
+cm_assert( 'bulk verwijderen hangt aan de load-hook van Consent log', has_action( 'load-cookiebaas_page_cookiebaas-log' ) );
+
+cm_test_group( 'Oude adressen (Review Focus 3)' );
+$map = array(
+    'cookiemelding'         => 'cookiebaas',
+    'cookiemelding-cookies' => 'cookiebaas-cookies',
+    'cookiemelding-privacy' => 'cookiebaas-privacy',
+    'cookiemelding-log'     => 'cookiebaas-log',
+    'cookiemelding-beheer'  => 'cookiebaas-beheer',
+);
+foreach ( $map as $old => $new ) cm_assert( "$old → $new", cm_admin_old_slug_target( $old ) === $new );
+cm_assert( 'andere slug → niets', cm_admin_old_slug_target( 'cookiebaas-banner' ) === '' && cm_admin_old_slug_target( 'iets' ) === '' );
+cm_assert( 'doorverwijzing vóór de "geen toestemming"-melding van WordPress', has_action( 'admin_page_access_denied' ) );
 
 exit( cm_test_summary() );
