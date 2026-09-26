@@ -131,6 +131,7 @@
       return post('cm_scan_add', { nonce: cfg.nonces.scanAdd, cookies: JSON.stringify(list) });
     }).then(function (r) {
       if (!r || !r.success) throw new Error('mislukt');
+      if (addStatus) { addStatus.remove(); addStatus = null; } // oude foutmelding weg na een geslaagde poging
       var added = {};
       (r.data.added || []).forEach(function (n) { added[n] = true; });
       buttons.forEach(function (b) {
