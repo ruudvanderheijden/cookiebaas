@@ -159,7 +159,7 @@ function cm_license_deactivate() {
         return array( 'success' => true, 'message' => $result['message'] ?? 'Licentie gedeactiveerd.' );
     }
 
-    return array( 'success' => true, 'message' => 'Licentie lokaal gedeactiveerd.' );
+    return array( 'success' => true, 'remote' => false, 'message' => 'De licentie is op deze website gedeactiveerd, maar de licentieserver was niet bereikbaar. Deactiveer de website eventueel ook in uw account op cookiebaas.nl.' );
 }
 
 /* ================================================================
@@ -167,7 +167,7 @@ function cm_license_deactivate() {
    ================================================================ */
 function cm_license_check_status() {
     $lic = cm_license_get();
-    if ( empty( $lic['key'] ) ) return;
+    if ( empty( $lic['key'] ) ) return array();
 
     $result = cm_license_api_call( 'status', array(
         'license_key' => $lic['key'],
@@ -196,6 +196,7 @@ function cm_license_check_status() {
     }
 
     cm_license_save( $lic );
+    return $result;
 }
 
 /* ================================================================

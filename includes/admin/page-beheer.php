@@ -34,11 +34,26 @@ function cm_license_summary( array $lic, $valid ) {
 
 /** Antwoord van de licentieserver → melding. Nooit "gelukt" zonder success. */
 function cm_license_flash( array $result ) {
-    if ( ! empty( $result['success'] ) ) {
+    if ( ! empty( $result['success'] ) && isset( $result['remote'] ) && $result['remote'] === false ) {
+        cm_admin_flash( 'warning', ! empty( $result['message'] ) ? $result['message'] : 'Gelukt.' );
+    } elseif ( ! empty( $result['success'] ) ) {
         cm_admin_flash( 'success', ! empty( $result['message'] ) ? $result['message'] : 'Gelukt.' );
     } else {
         cm_admin_flash( 'error', ! empty( $result['error'] ) ? $result['error'] : 'De licentieserver gaf geen bruikbaar antwoord. Probeer het later opnieuw.' );
     }
+}
+
+/**
+ * Antwoord van cm_license_check_status() → melding. Zonder 'valid' in het
+ * antwoord was de server niet bereikbaar: de status blijft dan ongewijzigd,
+ * dus nooit een succesmelding tonen.
+ */
+function cm_license_check_notice( $result, $word ) {
+    if ( is_array( $result ) && isset( $result['valid'] ) ) {
+        return array( 'info', 'Status gecontroleerd: ' . $word . '.' );
+    }
+    $error = is_array( $result ) && ! empty( $result['error'] ) ? ': ' . $result['error'] : '';
+    return array( 'error', 'De licentieserver was niet bereikbaar' . $error . '. De status is niet gewijzigd.' );
 }
 
 /** Activeren: een lege sleutel gaat niet naar de server. */
@@ -59,7 +74,7 @@ function cm_render_beheer_licentie() {
         if ( ! empty( $lic['expires_at'] ) ) echo esc_html( ' — verloopt op ' . date_i18n( 'j F Y', strtotime( $lic['expires_at'] ) ) );
         echo '</td></tr>';
         echo '<tr><th scope="row">Domein</th><td><code>' . esc_html( ! empty( $lic['domain'] ) ? $lic['domain'] : cm_license_get_domain() ) . '</code></td></tr>';
-        echo '<tr><th scope="row">Laatste controle</th><td>' . esc_html( ! empty( $lic['last_check'] ) ? date_i18n( 'j F Y, H:i', $lic['last_check'] ) : 'Nog niet gecontroleerd' ) . '</td></tr>';
+        echo '<tr><th scope="row">Laatste controle</th><td>' . esc_html( ! empty( $lic['last_check'] ) ? wp_date( 'j F Y, H:i', $lic['last_check'] ) : 'Nog niet gecontroleerd' ) . '</td></tr>';
         echo '</tbody></table>';
         echo '<div>' . cm_admin_action_form( 'license_check', 'Status controleren' ) . ' '
            . cm_admin_action_form( 'license_deactivate', 'Deactiveren', array(), 'De licentie op deze website deactiveren? De cookiescan pauzeert tot u opnieuw activeert.', 'button button-link-delete' ) . '</div>';
@@ -315,9 +330,10 @@ if ( function_exists( 'cm_admin_register_action' ) ) {
         return '';
     } );
     cm_admin_register_action( 'license_check', function () {
-        cm_license_check_status();
+        $r = cm_license_check_status();
         list( , $word ) = cm_license_summary( cm_license_get(), cm_license_is_valid() );
-        cm_admin_flash( 'info', 'Status gecontroleerd: ' . $word . '.' );
+        list( $t, $x ) = cm_license_check_notice( $r, $word );
+        cm_admin_flash( $t, $x );
         return '';
     } );
     cm_admin_register_action( 'license_deactivate', function () {

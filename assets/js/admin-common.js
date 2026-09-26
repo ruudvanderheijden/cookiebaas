@@ -147,6 +147,21 @@
     if (msg && !window.confirm(msg)) e.preventDefault();
   }, true);
 
+  /* ---- Bulk verwijderen in de lijsttabel: bevestigen, of niet per ongeluk via een zoekopdracht ---- */
+  document.addEventListener('submit', function (e) {
+    var top = e.target.querySelector('select[name=action]');
+    var bottom = e.target.querySelector('select[name=action2]');
+    if (!top && !bottom) return;
+    if (!((top && top.value === 'cm_delete') || (bottom && bottom.value === 'cm_delete'))) return;
+    var viaButton = e.submitter && (e.submitter.id === 'doaction' || e.submitter.id === 'doaction2');
+    if (viaButton) {
+      if (!window.confirm('De geselecteerde registraties definitief verwijderen?')) e.preventDefault();
+    } else {
+      if (top) top.value = '-1';
+      if (bottom) bottom.value = '-1';
+    }
+  }, true);
+
   /* Ook bij destructieve links, zoals "Verwijderen" in een tabelrij */
   document.addEventListener('click', function (e) {
     var a = e.target.closest ? e.target.closest('a[data-cm-confirm]') : null;

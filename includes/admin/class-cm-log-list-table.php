@@ -55,12 +55,15 @@ class CM_Log_List_Table extends WP_List_Table {
         list( $where, $args ) = cm_log_where( $search !== '' ? '%' . $wpdb->esc_like( $search ) . '%' : '', cm_log_current_filter() );
         $count = "SELECT COUNT(*) FROM `{$table}` {$where}";
         $total = (int) $wpdb->get_var( $args ? $wpdb->prepare( $count, $args ) : $count );
+        // Vóór get_pagenum(): WP_List_Table klemt het paginanummer pas vast op
+        // total_pages nadat de paginering hier bekend is (anders blijft een
+        // pagina voorbij het einde na verwijderen een lege OFFSET opleveren).
+        $this->set_pagination_args( array( 'total_items' => $total, 'per_page' => $per ) );
         $rows  = $wpdb->get_results( $wpdb->prepare(
             "SELECT consent_id, analytics, marketing, method, url, created_at FROM `{$table}` {$where} ORDER BY created_at DESC LIMIT %d OFFSET %d",
             array_merge( $args, array( $per, ( $this->get_pagenum() - 1 ) * $per ) )
         ), ARRAY_A );
         $this->items = $rows ? $rows : array();
-        $this->set_pagination_args( array( 'total_items' => $total, 'per_page' => $per ) );
         $this->_column_headers = array( $this->get_columns(), array(), array(), 'consent_id' );
     }
 
@@ -69,7 +72,7 @@ class CM_Log_List_Table extends WP_List_Table {
     }
 
     protected function column_cb( $item ) {
-        return '<input type="checkbox" name="consent[]" value="' . esc_attr( $item['consent_id'] ) . '">';
+        return '<label class="screen-reader-text" for="cb-select-' . esc_attr( $item['consent_id'] ) . '">Registratie ' . esc_html( $item['consent_id'] ) . ' selecteren</label><input type="checkbox" id="cb-select-' . esc_attr( $item['consent_id'] ) . '" name="consent[]" value="' . esc_attr( $item['consent_id'] ) . '">';
     }
 
     protected function column_consent_id( $item ) {

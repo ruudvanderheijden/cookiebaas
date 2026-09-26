@@ -83,6 +83,15 @@ cm_admin_flash( 'onzin', '<b>x</b>' );
 ob_start(); cm_admin_render_notices(); $h = ob_get_clean();
 cm_assert( 'onbekend type → info, tekst ge-escaped', strpos( $h, 'notice-info' ) !== false && strpos( $h, '<b>' ) === false );
 
+cm_test_group( 'Statuscontrole eerlijk gemeld (Important, spec §7)' );
+cm_assert( 'geldig antwoord → infomelding met de status in woorden', cm_license_check_notice( array( 'valid' => true ), 'Actief' ) === array( 'info', 'Status gecontroleerd: Actief.' ) );
+$n = cm_license_check_notice( array( 'success' => false, 'error' => 'timeout' ), 'Actief' );
+cm_assert( 'serverfout → foutmelding met de fouttekst erin, nooit "gecontroleerd"', $n[0] === 'error' && strpos( $n[1], 'timeout' ) !== false );
+cm_assert( 'geen bruikbaar antwoord (null) → foutmelding, geen fatal', cm_license_check_notice( null, 'Actief' )[0] === 'error' );
+cm_license_flash( array( 'success' => true, 'remote' => false, 'message' => 'Lokaal gedeactiveerd.' ) );
+ob_start(); cm_admin_render_notices(); $h = ob_get_clean();
+cm_assert( 'lokaal gelukt maar server onbereikbaar → waarschuwing, geen succesmelding', strpos( $h, 'notice-warning' ) !== false && strpos( $h, 'notice-success' ) === false );
+
 cm_test_group( 'Activeren' );
 cm_assert( 'lege sleutel → fout, de server wordt niet benaderd', cm_license_activate_request( '  ' )['success'] === false && ! $GLOBALS['cm_test_activations'] );
 cm_assert( 'sleutel → naar de server', cm_license_activate_request( 'CB-1' )['success'] === true && $GLOBALS['cm_test_activations'] === array( 'CB-1' ) );

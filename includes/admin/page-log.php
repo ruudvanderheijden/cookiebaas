@@ -336,16 +336,22 @@ function cm_render_log_bewaren_tools() {
     echo '</div>';
 }
 
-/** Leeg de hele log. False alleen bij een databasefout (0 rijen telt als gelukt). */
+/**
+ * Leeg de hele log. False alleen bij een databasefout (0 rijen telt als
+ * gelukt). TRUNCATE vereist het DROP-recht; zonder dat recht valt dit terug
+ * op een gewone DELETE.
+ */
 function cm_log_clear() {
     global $wpdb;
-    return $wpdb->query( 'TRUNCATE TABLE `' . cm_log_table() . '`' ) !== false;
+    $truncate = $wpdb->query( 'TRUNCATE TABLE `' . cm_log_table() . '`' ) !== false;
+    if ( $truncate ) return true;
+    return $wpdb->query( 'DELETE FROM `' . cm_log_table() . '`' ) !== false;
 }
 
 if ( function_exists( 'cm_admin_register_action' ) ) {
     cm_admin_register_action( 'delete_consent', function () {
         $n = cm_log_delete( array( isset( $_GET['consent'] ) ? wp_unslash( $_GET['consent'] ) : '' ) );
-        return $n ? 'log-deleted' : 'action-failed';
+        return $n === false ? 'action-failed' : 'log-deleted';
     } );
 
     cm_admin_register_action( 'export_log', function () {

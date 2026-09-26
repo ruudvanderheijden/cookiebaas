@@ -155,7 +155,7 @@ cm_test_group( 'Log leegmaken' );
 $wpdb->result = 0;
 cm_assert( 'TRUNCATE gelukt (0 rijen telt ook als gelukt)', cm_log_clear() === true && strpos( end( $wpdb->queries ), 'TRUNCATE TABLE `wp_cm_consent_log`' ) === 0 );
 $wpdb->result = false;
-cm_assert( 'databasefout → false', cm_log_clear() === false );
+cm_assert( 'databasefout op TRUNCATE → DELETE-fallback geprobeerd', cm_log_clear() === false && strpos( end( $wpdb->queries ), 'DELETE FROM `wp_cm_consent_log`' ) === 0 );
 $wpdb->result = 2;
 
 exit( cm_test_summary() );
