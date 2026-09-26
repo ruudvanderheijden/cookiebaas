@@ -2840,3 +2840,19 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - de eenmalige melding "nieuwe indeling";
   - het label weer "Cookiebaas".
   Het plan bereidt ook de release 3.0.0 voor, pas na akkoord van Ruud.
+
+## Uitkomst van plan 1 (26 september 2026)
+
+Uitgevoerd via subagent-driven development: 9 taken, elk met review, plus een eindreview met één fixronde. Commits `d3d2e1e`..`8c3d978` op `main`, niet gepusht, versie blijft 2.4.5. Alle 15 testsuites groen; de frontend-output is byte-identiek aan de start (`5da5dc9`).
+
+**Meegenomen voor plan 2 en 3:**
+- **Frontend-bug (beslissing Ruud):** in het donkere thema maakt de frontend van `dm_radius_btn`, `dm_radius_popup` en `dm_overlay_opacity` = 0 respectievelijk 6px, 18px en 75% (`?:` in `cm_output_inline_css`, `frontend.php` ~131–133). De preview spiegelt dat nu, zodat hij toont wat bezoekers zien. Na een frontend-fix (`0` moet `0` blijven) moet de 6e kolom van `cm_preview_var_map()` weg.
+- **Plan 3, opruimen bij verwijderen oude admin:**
+  - de fallback-branches voor html, svg en url in `cm_sanitize_settings()` en de generieke multiselect/checkboxes-branch in `cm_sanitize_field_value()` worden dan dode code;
+  - de preview-assets alleen op de tabs Vormgeving/Teksten laden.
+- **Plan 2 en 3, nieuwe writers van `cm_settings`:** de sanitize-callback start altijd vanaf de opgeslagen waarde. Een writer kan dus geen sleutels verwijderen, en een sleutel buiten de defaults wordt stil genegeerd.
+- **Opslaan zonder wijziging leegt de paginacache niet meer**, want `update_option_*` vuurt alleen bij een verandering. Dat is bewust; de reden staat in de spec §5.3.
+- **Kleinigheden:**
+  - `tests/run.php` lint `includes/admin/*.php` niet apart (parse-fouten vallen wel via de suites);
+  - een geplakte hex zonder `#` bereikt de preview pas bij blur;
+  - de preview past de kses van de site niet toe (onschadelijk in de sandbox).
