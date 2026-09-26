@@ -11,3 +11,7 @@
 .cm-media-img { max-width: 64px; max-height: 64px; vertical-align: middle; }
 .cm-switch { float: none; margin: 0 0 12px; }
 .cm-action-form { display: inline; }
+.cm-preview { position: sticky; top: 48px; margin-top: 20px; }
+.cm-preview .subsubsub { float: none; margin: 0 0 8px; }
+.cm-preview-stage { position: relative; overflow: hidden; }
+#cm-preview-frame { border: 0; transform-origin: 0 0; display: block; }

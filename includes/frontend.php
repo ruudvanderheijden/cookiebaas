@@ -931,29 +931,12 @@ function cm_is_excluded_page() {
     return false;
 }
 
-function cm_render_frontend() {
-    if ( ! empty( $GLOBALS['cm_rendered'] ) ) return;
-    if ( is_admin() ) return;
-
-    // Bewust GEEN licentiecheck: de banner is de compliance-kern en wordt
-    // altijd getoond, ook bij een verlopen/ontbrekende licentie.
-
-    // Pagina-uitzonderingen — geen banner op uitgesloten pagina's
-    if ( cm_is_excluded_page() ) {
-        $GLOBALS['cm_rendered'] = true;
-        return;
-    }
-
-    $GLOBALS['cm_rendered'] = true;
-
-    // Geo-targeting: de beslissing "hoort deze bezoeker een banner te zien?"
-    // hangt af van zijn IP-land en is dus PER BEZOEKER verschillend. Die mag
-    // NIET in de (gedeelde) pagina-HTML terechtkomen — onder een paginacache
-    // krijgt de eerste bezoeker het voor iedereen (zelfde klasse als de
-    // cache-vergiftiging uit v1.7.7). De banner wordt daarom altijd gerenderd;
-    // de geo-keuze valt client-side via een ongecachete land-lookup
-    // (admin-ajax cm_geo_check). Zie de init()/geoDecide()-logica hieronder.
-
+/**
+ * Banner, voorkeurenvenster en zweefknop — de zichtbare markup, zonder script.
+ * Gedeeld door de frontend en de admin-preview. Geeft de cookies per
+ * categorie terug; het frontend-script heeft die nodig (COOKIE_NAMES).
+ */
+function cm_banner_markup() {
     $show_float      = cm_get('show_float_btn');
     $float_btn_style = cm_get('float_btn_style'); // 'text' of 'icon'
 
@@ -1332,6 +1315,35 @@ function cm_render_frontend() {
         <?php endif; ?>
     </div>
     <?php endif; ?>
+<?php
+    return $cats;
+}
+
+function cm_render_frontend() {
+    if ( ! empty( $GLOBALS['cm_rendered'] ) ) return;
+    if ( is_admin() ) return;
+
+    // Bewust GEEN licentiecheck: de banner is de compliance-kern en wordt
+    // altijd getoond, ook bij een verlopen/ontbrekende licentie.
+
+    // Pagina-uitzonderingen — geen banner op uitgesloten pagina's
+    if ( cm_is_excluded_page() ) {
+        $GLOBALS['cm_rendered'] = true;
+        return;
+    }
+
+    $GLOBALS['cm_rendered'] = true;
+
+    // Geo-targeting: de beslissing "hoort deze bezoeker een banner te zien?"
+    // hangt af van zijn IP-land en is dus PER BEZOEKER verschillend. Die mag
+    // NIET in de (gedeelde) pagina-HTML terechtkomen — onder een paginacache
+    // krijgt de eerste bezoeker het voor iedereen (zelfde klasse als de
+    // cache-vergiftiging uit v1.7.7). De banner wordt daarom altijd gerenderd;
+    // de geo-keuze valt client-side via een ongecachete land-lookup
+    // (admin-ajax cm_geo_check). Zie de init()/geoDecide()-logica hieronder.
+
+    $cats = cm_banner_markup();
+    ?>
 
     <script data-no-defer="1" nowprocket>
     (function () {
