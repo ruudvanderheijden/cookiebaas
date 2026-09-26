@@ -15,6 +15,9 @@ function add_query_arg( $a, $b = null, $c = null ) {
 }
 function wp_nonce_url( $url, $action ) { return $url . ( strpos( $url, '?' ) === false ? '?' : '&' ) . '_wpnonce=nonce-' . $action; }
 function mysql2date( $format, $date ) { return 'fmt:' . $date; }
+function sanitize_text_field( $s ) { return is_scalar( $s ) ? trim( preg_replace( '/[\r\n\t ]+/', ' ', strip_tags( (string) $s ) ) ) : ''; }
+function date_i18n( $format, $ts = null ) { return 'datum'; }
+function wp_date( $format, $ts = null ) { return 'wpdate:' . $ts; }
 
 /** Neemt query's op; prepare() vult de placeholders zichtbaar in. */
 class CM_Test_Wpdb {
@@ -33,6 +36,7 @@ $GLOBALS['wpdb'] = new CM_Test_Wpdb();
 require __DIR__ . '/bootstrap.php';
 require CM_PLUGIN_ROOT . '/includes/admin/menu.php';
 require CM_PLUGIN_ROOT . '/includes/admin/actions.php';
+require CM_PLUGIN_ROOT . '/includes/admin/fields.php';
 require CM_PLUGIN_ROOT . '/includes/admin/page-log.php';
 
 $good = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d';
@@ -121,5 +125,37 @@ cm_assert( 'ontbrekend veld → leeg, geen notice', cm_log_proof_rows( array() )
 $before = count( $wpdb->queries );
 cm_assert( 'ongeldige ID → geen query, geen registratie', cm_log_get( "x' OR 1=1" ) === null && count( $wpdb->queries ) === $before );
 cm_assert( 'geldige ID die niet bestaat → null', cm_log_get( $good ) === null && count( $wpdb->queries ) === $before + 1 );
+
+cm_test_group( 'Iedereen opnieuw laten kiezen' );
+update_option( 'cm_consent_version', 4 );
+update_option( 'cm_consent_changelog', array() );
+cm_assert( 'versie gaat één omhoog', cm_bump_consent_version( '<b>Nieuwe dienst</b>' ) === 5 && (int) get_option( 'cm_consent_version' ) === 5 );
+$log = get_option( 'cm_consent_changelog' );
+cm_assert( 'reden, versie en datum in de geschiedenis, zonder HTML', count( $log ) === 1 && $log[0]['version'] === 5 && $log[0]['reason'] === 'Nieuwe dienst' && $log[0]['date'] === 'datum' );
+update_option( 'cm_consent_changelog', array_fill( 0, 50, array( 'date' => 'x', 'version' => 1, 'reason' => '' ) ) );
+cm_bump_consent_version();
+cm_assert( 'maximaal 50 regels, de nieuwste blijft', count( get_option( 'cm_consent_changelog' ) ) === 50 && end( $GLOBALS['cm_test_options']['cm_consent_changelog'] )['version'] === 6 );
+
+cm_test_group( 'Versiegeschiedenis' );
+ob_start(); cm_render_consent_changelog( array( array( 'date' => '1 jan', 'version' => 2, 'reason' => 'A' ), array( 'date' => '2 jan', 'version' => 3, 'reason' => '<script>' ) ) ); $h = ob_get_clean();
+cm_assert( 'nieuwste bovenaan', strpos( $h, '<td>3</td>' ) < strpos( $h, '<td>2</td>' ) );
+cm_assert( 'reden ge-escaped', strpos( $h, '<script>' ) === false && strpos( $h, '&lt;script&gt;' ) !== false );
+ob_start(); cm_render_consent_changelog( 'geen array' ); $h = ob_get_clean();
+cm_assert( 'lege of kapotte geschiedenis → uitleg', strpos( $h, 'nog niet eerder' ) !== false );
+
+cm_test_group( 'Bewaartermijn' );
+$f = cm_admin_field_index( 'cm_settings', array( 'cookiebaas-log' => cm_tabs_log() ) );
+cm_assert( 'log_retention_months staat op Bewaren als keuzelijst', isset( cm_tabs_log()['bewaren'], $f['log_retention_months'] ) && $f['log_retention_months']['type'] === 'select' );
+cm_assert( 'de standaard (36) en "nooit" zijn opties', array_key_exists( '36', cm_admin_field_options( $f['log_retention_months'] ) ) && array_key_exists( '0', cm_admin_field_options( $f['log_retention_months'] ) ) );
+cm_assert( 'status: uit', strpos( cm_log_retention_status_text( 0, false ), 'niet automatisch' ) !== false );
+cm_assert( 'status: nog niet ingepland', strpos( cm_log_retention_status_text( 36, false ), 'volgende paginabezoek' ) !== false );
+cm_assert( 'status: ingepland, met tijdstip', strpos( cm_log_retention_status_text( 36, 1767261600 ), 'Volgende controle: wpdate:1767261600' ) !== false );
+
+cm_test_group( 'Log leegmaken' );
+$wpdb->result = 0;
+cm_assert( 'TRUNCATE gelukt (0 rijen telt ook als gelukt)', cm_log_clear() === true && strpos( end( $wpdb->queries ), 'TRUNCATE TABLE `wp_cm_consent_log`' ) === 0 );
+$wpdb->result = false;
+cm_assert( 'databasefout → false', cm_log_clear() === false );
+$wpdb->result = 2;
 
 exit( cm_test_summary() );

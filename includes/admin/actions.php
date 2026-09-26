@@ -20,6 +20,8 @@ function cm_admin_notice_messages() {
         'privacy-reset'       => array( 'success', 'De privacyverklaring is teruggezet naar de standaardtekst.' ),
         'log-deleted'         => array( 'success', 'De geselecteerde registraties zijn verwijderd.' ),
         'log-none-selected'   => array( 'info',    'Er is niets geselecteerd. Vink eerst de registraties aan die u wilt verwijderen.' ),
+        'consent-version-bumped' => array( 'success', 'De consent-versie is verhoogd. Elke bezoeker ziet de banner opnieuw.' ),
+        'log-cleared'            => array( 'success', 'De consent log is leeggemaakt.' ),
     );
 }
 
@@ -41,8 +43,8 @@ add_filter( 'removable_query_args', function ( $args ) {
     return $args;
 } );
 
-/** Een knop die als eigen formulier naar admin-post.php post. */
-function cm_admin_action_form( $action, $label, array $args = array(), $confirm = '', $class = 'button' ) {
+/** Een knop die als eigen formulier naar admin-post.php post; $fields = extra (al ge-escapete) velden vóór de knop. */
+function cm_admin_action_form( $action, $label, array $args = array(), $confirm = '', $class = 'button', $fields = '' ) {
     $html  = '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="cm-action-form"'
            . ( $confirm !== '' ? ' data-cm-confirm="' . esc_attr( $confirm ) . '"' : '' ) . '>';
     $html .= '<input type="hidden" name="action" value="' . esc_attr( 'cm_' . $action ) . '">';
@@ -50,6 +52,7 @@ function cm_admin_action_form( $action, $label, array $args = array(), $confirm 
     foreach ( $args as $k => $v ) {
         $html .= '<input type="hidden" name="' . esc_attr( $k ) . '" value="' . esc_attr( $v ) . '">';
     }
+    $html .= $fields;
     $html .= '<button type="submit" class="' . esc_attr( $class ) . '">' . esc_html( $label ) . '</button></form>';
     return $html;
 }

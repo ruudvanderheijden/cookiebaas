@@ -19,8 +19,7 @@ foreach ( glob( CM_PLUGIN_ROOT . '/includes/admin/*.php' ) as $file ) require $f
 require CM_PLUGIN_ROOT . '/includes/privacy.php';
 
 $no_ui   = array( 'txt_embed_btn', 'txt_embed_btn_en', 'color_always_on_bg' );          // dood, sleutel blijft voor de data
-$pending = array( 'log_retention_months',                                                 // plan 3: Consent log
-                  'api_key' );                                                            // plan 3: Beheer › Geavanceerd
+$pending = array( 'api_key' );                                                            // plan 3: Beheer › Geavanceerd (Taak 6)
 
 cm_test_group( 'Elke instelling precies één keer' );
 $keys   = array_map( function ( $f ) { return $f['key']; }, cm_admin_field_list( 'cm_settings' ) );

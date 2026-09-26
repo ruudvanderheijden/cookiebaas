@@ -55,4 +55,8 @@ $u = cm_admin_action_url( 'export_cookies', array( 'x' => '1' ) );
 cm_assert( 'link naar admin-post.php met eigen action', strpos( $u, 'https://example.test/wp-admin/admin-post.php?' ) === 0 && strpos( $u, 'action=cm_export_cookies' ) !== false );
 cm_assert( 'met extra argument en eigen nonce', strpos( $u, 'x=1' ) !== false && strpos( $u, '_wpnonce=nonce-cm_export_cookies' ) !== false );
 
+cm_test_group( 'Actieformulier met extra velden' );
+$f = cm_admin_action_form( 'bump_consent_version', 'Doe', array(), '', 'button', '<input type="text" name="reason">' );
+cm_assert( 'extra velden staan vóór de knop', strpos( $f, '<input type="text" name="reason">' ) !== false && strpos( $f, '<input type="text" name="reason">' ) < strpos( $f, '<button' ) );
+
 exit( cm_test_summary() );

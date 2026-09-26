@@ -9,6 +9,34 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 function cm_tabs_log() {
     return array(
         'registraties' => array( 'label' => 'Registraties', 'render' => 'cm_log_render_registraties' ),
+        'bewaren'      => cm_tab_log_bewaren(),
+    );
+}
+
+function cm_tab_log_bewaren() {
+    return array(
+        'label'      => 'Bewaren en opnieuw vragen',
+        'sections'   => array(
+            array(
+                'title'   => 'Bewaartermijn',
+                'intro'   => 'De AVG (artikel 5 lid 1e) vraagt persoonsgegevens niet langer te bewaren dan nodig. 36 maanden geeft genoeg bewijs bij een klacht, zonder onnodig lang te bewaren.',
+                'content' => 'cm_render_log_retention_status',
+                'fields'  => array(
+                    cm_field( 'log_retention_months', 'select', 'Registraties verwijderen', array(
+                        'options'     => array(
+                            '0'  => 'Nooit automatisch',
+                            '3'  => 'Na 3 maanden',
+                            '6'  => 'Na 6 maanden',
+                            '12' => 'Na 12 maanden',
+                            '24' => 'Na 24 maanden',
+                            '36' => 'Na 36 maanden (aanbevolen)',
+                        ),
+                        'description' => 'Oudere registraties worden elke dag rond 12:00 uur automatisch verwijderd.',
+                    ) ),
+                ),
+            ),
+        ),
+        'after_form' => 'cm_render_log_bewaren_tools',
     );
 }
 
@@ -247,6 +275,73 @@ function cm_log_render_registraties() {
     echo '</form>';
 }
 
+function cm_log_retention_status_text( $months, $next ) {
+    $months = (int) $months;
+    if ( $months <= 0 ) return 'Registraties worden nu niet automatisch verwijderd.';
+    $text = 'Registraties ouder dan ' . $months . ' maanden worden verwijderd.';
+    return $next
+        ? $text . ' Volgende controle: ' . wp_date( 'j F Y, H:i', $next ) . '.'
+        : $text . ' De dagelijkse controle wordt bij het volgende paginabezoek ingepland.';
+}
+
+function cm_render_log_retention_status() {
+    echo '<p>' . esc_html( cm_log_retention_status_text( cm_get( 'log_retention_months' ), wp_next_scheduled( 'cm_log_retention_cron' ) ) ) . '</p>';
+}
+
+/** Verhoog de consent-versie (iedereen kiest opnieuw) en houd de geschiedenis bij. Geeft de nieuwe versie terug. */
+function cm_bump_consent_version( $reason = '' ) {
+    $new = (int) get_option( 'cm_consent_version', 1 ) + 1;
+    update_option( 'cm_consent_version', $new );
+    $log   = get_option( 'cm_consent_changelog', array() );
+    $log   = is_array( $log ) ? $log : array();
+    $log[] = array(
+        'date'    => date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ),
+        'version' => $new,
+        'reason'  => sanitize_text_field( is_scalar( $reason ) ? (string) $reason : '' ),
+    );
+    update_option( 'cm_consent_changelog', array_slice( $log, -50 ) );
+    return $new;
+}
+
+/** Versiegeschiedenis, nieuwste bovenaan. */
+function cm_render_consent_changelog( $log ) {
+    $log = is_array( $log ) ? array_reverse( $log ) : array();
+    if ( ! $log ) {
+        echo '<p class="description">Er is nog niet eerder om nieuwe toestemming gevraagd.</p>';
+        return;
+    }
+    echo '<table class="widefat striped"><thead><tr><th scope="col">Versie</th><th scope="col">Datum</th><th scope="col">Reden</th></tr></thead><tbody>';
+    foreach ( $log as $e ) {
+        $e = (array) $e;
+        echo '<tr><td>' . esc_html( isset( $e['version'] ) ? $e['version'] : '' ) . '</td>'
+           . '<td>' . esc_html( isset( $e['date'] ) ? $e['date'] : '' ) . '</td>'
+           . '<td>' . esc_html( ! empty( $e['reason'] ) ? $e['reason'] : '—' ) . '</td></tr>';
+    }
+    echo '</tbody></table>';
+}
+
+function cm_render_log_bewaren_tools() {
+    echo '<div class="cm-section"><h2>Iedereen opnieuw laten kiezen</h2>';
+    echo '<p>Verhoogt de consent-versie. Elke bezoeker ziet de banner dan opnieuw, bijvoorbeeld na een nieuwe dienst of een gewijzigde privacyverklaring. De huidige versie is ' . esc_html( (int) get_option( 'cm_consent_version', 1 ) ) . '.</p>';
+    $reason = '<p><label for="cm-bump-reason">Reden (optioneel, alleen voor uw eigen overzicht)</label><br>'
+            . '<input type="text" id="cm-bump-reason" name="reason" class="regular-text" maxlength="200"></p>';
+    echo '<div>' . cm_admin_action_form( 'bump_consent_version', 'Iedereen opnieuw laten kiezen', array(), 'Alle bezoekers krijgen de banner opnieuw te zien. Doorgaan?', 'button', $reason ) . '</div>';
+    echo '<h3>Eerdere keren</h3>';
+    cm_render_consent_changelog( get_option( 'cm_consent_changelog', array() ) );
+    echo '</div>';
+
+    echo '<div class="cm-section"><h2>Log leegmaken</h2>';
+    echo '<p>Verwijdert alle registraties definitief. Exporteer eerst een CSV als u het bewijs wilt bewaren.</p>';
+    echo '<div>' . cm_admin_action_form( 'clear_log', 'Log leegmaken', array(), 'Alle registraties definitief verwijderen? Dit kan niet ongedaan worden gemaakt.', 'button button-link-delete' ) . '</div>';
+    echo '</div>';
+}
+
+/** Leeg de hele log. False alleen bij een databasefout (0 rijen telt als gelukt). */
+function cm_log_clear() {
+    global $wpdb;
+    return $wpdb->query( 'TRUNCATE TABLE `' . cm_log_table() . '`' ) !== false;
+}
+
 if ( function_exists( 'cm_admin_register_action' ) ) {
     cm_admin_register_action( 'delete_consent', function () {
         $n = cm_log_delete( array( isset( $_GET['consent'] ) ? wp_unslash( $_GET['consent'] ) : '' ) );
@@ -264,5 +359,13 @@ if ( function_exists( 'cm_admin_register_action' ) ) {
         $sql   = "SELECT consent_id, method, analytics, marketing, url, plugin_version, created_at FROM `{$table}` {$where} ORDER BY created_at DESC";
         $rows  = $wpdb->get_results( $args ? $wpdb->prepare( $sql, $args ) : $sql, ARRAY_A );
         cm_admin_send_csv( 'consent-log-' . wp_date( 'Y-m-d' ) . '.csv', cm_log_csv_rows( $rows ? $rows : array() ) );
+    } );
+
+    cm_admin_register_action( 'bump_consent_version', function () {
+        cm_bump_consent_version( isset( $_POST['reason'] ) ? wp_unslash( $_POST['reason'] ) : '' );
+        return 'consent-version-bumped';
+    } );
+    cm_admin_register_action( 'clear_log', function () {
+        return cm_log_clear() ? 'log-cleared' : 'action-failed';
     } );
 }
