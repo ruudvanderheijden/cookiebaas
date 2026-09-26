@@ -55,6 +55,7 @@ function cm_admin_render_page() {
 
     echo '<div class="wrap cm-admin">';
     echo '<h1 class="wp-heading-inline">' . esc_html( isset( $pages[ $page ] ) ? $pages[ $page ] : 'Cookiebaas' ) . '</h1>';
+    if ( ! empty( $def['title_actions'] ) ) call_user_func( $def['title_actions'] );
     echo '<hr class="wp-header-end">';
     settings_errors();
     if ( function_exists( 'cm_admin_render_notices' ) ) cm_admin_render_notices();
@@ -82,9 +83,10 @@ function cm_admin_render_form_tab( $page, $tab, array $def ) {
     $preview = ! empty( $def['preview'] ) && function_exists( 'cm_admin_render_preview' );
     if ( $preview ) echo '<div class="cm-cols">';
     echo '<form method="post" action="' . esc_url( admin_url( 'options.php' ) ) . '" class="cm-form">';
-    settings_fields( 'cookiebaas_settings' );
+    settings_fields( isset( $def['group'] ) ? $def['group'] : 'cookiebaas_settings' );
+    $values = ! empty( $def['values'] ) ? call_user_func( $def['values'] ) : cm_get_settings();
     if ( function_exists( 'cm_admin_render_sections' ) ) {
-        cm_admin_render_sections( isset( $def['sections'] ) ? $def['sections'] : array(), cm_get_settings() );
+        cm_admin_render_sections( isset( $def['sections'] ) ? $def['sections'] : array(), $values );
     }
     submit_button( 'Wijzigingen opslaan' );
     echo '</form>';

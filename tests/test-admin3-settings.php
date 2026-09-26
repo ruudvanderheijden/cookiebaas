@@ -21,6 +21,7 @@ function add_settings_error( $setting, $code, $message ) { $GLOBALS['cm_test_err
 $GLOBALS['cm_test_purges'] = 0;
 function cm_purge_page_caches() { $GLOBALS['cm_test_purges']++; }
 function absint( $v ) { return abs( (int) $v ); }
+function esc_url_raw( $s ) { $s = trim( (string) $s ); return preg_match( '#^https?://#i', $s ) ? $s : ''; }
 
 require __DIR__ . '/bootstrap.php';
 require CM_PLUGIN_ROOT . '/includes/defaults.php';
@@ -96,5 +97,23 @@ update_option( 'cm_cookie_list', array() );
 update_option( 'cm_privacy', array() );
 update_option( 'cm_consent_version', 2 );
 cm_assert( 'elke inhoudswijziging leegt de cache', $GLOBALS['cm_test_purges'] === $p + 4 );
+
+cm_test_group( 'Rijen (rows)' );
+$rf = cm_field( 'pv_doeleinden', 'rows', 'Doeleinden', array( 'option' => 'cm_privacy', 'columns' => array(
+    'doel' => array( 'label' => 'Doel' ),
+    'url'  => array( 'label' => 'URL', 'type' => 'url' ),
+    'cat'  => array( 'label' => 'Cat', 'type' => 'select', 'options' => array( 'functional' => 'F', 'marketing' => 'M' ) ),
+) ) );
+$json = cm_sanitize_field_value( $rf, array(
+    3 => array( 'doel' => ' Contact <b>x</b> ', 'url' => 'javascript:alert(1)', 'cat' => 'bogus', 'extra' => 'weg' ),
+    7 => array( 'doel' => '', 'url' => '', 'cat' => 'marketing' ),
+), '[]' );
+$rows = json_decode( $json, true );
+cm_assert( 'rijen worden een JSON-string (opgeslagen formaat)', is_string( $json ) && is_array( $rows ) );
+cm_assert( 'rij met alleen een keuzelijst verdwijnt; index opnieuw vanaf 0', count( $rows ) === 1 && array_keys( $rows ) === array( 0 ) );
+cm_assert( 'alleen bekende kolommen, tekst opgeschoond, onveilige URL leeg, onbekende keuze wordt de eerste', $rows[0] === array( 'doel' => 'Contact x', 'url' => '', 'cat' => 'functional' ) );
+cm_assert( 'alles verwijderd (lege string uit het formulier) wordt een lege lijst', cm_sanitize_field_value( $rf, '', '[{"doel":"x"}]' ) === '[]' );
+$oud = json_decode( cm_sanitize_field_value( $rf, '[{"doel":"Oud"}]', '[]' ), true );
+cm_assert( 'oude admin post een JSON-string: blijft werken', $oud[0]['doel'] === 'Oud' );
 
 exit( cm_test_summary() );

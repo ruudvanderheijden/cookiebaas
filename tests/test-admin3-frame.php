@@ -7,9 +7,15 @@
  * (spec §4: alles WordPress-native).
  */
 
+function settings_fields( $group ) { echo '<!--group:' . $group . '-->'; }
+function submit_button( $text = '' ) { echo '<!--submit:' . $text . '-->'; }
+function wp_kses_post( $s ) { return (string) $s; }
+function esc_textarea( $s ) { return htmlspecialchars( (string) $s, ENT_QUOTES ); }
+
 require __DIR__ . '/bootstrap.php';
 require CM_PLUGIN_ROOT . '/includes/defaults.php';
 require CM_PLUGIN_ROOT . '/includes/admin/menu.php';
+require CM_PLUGIN_ROOT . '/includes/admin/fields.php';
 
 cm_test_group( 'Tab uit de URL' );
 $tabs = array( 'vormgeving' => array( 'label' => 'Vormgeving' ), 'teksten' => array( 'label' => 'Teksten' ) );
@@ -36,5 +42,18 @@ foreach ( $files as $file ) {
     cm_assert( "$rel: geen hex-kleur #rrggbb", ! preg_match( '/#[0-9a-fA-F]{6}\b/', $src ) );
     cm_assert( "$rel: geen &#-entities",      ! preg_match( '/&#x?[0-9a-fA-F]+;/', $src ) );
 }
+
+cm_test_group( 'Formulier-tab: groep en waarden per tab' );
+ob_start();
+cm_admin_render_form_tab( 'p', 't', array(
+    'group'    => 'cookiebaas_privacy',
+    'values'   => function () { return array( 'pv_x' => 'uit-values' ); },
+    'sections' => array( array( 'fields' => array( cm_field( 'pv_x', 'text', 'X', array( 'option' => 'cm_privacy' ) ) ) ) ),
+) );
+$h = ob_get_clean();
+cm_assert( 'eigen settings-groep', strpos( $h, '<!--group:cookiebaas_privacy-->' ) !== false );
+cm_assert( 'waarden uit de tab-callback', strpos( $h, 'value="uit-values"' ) !== false );
+ob_start(); cm_admin_render_form_tab( 'p', 't', array( 'sections' => array() ) ); $d = ob_get_clean();
+cm_assert( 'standaard: cookiebaas_settings', strpos( $d, '<!--group:cookiebaas_settings-->' ) !== false );
 
 exit( cm_test_summary() );

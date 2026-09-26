@@ -14,9 +14,12 @@ function remove_query_arg( $keys, $url ) {
     foreach ( (array) $keys as $k ) unset( $q[ $k ] );
     return $p['scheme'] . '://' . $p['host'] . $p['path'] . ( $q ? '?' . http_build_query( $q ) : '' );
 }
-function add_query_arg( $key, $value, $url ) {
-    return $url . ( strpos( $url, '?' ) === false ? '?' : '&' ) . rawurlencode( $key ) . '=' . rawurlencode( $value );
+function add_query_arg( $a, $b = null, $c = null ) {
+    if ( is_array( $a ) ) { $args = $a; $url = $b; } else { $args = array( $a => $b ); $url = $c; }
+    foreach ( $args as $k => $v ) $url .= ( strpos( $url, '?' ) === false ? '?' : '&' ) . rawurlencode( $k ) . '=' . rawurlencode( $v );
+    return $url;
 }
+function wp_nonce_url( $url, $action ) { return $url . ( strpos( $url, '?' ) === false ? '?' : '&' ) . '_wpnonce=nonce-' . $action; }
 
 require __DIR__ . '/bootstrap.php';
 require CM_PLUGIN_ROOT . '/includes/admin/actions.php';
@@ -46,5 +49,10 @@ cm_assert( 'settings-updated erbij → geen actie-melding meer (voorkomt herhali
 $_GET = array( 'cm_notice' => 'theme-reset-light' );
 ob_start(); cm_admin_render_notices(); $out = ob_get_clean();
 cm_assert( 'alleen cm_notice → melding verschijnt gewoon', strpos( $out, 'notice notice-success is-dismissible' ) !== false );
+
+cm_test_group( 'Actie-URL (downloads)' );
+$u = cm_admin_action_url( 'export_cookies', array( 'x' => '1' ) );
+cm_assert( 'link naar admin-post.php met eigen action', strpos( $u, 'https://example.test/wp-admin/admin-post.php?' ) === 0 && strpos( $u, 'action=cm_export_cookies' ) !== false );
+cm_assert( 'met extra argument en eigen nonce', strpos( $u, 'x=1' ) !== false && strpos( $u, '_wpnonce=nonce-cm_export_cookies' ) !== false );
 
 exit( cm_test_summary() );

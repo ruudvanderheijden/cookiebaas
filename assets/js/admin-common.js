@@ -117,6 +117,30 @@
     sync();
   });
 
+  /* ---- Rijen-editor (cookielijst, privacytabellen) ---- */
+  document.addEventListener('click', function (e) {
+    var add = e.target.closest('.cm-rows-add');
+    if (add) {
+      e.preventDefault();
+      var wrap = add.closest('.cm-rows');
+      var n = parseInt(wrap.getAttribute('data-cm-next'), 10) || 0;
+      wrap.setAttribute('data-cm-next', String(n + 1));
+      var body = wrap.querySelector('tbody');
+      body.insertAdjacentHTML('beforeend', wrap.querySelector('template').innerHTML.split('__i__').join(String(n)));
+      var first = body.lastElementChild && body.lastElementChild.querySelector('input, select');
+      if (first) first.focus();
+      wrap.dispatchEvent(new Event('input', { bubbles: true }));
+      return;
+    }
+    var rm = e.target.closest('.cm-rows-remove');
+    if (rm) {
+      e.preventDefault();
+      var table = rm.closest('.cm-rows');
+      rm.closest('tr').remove();
+      if (table) table.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+
   /* ---- Bevestigen bij destructieve acties ---- */
   document.addEventListener('submit', function (e) {
     var msg = e.target.getAttribute('data-cm-confirm');

@@ -73,4 +73,36 @@ cm_assert( 'lijst toont dubbelingen', count( cm_admin_field_list( 'cm_settings',
 cm_assert( 'index: alleen opgeslagen velden van deze option', array_keys( cm_admin_field_index( 'cm_settings', $tabs ) ) === array( 'x' ) );
 cm_assert( 'index per option', array_keys( cm_admin_field_index( 'cm_privacy', $tabs ) ) === array( 'pv_iets' ) );
 
+cm_test_group( 'Rijen-editor' );
+$cols = array(
+    'doel'      => array( 'label' => 'Doel' ),
+    'grondslag' => array( 'label' => 'Grondslag', 'suggestions' => array( 'Toestemming' ) ),
+    'cat'       => array( 'label' => 'Categorie', 'type' => 'select', 'options' => array( 'functional' => 'Functioneel', 'marketing' => 'Marketing' ) ),
+);
+ob_start();
+cm_admin_render_rows( 'cm_privacy[pv_doeleinden]', $cols, array( array( 'doel' => 'Contact <b>', 'grondslag' => 'Toestemming', 'cat' => 'marketing' ) ), 'Rij toevoegen' );
+$h = ob_get_clean();
+cm_assert( 'verborgen lege waarde vóór de rijen (alles verwijderen = leeg opslaan)', strpos( $h, '<input type="hidden" name="cm_privacy[pv_doeleinden]" value="">' ) !== false );
+cm_assert( 'bestaande rij met genummerde namen, waarde ge-escaped', strpos( $h, 'name="cm_privacy[pv_doeleinden][0][doel]" value="Contact &lt;b&gt;"' ) !== false );
+cm_assert( 'select behoudt de opgeslagen keuze', preg_match( '/name="cm_privacy\[pv_doeleinden\]\[0\]\[cat\]"[^>]*>.*?<option value="marketing" selected>/s', $h ) === 1 );
+cm_assert( 'sjabloonrij met __i__ in een template', strpos( $h, '<template>' ) !== false && strpos( $h, '[__i__][doel]' ) !== false );
+cm_assert( 'suggesties via een datalist', strpos( $h, '<datalist id=' ) !== false && strpos( $h, ' list="' ) !== false );
+cm_assert( 'volgende index = aantal rijen', strpos( $h, 'data-cm-next="1"' ) !== false );
+cm_assert( 'invoervelden hebben een toegankelijk label', strpos( $h, 'aria-label="Doel"' ) !== false );
+$h2 = row( cm_field( 'pv_doeleinden', 'rows', 'Doeleinden', array( 'option' => 'cm_privacy', 'columns' => $cols ) ), array( 'pv_doeleinden' => '[{"doel":"Uit JSON"}]' ) );
+cm_assert( 'rows-veld leest het opgeslagen JSON-formaat', strpos( $h2, 'value="Uit JSON"' ) !== false );
+
+cm_test_group( 'Checkgroep' );
+$g  = cm_field( 'pv_cf_fields', 'checkgroup', 'Verzamelde velden', array( 'option' => 'cm_privacy', 'keys' => array( 'pv_cf_voornaam' => 'Voornaam', 'pv_cf_email' => 'E-mailadres' ) ) );
+$gh = row( $g, array( 'pv_cf_voornaam' => '1', 'pv_cf_email' => '0' ) );
+cm_assert( 'elke sleutel een eigen checkbox met verborgen 0', substr_count( $gh, 'type="hidden"' ) === 2 && strpos( $gh, 'name="cm_privacy[pv_cf_voornaam]"' ) !== false );
+cm_assert( 'aangevinkt volgens de waarden', preg_match( '/name="cm_privacy\[pv_cf_voornaam\]" data-cm-key="pv_cf_voornaam" value="1" checked/', $gh ) === 1 && preg_match( '/pv_cf_email" value="1" checked/', $gh ) === 0 );
+$gl = cm_admin_field_list( 'cm_privacy', array( 'p' => array( 't' => array( 'label' => 'T', 'sections' => array( array( 'fields' => array( $g ) ) ) ) ) ) );
+cm_assert( 'veldlijst splitst de groep in losse checkbox-instellingen', array_map( function ( $f ) { return $f['key'] . ':' . $f['type']; }, $gl ) === array( 'pv_cf_voornaam:checkbox', 'pv_cf_email:checkbox' ) );
+
+cm_test_group( 'Select met een onbekende huidige waarde (Review Focus 5)' );
+$sel = row( cm_field( 'pv_cf_grondslag', 'select', 'Rechtsgrondslag', array( 'options' => array( 'A' => 'A', 'B' => 'B' ) ) ), array( 'pv_cf_grondslag' => 'Oude vrije tekst' ) );
+cm_assert( 'de huidige waarde blijft zichtbaar en geselecteerd', strpos( $sel, '<option value="Oude vrije tekst" selected>Oude vrije tekst</option>' ) !== false );
+cm_assert( 'geen andere optie geselecteerd', substr_count( $sel, ' selected' ) === 1 );
+
 exit( cm_test_summary() );

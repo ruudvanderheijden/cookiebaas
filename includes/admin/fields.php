@@ -42,7 +42,13 @@ function cm_admin_field_list( $option = 'cm_settings', $tabs = null ) {
             foreach ( isset( $tab['sections'] ) ? $tab['sections'] : array() as $section ) {
                 foreach ( isset( $section['fields'] ) ? $section['fields'] : array() as $f ) {
                     if ( isset( $f['store'] ) && $f['store'] === false ) continue;
-                    if ( ( isset( $f['option'] ) ? $f['option'] : 'cm_settings' ) !== $option ) continue;
+                    $f_option = isset( $f['option'] ) ? $f['option'] : 'cm_settings';
+                    if ( $f_option !== $option ) continue;
+                    if ( $f['type'] === 'checkgroup' ) {
+                        // Eén rij in de UI, maar elke sleutel is een eigen checkbox-instelling
+                        foreach ( $f['keys'] as $k => $label ) $list[] = cm_field( $k, 'checkbox', $label, array( 'option' => $f_option ) );
+                        continue;
+                    }
                     $list[] = $f;
                 }
             }
@@ -73,6 +79,65 @@ function cm_html_allowed() {
 function cm_csv_list( $value ) {
     $parts = is_array( $value ) ? $value : explode( ',', (string) $value );
     return array_values( array_filter( array_map( 'trim', array_map( 'strval', $parts ) ), 'strlen' ) );
+}
+
+/** Rijen uit het opgeslagen JSON-formaat (string) of uit het formulier (array). */
+function cm_rows_decode( $value ) {
+    if ( is_array( $value ) ) return $value;
+    $decoded = json_decode( (string) $value, true );
+    return is_array( $decoded ) ? $decoded : array();
+}
+
+/**
+ * Rijen-editor: tabel met invoervelden per kolom, een sjabloonrij (template,
+ * index __i__) en een knop om rijen toe te voegen (admin-common.js). Het lege
+ * verborgen veld zorgt dat "alle rijen verwijderd" ook echt leeg opslaat.
+ */
+function cm_admin_render_rows( $name, array $columns, array $rows, $add_label ) {
+    $id = 'cm-rows-' . trim( preg_replace( '/[^a-z0-9_]+/', '-', strtolower( $name ) ), '-' );
+    echo '<div class="cm-rows" id="' . esc_attr( $id ) . '" data-cm-next="' . count( $rows ) . '">';
+    echo '<input type="hidden" name="' . esc_attr( $name ) . '" value="">';
+    echo '<table class="widefat striped cm-rows-table"><thead><tr>';
+    foreach ( $columns as $c ) echo '<th scope="col">' . esc_html( $c['label'] ) . '</th>';
+    echo '<td class="cm-rows-actions"><span class="screen-reader-text">Acties</span></td></tr></thead><tbody>';
+    $i = 0;
+    foreach ( $rows as $row ) {
+        echo cm_admin_rows_tr( $name, $columns, (string) $i, is_array( $row ) ? $row : array(), $id );
+        $i++;
+    }
+    echo '</tbody></table>';
+    echo '<template>' . cm_admin_rows_tr( $name, $columns, '__i__', array(), $id ) . '</template>';
+    foreach ( $columns as $col => $c ) {
+        if ( empty( $c['suggestions'] ) ) continue;
+        echo '<datalist id="' . esc_attr( $id . '-' . $col ) . '">';
+        foreach ( $c['suggestions'] as $s ) echo '<option value="' . esc_attr( $s ) . '">';
+        echo '</datalist>';
+    }
+    echo '<p><button type="button" class="button cm-rows-add">' . esc_html( $add_label ) . '</button></p>';
+    echo '</div>';
+}
+
+/** Eén rij van de rijen-editor als HTML-string. */
+function cm_admin_rows_tr( $name, array $columns, $i, array $row, $id ) {
+    $html = '<tr>';
+    foreach ( $columns as $col => $c ) {
+        $n     = $name . '[' . $i . '][' . $col . ']';
+        $v     = isset( $row[ $col ] ) && is_scalar( $row[ $col ] ) ? (string) $row[ $col ] : '';
+        $label = esc_attr( $c['label'] );
+        if ( isset( $c['type'] ) && $c['type'] === 'select' ) {
+            $html .= '<td><select name="' . esc_attr( $n ) . '" aria-label="' . $label . '">';
+            foreach ( $c['options'] as $ov => $ol ) {
+                $html .= '<option value="' . esc_attr( $ov ) . '"' . ( $v === (string) $ov ? ' selected' : '' ) . '>' . esc_html( $ol ) . '</option>';
+            }
+            $html .= '</select></td>';
+        } else {
+            $html .= '<td><input type="text" class="widefat" name="' . esc_attr( $n ) . '" value="' . esc_attr( $v ) . '" aria-label="' . $label . '"'
+                . ( isset( $c['placeholder'] ) ? ' placeholder="' . esc_attr( $c['placeholder'] ) . '"' : '' )
+                . ( ! empty( $c['suggestions'] ) ? ' list="' . esc_attr( $id . '-' . $col ) . '"' : '' ) . '></td>';
+        }
+    }
+    $html .= '<td class="cm-rows-actions"><button type="button" class="button-link cm-rows-remove">Verwijderen</button></td></tr>';
+    return $html;
 }
 
 function cm_admin_render_sections( array $sections, array $values ) {
@@ -111,9 +176,10 @@ function cm_admin_render_field_row( array $f, array $values ) {
     $value = ( isset( $f['value'] ) && $f['value'] instanceof Closure )
         ? call_user_func( $f['value'], $values )
         : ( array_key_exists( $key, $values ) ? $values[ $key ] : '' );
+    if ( $f['type'] === 'checkgroup' ) $value = array_intersect_key( $values, $f['keys'] );
     $show  = ! empty( $f['show_if'] ) ? ' data-cm-show-if="' . esc_attr( wp_json_encode( $f['show_if'] ) ) . '"' : '';
     $mark  = ( $f['type'] === 'color_optional' || ! empty( $f['optional'] ) ) ? ' <span class="description">(optioneel)</span>' : '';
-    $plain = in_array( $f['type'], array( 'checkbox', 'radio', 'checkboxes', 'media', 'custom' ), true );
+    $plain = in_array( $f['type'], array( 'checkbox', 'radio', 'checkboxes', 'media', 'custom', 'rows', 'checkgroup' ), true );
 
     echo '<tr' . $show . '><th scope="row">';
     echo $plain
@@ -168,6 +234,11 @@ function cm_admin_render_control( array $f, $id, $name, $value ) {
 
         case 'select':
             echo '<select' . $attr . '>';
+            // Een opgeslagen waarde buiten de opties (oude vrije tekst) blijft zichtbaar en
+            // geselecteerd, in plaats van dat de browser stil de eerste optie kiest.
+            if ( (string) $value !== '' && ! array_key_exists( (string) $value, cm_admin_field_options( $f ) ) ) {
+                echo '<option value="' . esc_attr( $value ) . '" selected>' . esc_html( $value ) . '</option>';
+            }
             foreach ( cm_admin_field_options( $f ) as $opt => $label ) {
                 echo '<option value="' . esc_attr( $opt ) . '"' . ( (string) $value === (string) $opt ? ' selected' : '' ) . '>' . esc_html( $label ) . '</option>';
             }
@@ -217,6 +288,23 @@ function cm_admin_render_control( array $f, $id, $name, $value ) {
             echo '<img class="cm-media-img" alt=""' . ( $v !== '' ? ' src="' . esc_url( $v ) . '"' : ' hidden' ) . '> ';
             echo '<button type="button" class="button cm-media-pick">Afbeelding kiezen</button> ';
             echo '<button type="button" class="button-link cm-media-remove"' . ( $v === '' ? ' hidden' : '' ) . '>Verwijderen</button></span>';
+            break;
+
+        case 'rows':
+            cm_admin_render_rows( $name, $f['columns'], cm_rows_decode( $value ), isset( $f['add_label'] ) ? $f['add_label'] : 'Rij toevoegen' );
+            break;
+
+        case 'checkgroup':
+            $opt = isset( $f['option'] ) ? $f['option'] : 'cm_settings';
+            echo '<fieldset><legend class="screen-reader-text"><span>' . esc_html( $f['label'] ) . '</span></legend>';
+            foreach ( $f['keys'] as $k => $label ) {
+                $kn  = $opt . '[' . $k . ']';
+                $kid = 'cm-f-' . $k;
+                echo '<input type="hidden" name="' . esc_attr( $kn ) . '" value="0">';
+                echo '<label for="' . esc_attr( $kid ) . '"><input type="checkbox" id="' . esc_attr( $kid ) . '" name="' . esc_attr( $kn ) . '" data-cm-key="' . esc_attr( $k ) . '" value="1"'
+                    . ( isset( $value[ $k ] ) && (string) $value[ $k ] === '1' ? ' checked' : '' ) . '> ' . esc_html( $label ) . '</label><br>';
+            }
+            echo '</fieldset>';
             break;
 
         case 'custom':

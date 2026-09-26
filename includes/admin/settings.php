@@ -81,9 +81,42 @@ function cm_sanitize_field_value( array $f, $raw, $current ) {
         case 'multiselect':
         case 'checkboxes':
             return is_array( $raw ) ? implode( ',', array_map( 'sanitize_text_field', cm_csv_list( $raw ) ) ) : sanitize_text_field( $raw );
+        case 'rows':
+            return (string) wp_json_encode( cm_sanitize_rows( $raw, $f['columns'] ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
         default:
             return sanitize_text_field( $raw );
     }
+}
+
+/**
+ * Rijen opschonen: alleen bekende kolommen, tekst via sanitize_text_field, URL's
+ * via esc_url_raw, keuzelijsten tegen hun opties. Rijen zonder ingevulde tekst
+ * (een keuzelijst telt niet mee) vervallen; de index begint opnieuw bij 0.
+ * Accepteert de array uit het formulier én de JSON-string van de oude admin.
+ */
+function cm_sanitize_rows( $raw, array $columns ) {
+    $clean = array();
+    foreach ( cm_rows_decode( $raw ) as $row ) {
+        if ( ! is_array( $row ) ) continue;
+        $out    = array();
+        $filled = false;
+        foreach ( $columns as $col => $c ) {
+            $type = isset( $c['type'] ) ? $c['type'] : 'text';
+            $v    = isset( $row[ $col ] ) && is_scalar( $row[ $col ] ) ? (string) $row[ $col ] : '';
+            if ( $type === 'url' ) {
+                $v = esc_url_raw( trim( $v ) );
+            } elseif ( $type === 'select' ) {
+                $keys = array_keys( $c['options'] );
+                $v    = in_array( $v, array_map( 'strval', $keys ), true ) ? $v : (string) $keys[0];
+            } else {
+                $v = sanitize_text_field( $v );
+            }
+            $out[ $col ] = $v;
+            if ( $v !== '' && $type !== 'select' ) $filled = true;
+        }
+        if ( $filled ) $clean[] = $out;
+    }
+    return $clean;
 }
 
 /**

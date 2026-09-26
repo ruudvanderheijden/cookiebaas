@@ -47,6 +47,12 @@ function cm_admin_action_form( $action, $label, array $args = array(), $confirm 
     return $html;
 }
 
+/** Link (GET) naar een actie, met nonce — voor downloads zoals CSV-exports. */
+function cm_admin_action_url( $action, array $args = array() ) {
+    $url = add_query_arg( array_merge( array( 'action' => 'cm_' . $action ), $args ), admin_url( 'admin-post.php' ) );
+    return wp_nonce_url( $url, 'cm_' . $action );
+}
+
 /** Registreer een actie: rechten + nonce controleren, callback uitvoeren, terug met melding. */
 function cm_admin_register_action( $action, $callback ) {
     add_action( 'admin_post_cm_' . $action, function () use ( $action, $callback ) {
