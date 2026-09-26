@@ -110,4 +110,14 @@ unset( $input_no_land['pv_land'] );
 $kept = cm_sanitize_privacy( $input_no_land, $existing_land );
 cm_assert( 'pv_land blijft België als het veld ontbreekt in de invoer', $kept['pv_land'] === 'België' );
 
+cm_test_group( 'Shortcode-regel en idempotentie' );
+$first = cm_privacy_sections()[0];
+ob_start(); call_user_func( $first['content'], array() ); $h = ob_get_clean();
+cm_assert( 'shortcode-regel linkt naar Beheer › Info', strpos( $h, 'page=cookiebaas-beheer&tab=info' ) !== false );
+update_option( 'cm_privacy', cm_default_privacy() );
+$once  = cm_privacy_sanitize_callback( cm_default_privacy() );
+update_option( 'cm_privacy', $once );
+$twice = cm_privacy_sanitize_callback( $once );
+cm_assert( 'twee keer opslaan = één keer (spec §5.3)', $once === $twice );
+
 exit( cm_test_summary() );

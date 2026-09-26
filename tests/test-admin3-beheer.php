@@ -43,6 +43,7 @@ function cm_license_get() { return $GLOBALS['cm_test_lic']; }
 function cm_license_is_valid() { return $GLOBALS['cm_test_valid']; }
 function cm_license_get_domain() { return 'example.test'; }
 function cm_license_activate( $key ) { $GLOBALS['cm_test_activations'][] = $key; return array( 'success' => true, 'message' => 'Licentie geactiveerd.' ); }
+function rest_url( $path = '' ) { return 'https://example.test/wp-json/' . $path; }
 
 class CM_Test_Wpdb {
     public $prefix  = 'wp_';
@@ -197,7 +198,7 @@ cm_assert( 'mislukte log → gemeld, niet "alles gelukt"', cm_reset_everything()
 $wpdb->result = 0;
 
 cm_test_group( 'Tabs Backup en Reset' );
-cm_assert( 'volgorde Licentie, Backup, Reset', array_keys( cm_tabs_beheer() ) === array( 'licentie', 'backup', 'reset' ) );
+cm_assert( 'volgorde Licentie, Backup, Reset', array_keys( cm_tabs_beheer() ) === array( 'licentie', 'backup', 'geavanceerd', 'reset', 'info' ) );
 ob_start(); cm_render_beheer_backup(); $h = ob_get_clean();
 cm_assert( 'download en upload', strpos( $h, 'action=cm_export_backup' ) !== false && strpos( $h, 'enctype="multipart/form-data"' ) !== false && strpos( $h, 'name="cm_backup"' ) !== false );
 ob_start(); cm_render_beheer_reset(); $h = ob_get_clean();
@@ -208,5 +209,35 @@ cm_assert( 'export_backup is geregistreerd', has_action( 'admin_post_cm_export_b
 cm_assert( 'import_backup is geregistreerd', has_action( 'admin_post_cm_import_backup' ) );
 cm_assert( 'reset_all is geregistreerd', has_action( 'admin_post_cm_reset_all' ) );
 cm_assert( 'license_reset is geregistreerd', has_action( 'admin_post_cm_license_reset' ) );
+
+cm_test_group( 'API-sleutel' );
+cm_assert( 'leeg of 40 hex-tekens wordt bewaard', cm_sanitize_api_key( '', 'oud' ) === '' && cm_sanitize_api_key( str_repeat( 'B', 40 ), 'oud' ) === str_repeat( 'b', 40 ) );
+cm_assert( 'iets anders → de oude sleutel blijft', cm_sanitize_api_key( '<script>', 'oud' ) === 'oud' && cm_sanitize_api_key( array(), 'oud' ) === 'oud' );
+$idx = cm_admin_field_index( 'cm_settings' );
+cm_assert( 'api_key staat op Beheer › Geavanceerd, met eigen sanitizer', isset( cm_tabs_beheer()['geavanceerd'], $idx['api_key'] ) && $idx['api_key']['sanitize'] === 'cm_sanitize_api_key' );
+update_option( 'cm_settings', array_merge( cm_default_settings(), array( 'api_key' => '' ) ) );
+cm_set_api_key( str_repeat( 'c', 40 ) );
+$full = get_option( 'cm_settings' );
+cm_assert( 'sleutel zetten', $full['api_key'] === str_repeat( 'c', 40 ) );
+cm_assert( 'gewoon opslaan laat een geldige sleutel staan (idempotent)', cm_sanitize_settings( $full, $full )['api_key'] === str_repeat( 'c', 40 ) );
+$own = array_merge( $full, array( 'api_key' => 'mijn-eigen-sleutel' ) );
+cm_assert( 'een zelfgekozen sleutel uit 2.x blijft staan', cm_sanitize_settings( $own, $own )['api_key'] === 'mijn-eigen-sleutel' );
+
+cm_test_group( 'Tab Geavanceerd' );
+cm_get_flush();
+ob_start(); cm_render_beheer_geavanceerd(); $h = ob_get_clean();
+cm_assert( 'endpoint, sleutel en beide acties', strpos( $h, 'wp-json/cookiebaas/v1/consent/' ) !== false && strpos( $h, str_repeat( 'c', 40 ) ) !== false && strpos( $h, 'value="cm_api_key_generate"' ) !== false && strpos( $h, 'value="cm_api_key_revoke"' ) !== false );
+cm_assert( 'geen formulier binnen een alinea', ! preg_match( '#<p>(?:(?!</p>).)*<form#s', $h ) );
+cm_set_api_key( '' );
+cm_get_flush();
+ob_start(); cm_render_beheer_geavanceerd(); $h = ob_get_clean();
+cm_assert( 'zonder sleutel: geen intrekknop, wel uitleg', strpos( $h, 'value="cm_api_key_revoke"' ) === false && strpos( $h, 'applicatiewachtwoord' ) !== false );
+
+cm_test_group( 'Tab Info' );
+cm_assert( 'volgorde van de tabs zoals in de spec', array_keys( cm_tabs_beheer() ) === array( 'licentie', 'backup', 'geavanceerd', 'reset', 'info' ) );
+ob_start(); cm_render_beheer_info(); $h = ob_get_clean();
+cm_assert( 'alle shortcodes', strpos( $h, '[cookiebaas_privacy]' ) !== false && strpos( $h, '[cookiebaas_cookies]' ) !== false && strpos( $h, '[cookiebaas_voorkeuren]' ) !== false );
+cm_assert( 'versie, disclaimer en contact', strpos( $h, CM_VERSION ) !== false && strpos( $h, 'Disclaimer' ) !== false && strpos( $h, 'cookiebaas.nl' ) !== false );
+cm_assert( 'snel aan de slag noemt de nieuwe menu’s', strpos( $h, 'Blokkering › Google' ) !== false && strpos( $h, 'Cookies &amp; scan' ) === false && strpos( $h, 'Instellingen' ) === false );
 
 exit( cm_test_summary() );

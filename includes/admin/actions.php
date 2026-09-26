@@ -24,6 +24,8 @@ function cm_admin_notice_messages() {
         'log-cleared'            => array( 'success', 'De consent log is leeggemaakt.' ),
         'reset-all-done'         => array( 'success', 'Alles is teruggezet naar de standaard. Elke bezoeker ziet de banner opnieuw.' ),
         'license-cleared'        => array( 'success', 'De licentiegegevens zijn van deze website gewist. De cookiescan pauzeert tot u opnieuw een licentie activeert.' ),
+        'api-key-created'        => array( 'success', 'Er is een nieuwe API-sleutel gemaakt. Zet hem in uw externe koppelingen.' ),
+        'api-key-revoked'        => array( 'success', 'De API-sleutel is ingetrokken.' ),
     );
 }
 

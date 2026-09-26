@@ -8,9 +8,19 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 function cm_tabs_beheer() {
     return array(
-        'licentie' => array( 'label' => 'Licentie', 'render' => 'cm_render_beheer_licentie' ),
-        'backup'   => array( 'label' => 'Backup', 'render' => 'cm_render_beheer_backup' ),
-        'reset'    => array( 'label' => 'Reset', 'render' => 'cm_render_beheer_reset' ),
+        'licentie'    => array( 'label' => 'Licentie', 'render' => 'cm_render_beheer_licentie' ),
+        'backup'      => array( 'label' => 'Backup', 'render' => 'cm_render_beheer_backup' ),
+        'geavanceerd' => array(
+            'label'    => 'Geavanceerd',
+            'render'   => 'cm_render_beheer_geavanceerd',
+            // Alleen voor het register en de sanitizer: de sleutel wordt nooit via een
+            // formulier gepost, alleen gezet door de acties Sleutel maken en Intrekken.
+            'sections' => array( array( 'fields' => array(
+                cm_field( 'api_key', 'custom', 'API-sleutel', array( 'sanitize' => 'cm_sanitize_api_key' ) ),
+            ) ) ),
+        ),
+        'reset'       => array( 'label' => 'Reset', 'render' => 'cm_render_beheer_reset' ),
+        'info'        => array( 'label' => 'Info', 'render' => 'cm_render_beheer_info' ),
     );
 }
 
@@ -200,6 +210,104 @@ function cm_render_beheer_reset() {
     echo '<div>' . cm_admin_action_form( 'reset_all', 'Alles resetten', array(), 'Alles resetten? Instellingen, cookielijst, privacyverklaring, consent log en licentie worden gewist. Dit kan niet ongedaan worden gemaakt.', 'button button-link-delete' ) . '</div>';
 }
 
+/**
+ * API-sleutel: leeg, of 40 hex-tekens zoals "Sleutel maken" die maakt. Iets
+ * anders laat de huidige sleutel staan, ook een zelfgekozen sleutel uit 2.x
+ * (WordPress haalt elke opslag van cm_settings door deze sanitizer).
+ */
+function cm_sanitize_api_key( $raw, $current ) {
+    if ( ! is_string( $raw ) ) return (string) $current;
+    $raw = strtolower( trim( $raw ) );
+    return ( $raw === '' || preg_match( '/^[a-f0-9]{40}$/', $raw ) ) ? $raw : (string) $current;
+}
+
+function cm_set_api_key( $key ) {
+    $s = get_option( 'cm_settings', array() );
+    $s = is_array( $s ) ? $s : array();
+    $s['api_key'] = (string) $key;
+    update_option( 'cm_settings', $s );
+}
+
+function cm_render_beheer_geavanceerd() {
+    $key      = (string) cm_get( 'api_key' );
+    $endpoint = rest_url( 'cookiebaas/v1/consent/' );
+    echo '<h2>REST API</h2>';
+    echo '<p>Controleer een toestemming vanuit een CRM, e-mailplatform of andere externe dienst. Het endpoint geeft de keuze terug zonder persoonsgegevens (geen IP-adres, geen browser).</p>';
+    echo '<table class="form-table" role="presentation"><tbody>';
+    echo '<tr><th scope="row">Endpoint</th><td><code>' . esc_html( $endpoint . '{consent_id}' ) . '</code></td></tr>';
+    echo '<tr><th scope="row">API-sleutel</th><td>';
+    if ( $key !== '' ) {
+        echo '<code>' . esc_html( $key ) . '</code>';
+        echo '<p class="description">Stuur de sleutel mee als HTTP-header <code>X-Cookiebaas-Key</code>.</p>';
+    } else {
+        echo '<p>Geen sleutel.</p><p class="description">Zonder sleutel is het endpoint alleen bereikbaar met een WordPress-applicatiewachtwoord.</p>';
+    }
+    echo '<div>' . cm_admin_action_form( 'api_key_generate', $key !== '' ? 'Nieuwe sleutel maken' : 'Sleutel maken', array(), $key !== '' ? 'Een nieuwe sleutel maken? De huidige sleutel werkt daarna niet meer.' : '' );
+    if ( $key !== '' ) {
+        echo ' ' . cm_admin_action_form( 'api_key_revoke', 'Intrekken', array(), 'De API-sleutel intrekken? Externe koppelingen die hem gebruiken, verliezen direct toegang.', 'button button-link-delete' );
+    }
+    echo '</div></td></tr>';
+    echo '</tbody></table>';
+
+    if ( $key !== '' ) {
+        echo '<h3>Voorbeeld</h3>';
+        echo '<pre><code>' . esc_html( 'curl -H "X-Cookiebaas-Key: ' . $key . '" "' . $endpoint . '{consent_id}"' ) . '</code></pre>';
+    }
+    echo '<h3>Voorbeeldantwoord</h3>';
+    echo '<pre><code>' . esc_html( "{\n  \"consent_id\": \"a1b2c3d4-...\",\n  \"status\": \"Geaccepteerd\",\n  \"method\": \"accept-all\",\n  \"analytics\": true,\n  \"marketing\": true,\n  \"config_hash\": \"a3f9d2b1c4e87f20\",\n  \"timestamp\": \"2026-03-17 10:25:00\",\n  \"verified\": true\n}" ) . '</code></pre>';
+    echo '<p class="description">Statuswaarden: <code>Geaccepteerd</code>, <code>Geweigerd</code>, <code>Aangepast</code>, <code>Terugkerend bezoek</code>. HTTP 404 als de consent-ID niet bestaat.</p>';
+}
+
+/** Tekst van de disclaimer: array( kop, alinea ). */
+function cm_disclaimer_paragraphs() {
+    return array(
+        array( '1. Geen juridisch advies', 'De Cookiebaas plugin is een technisch hulpmiddel en biedt geen juridisch advies. De plugin vervangt op geen enkele wijze de noodzaak om een gekwalificeerde juridisch adviseur te raadplegen over uw specifieke situatie met betrekking tot de AVG/GDPR, de ePrivacy-richtlijn, de Telecommunicatiewet of andere toepasselijke wet- en regelgeving. Het gebruik van deze plugin garandeert niet dat uw website voldoet aan geldende privacywetgeving.' ),
+        array( '2. “Zoals beschikbaar”', 'De Cookiebaas plugin wordt aangeboden “as is” en “as available”, zonder enige garantie van welke aard dan ook, uitdrukkelijk noch stilzwijgend. Dit omvat, maar is niet beperkt tot, garanties van verkoopbaarheid, geschiktheid voor een bepaald doel, niet-inbreuk, juistheid, volledigheid, of ononderbroken en foutloze werking.' ),
+        array( '3. Beperking van aansprakelijkheid', 'Ruud van der Heijden en eventuele bijdragers zijn in geen geval aansprakelijk voor enige directe, indirecte, incidentele, speciale, gevolg- of voorbeeldschade (inclusief maar niet beperkt tot boetes van toezichthouders, verlies van gegevens, gederfde winst, bedrijfsonderbreking of reputatieschade) die voortvloeit uit of verband houdt met het gebruik of het onvermogen tot gebruik van deze plugin, zelfs indien op de hoogte gesteld van de mogelijkheid van dergelijke schade.' ),
+        array( '4. Verantwoordelijkheid van de gebruiker', 'De website-eigenaar blijft te allen tijde zelf verantwoordelijk voor de naleving van privacywetgeving. Dit omvat onder meer: het correct configureren van de plugin, het actueel houden van de cookielijst en privacyverklaring, het testen of cookies daadwerkelijk geblokkeerd worden vóór consent, het inschakelen van een juridisch adviseur bij twijfel, en het periodiek controleren van de compliance-check.' ),
+        array( '5. Geen garantie op compliance', 'Hoewel de Cookiebaas plugin is ontworpen met de AVG, EDPB-richtlijnen en AP-handhavingscriteria als uitgangspunt, kan de ontwikkelaar niet garanderen dat de plugin in alle situaties en jurisdicties volledige compliance biedt. Wet- en regelgeving verandert regelmatig en de interpretatie ervan kan per toezichthouder en per rechtsgebied verschillen.' ),
+        array( '6. Diensten van derden', 'De plugin interageert met diensten van derden (Google Analytics, Google Tag Manager, YouTube, Vimeo, Meta/Facebook, etc.). De ontwikkelaar heeft geen controle over en is niet verantwoordelijk voor het gedrag, de cookiepraktijken of het privacybeleid van deze diensten. Het is de verantwoordelijkheid van de website-eigenaar om te controleren of het gebruik van deze diensten in overeenstemming is met de toepasselijke wetgeving.' ),
+        array( '7. Updates en ondersteuning', 'Er is geen verplichting tot het leveren van updates, bugfixes, beveiligingspatches of ondersteuning. Eventuele updates worden naar eigen inzicht van de ontwikkelaar beschikbaar gesteld.' ),
+        array( '8. Aanvaarding', 'Door deze plugin te installeren, te activeren en/of te gebruiken, verklaart u dat u deze disclaimer en de daarin vervatte beperkingen van aansprakelijkheid hebt gelezen, begrepen en aanvaard. Indien u niet akkoord gaat met deze voorwaarden, dient u de plugin onmiddellijk te deactiveren en te verwijderen.' ),
+    );
+}
+
+function cm_render_beheer_info() {
+    echo '<h2>Plugin</h2>';
+    echo '<table class="form-table" role="presentation"><tbody>';
+    echo '<tr><th scope="row">Versie</th><td>' . esc_html( CM_VERSION ) . '</td></tr>';
+    echo '<tr><th scope="row">Gemaakt door</th><td><a href="https://www.cookiebaas.nl/" target="_blank" rel="noopener">Ruud van der Heijden</a></td></tr>';
+    echo '<tr><th scope="row">Naam van de toestemmingscookie</th><td><code>cc_cm_consent</code></td></tr>';
+    echo '</tbody></table>';
+
+    echo '<h2>Snel aan de slag</h2><ol>';
+    foreach ( array(
+        'Vul onder Blokkering › Google uw GA4- of GTM-ID in.',
+        'Pas onder Banner de kleuren, teksten en weergave aan naar uw huisstijl.',
+        'Laad onder Cookies › Scannen de cookiedatabase en voer een scan uit.',
+        'Vul de Privacyverklaring in en plaats de shortcode [cookiebaas_privacy] op uw privacypagina.',
+        'Test: verwijder de cookie cc_cm_consent en controleer met de ontwikkelaarstools (F12) dat cookies pas na akkoord verschijnen.',
+    ) as $step ) {
+        echo '<li>' . esc_html( $step ) . '</li>';
+    }
+    echo '</ol>';
+
+    echo '<h2>Shortcodes</h2>';
+    echo '<table class="form-table" role="presentation"><tbody>';
+    echo '<tr><th scope="row">Volledige privacyverklaring</th><td><code>[cookiebaas_privacy]</code></td></tr>';
+    echo '<tr><th scope="row">Alleen de cookieparagraaf</th><td><code>[cookiebaas_cookies]</code></td></tr>';
+    echo '<tr><th scope="row">Pagina met cookievoorkeuren</th><td><code>[cookiebaas_voorkeuren]</code></td></tr>';
+    echo '</tbody></table>';
+
+    echo '<h2>Disclaimer en aansprakelijkheid</h2>';
+    foreach ( cm_disclaimer_paragraphs() as $p ) {
+        echo '<h3>' . esc_html( $p[0] ) . '</h3><p>' . esc_html( $p[1] ) . '</p>';
+    }
+
+    echo '<h2>Contact en ondersteuning</h2>';
+    echo '<p>Voor vragen: <a href="https://www.cookiebaas.nl/" target="_blank" rel="noopener">cookiebaas.nl</a>.</p>';
+}
+
 if ( function_exists( 'cm_admin_register_action' ) ) {
     cm_admin_register_action( 'license_activate', function () {
         cm_license_flash( cm_license_activate_request( isset( $_POST['license_key'] ) ? sanitize_text_field( wp_unslash( $_POST['license_key'] ) ) : '' ) );
@@ -243,5 +351,13 @@ if ( function_exists( 'cm_admin_register_action' ) ) {
     cm_admin_register_action( 'license_reset', function () {
         cm_license_reset_local();
         return 'license-cleared';
+    } );
+    cm_admin_register_action( 'api_key_generate', function () {
+        cm_set_api_key( bin2hex( random_bytes( 20 ) ) );
+        return 'api-key-created';
+    } );
+    cm_admin_register_action( 'api_key_revoke', function () {
+        cm_set_api_key( '' );
+        return 'api-key-revoked';
     } );
 }

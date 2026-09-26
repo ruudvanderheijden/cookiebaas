@@ -5,7 +5,6 @@
  * De belangrijkste test van de herindeling: elke instelling uit
  * cm_default_settings() staat op precies één tab, of in een expliciete
  * lijst. Zo kan er bij het verhuizen niets verdwijnen of dubbel staan.
- * Plan 2 en 3 verwijderen sleutels uit $pending tot die leeg is.
  */
 
 function sanitize_text_field( $s ) { return is_scalar( $s ) ? trim( strip_tags( (string) $s ) ) : ''; }
@@ -19,14 +18,13 @@ foreach ( glob( CM_PLUGIN_ROOT . '/includes/admin/*.php' ) as $file ) require $f
 require CM_PLUGIN_ROOT . '/includes/privacy.php';
 
 $no_ui   = array( 'txt_embed_btn', 'txt_embed_btn_en', 'color_always_on_bg' );          // dood, sleutel blijft voor de data
-$pending = array( 'api_key' );                                                            // plan 3: Beheer › Geavanceerd (Taak 6)
 
 cm_test_group( 'Elke instelling precies één keer' );
 $keys   = array_map( function ( $f ) { return $f['key']; }, cm_admin_field_list( 'cm_settings' ) );
 $counts = array_count_values( $keys );
 $dups   = array_keys( array_filter( $counts, function ( $n ) { return $n > 1; } ) );
 cm_assert( 'geen sleutel op twee plekken' . ( $dups ? ' — dubbel: ' . implode( ', ', $dups ) : '' ), ! $dups );
-$missing = array_diff( array_keys( cm_default_settings() ), $keys, $no_ui, $pending );
+$missing = array_diff( array_keys( cm_default_settings() ), $keys, $no_ui );
 cm_assert( 'geen instelling zonder plek' . ( $missing ? ' — ontbreekt: ' . implode( ', ', $missing ) : '' ), ! $missing );
 $unknown = array_diff( $keys, array_keys( cm_default_settings() ) );
 cm_assert( 'geen veld zonder default (zou nooit opgeslagen worden)' . ( $unknown ? ' — onbekend: ' . implode( ', ', $unknown ) : '' ), ! $unknown );

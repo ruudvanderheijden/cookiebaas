@@ -93,7 +93,7 @@ function cm_privacy_sections() {
             $url = function_exists( 'get_privacy_policy_url' ) ? get_privacy_policy_url() : '';
             echo '<p>Plaats de shortcode <code>[cookiebaas_privacy]</code> op uw privacypagina. De cookietabel staat ook los beschikbaar als <code>[cookiebaas_cookies]</code>. Lege velden worden niet getoond.';
             if ( $url ) echo ' Uw privacypagina: <a href="' . esc_url( $url ) . '">' . esc_html( $url ) . '</a>.';
-            echo '</p>';
+            echo ' Alle shortcodes staan onder <a href="' . esc_url( admin_url( 'admin.php?page=cookiebaas-beheer&tab=info' ) ) . '">Beheer › Info</a>.</p>';
         } ),
         array( 'title' => 'Bedrijfsgegevens', 'fields' => array(
             $p( 'pv_bedrijfsnaam', 'text', 'Bedrijfsnaam' ),
