@@ -14,8 +14,6 @@ function cm_admin_verify_ajax( $action ) {
     }
     $nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
     if ( wp_verify_nonce( $nonce, 'cm_' . $action ) ) return;
-    // ponytail: de oude admin (tot plan 3) stuurt nog de gedeelde nonce; weg met de oude admin
-    if ( wp_verify_nonce( $nonce, 'cm_save_settings' ) ) return;
     wp_send_json_error( array( 'msg' => 'De sessie is verlopen. Herlaad de pagina en probeer het opnieuw.' ), 403 );
 }
 

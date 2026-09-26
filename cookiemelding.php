@@ -19,7 +19,7 @@ define( 'CM_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'CM_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 
 require_once CM_PLUGIN_DIR . 'includes/defaults.php';
-require_once CM_PLUGIN_DIR . 'includes/admin.php';
+require_once CM_PLUGIN_DIR . 'includes/consent.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/menu.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/fields.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/settings.php';
@@ -29,6 +29,7 @@ require_once CM_PLUGIN_DIR . 'includes/admin/preview.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/page-blokkering.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/page-cookies.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/ajax.php';
+require_once CM_PLUGIN_DIR . 'includes/admin/scan.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/page-privacy.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/page-overzicht.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/page-log.php';
@@ -397,7 +398,7 @@ function cm_run_auto_scan() {
             $site,
             count($new_cookies),
             $rows,
-            admin_url('admin.php?page=cookiemelding-cookies')
+            admin_url( 'admin.php?page=cookiebaas-cookies&tab=lijst' )
         );
 
         wp_mail( $email, $subject, $body );
@@ -463,67 +464,6 @@ function cm_perform_background_scan() {
         'existing_list' => $existing_list,
     );
 }
-
-// AJAX handler om scan-instellingen op te slaan vanaf de cookielijst-pagina
-add_action( 'wp_ajax_cm_save_scan_settings', 'cm_ajax_save_scan_settings' );
-function cm_ajax_save_scan_settings() {
-    check_ajax_referer( 'cm_save_settings', 'nonce' );
-    if ( ! current_user_can('manage_options') ) wp_die();
-
-    $settings = get_option( 'cm_settings', array() );
-    $mode     = sanitize_text_field( $_POST['auto_scan_mode'] ?? 'off' );
-    $interval = in_array( (string)($_POST['auto_scan_interval'] ?? '30'), array('10','30','180') )
-                ? (string)$_POST['auto_scan_interval'] : '30';
-    $email    = sanitize_email( $_POST['auto_scan_email'] ?? '' );
-
-    $settings['auto_scan_mode']     = $mode;
-    $settings['auto_scan_interval'] = $interval;
-    $settings['auto_scan_email']    = $email;
-    update_option( 'cm_settings', $settings );
-
-    // Cron herplannen (alleen als er nog geen timer loopt)
-    cm_maybe_schedule_auto_scan_cron();
-
-    $next = get_option('cm_auto_scan_next','');
-    $next_ts = $next ? strtotime($next) : 0;
-    wp_send_json_success( array(
-        'message'        => 'Opgeslagen.',
-        'next'           => $next ? date_i18n( get_option('date_format'), $next_ts ) : '',
-        'next_ts'        => $next_ts,
-        'next_formatted' => $next ? date_i18n( get_option('date_format') . ' ' . get_option('time_format'), $next_ts ) : '',
-    ));
-}
-
-// AJAX handler voor reset timer button - forceert timer reset
-add_action( 'wp_ajax_cm_reset_scan_timer', 'cm_ajax_reset_scan_timer' );
-function cm_ajax_reset_scan_timer() {
-    check_ajax_referer( 'cm_save_settings', 'nonce' );
-    if ( ! current_user_can('manage_options') ) wp_die();
-
-    $settings = get_option( 'cm_settings', array() );
-    $mode     = sanitize_text_field( $_POST['auto_scan_mode'] ?? 'off' );
-    $interval = in_array( (string)($_POST['auto_scan_interval'] ?? '30'), array('10','30','180') )
-                ? (string)$_POST['auto_scan_interval'] : '30';
-    $email    = sanitize_email( $_POST['auto_scan_email'] ?? '' );
-
-    $settings['auto_scan_mode']     = $mode;
-    $settings['auto_scan_interval'] = $interval;
-    $settings['auto_scan_email']    = $email;
-    update_option( 'cm_settings', $settings );
-
-    // Force reset van de timer
-    cm_force_reset_auto_scan_cron();
-
-    $next = get_option('cm_auto_scan_next','');
-    $next_ts = $next ? strtotime($next) : 0;
-    wp_send_json_success( array(
-        'message'        => 'Timer gereset.',
-        'next'           => $next ? date_i18n( get_option('date_format'), $next_ts ) : '',
-        'next_ts'        => $next_ts,
-        'next_formatted' => $next ? date_i18n( get_option('date_format') . ' ' . get_option('time_format'), $next_ts ) : '',
-    ));
-}
-
 
 /* ================================================================
    REST API — Consent verificatie

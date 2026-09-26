@@ -37,7 +37,7 @@ require CM_PLUGIN_ROOT . '/includes/admin/menu.php';
 require CM_PLUGIN_ROOT . '/includes/admin/fields.php';
 require CM_PLUGIN_ROOT . '/includes/admin/settings.php';
 require CM_PLUGIN_ROOT . '/includes/admin/actions.php';
-require CM_PLUGIN_ROOT . '/includes/admin.php';
+require CM_PLUGIN_ROOT . '/includes/admin/scan.php';
 require CM_PLUGIN_ROOT . '/includes/admin/page-cookies.php';
 require CM_PLUGIN_ROOT . '/includes/admin/ajax.php';
 
@@ -118,7 +118,7 @@ function verify_result( $nonce ) {
     try { cm_admin_verify_ajax( 'scan' ); return 'ok'; } catch ( CM_Test_Json $e ) { return 'fout'; }
 }
 cm_assert( 'eigen nonce (cm_scan) wordt geaccepteerd', verify_result( 'nonce-cm_scan' ) === 'ok' );
-cm_assert( 'gedeelde nonce van de oude admin wordt nog geaccepteerd', verify_result( 'nonce-cm_save_settings' ) === 'ok' );
+cm_assert( 'gedeelde nonce van de oude admin wordt niet meer geaccepteerd', verify_result( 'nonce-cm_save_settings' ) === 'fout' );
 cm_assert( 'andere nonce wordt geweigerd', verify_result( 'nonce-cm_scan_add' ) === 'fout' && verify_result( '' ) === 'fout' );
 $GLOBALS['cm_test_can'] = false;
 cm_assert( 'zonder rechten geweigerd, ook met geldige nonce', verify_result( 'nonce-cm_scan' ) === 'fout' );

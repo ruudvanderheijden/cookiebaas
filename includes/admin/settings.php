@@ -3,8 +3,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 /* ================================================================
    OPSLAAN — Settings API + type-bewuste sanitizing + cache-purge.
-   Gedeeld door de nieuwe admin (options.php) en de oude admin (AJAX),
-   tot plan 3 de oude admin verwijdert.
+   Ook migraties, resets, import en de automatische scan schrijven via
+   update_option() en lopen dus door dezelfde callbacks.
 ================================================================ */
 
 add_action( 'admin_init', 'cm_admin_register_settings' );

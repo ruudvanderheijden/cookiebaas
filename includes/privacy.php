@@ -409,19 +409,6 @@ function cm_render_cookies_shortcode() {
     return ob_get_clean();
 }
 
-/* ================================================================
-   AJAX — Privacy instellingen opslaan
-================================================================ */
-add_action( 'wp_ajax_cm_save_privacy', 'cm_ajax_save_privacy' );
-function cm_ajax_save_privacy() {
-    check_ajax_referer( 'cm_save_settings', 'nonce' );
-    if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang' );
-
-    $existing = get_option( 'cm_privacy', array() );
-    update_option( 'cm_privacy', cm_sanitize_privacy( wp_unslash( $_POST ), is_array( $existing ) ? $existing : array() ) );
-    wp_send_json_success( array( 'message' => 'Privacyverklaring opgeslagen.' ) );
-}
-
 /**
  * Sanitize de privacyverklaring (opslaan en import). Velden die het register
  * kent als kleur, keuzelijst, rijtabel of checkbox gaan type-bewust

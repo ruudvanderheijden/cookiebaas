@@ -19,8 +19,9 @@ $fail = 0;
 
 fwrite( STDOUT, "\n=== 1. PHP lint ===\n" );
 $lint_targets = array_merge(
-    array( $root . '/cookiemelding.php' ),
-    glob( $root . '/includes/*.php' )
+    array( $root . '/cookiemelding.php', $root . '/uninstall.php' ),
+    glob( $root . '/includes/*.php' ),
+    glob( $root . '/includes/admin/*.php' )
 );
 foreach ( $lint_targets as $file ) {
     $out = array(); $code = 0;

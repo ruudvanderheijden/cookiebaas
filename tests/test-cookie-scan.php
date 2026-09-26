@@ -14,7 +14,7 @@
 
 require __DIR__ . '/bootstrap.php';
 require CM_PLUGIN_ROOT . '/includes/defaults.php';
-require CM_PLUGIN_ROOT . '/includes/admin.php';
+require CM_PLUGIN_ROOT . '/includes/admin/scan.php';
 
 // --- Prefix-matcher --------------------------------------------------------
 cm_test_group( 'Prefix-matcher (_ en -)' );
