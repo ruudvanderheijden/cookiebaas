@@ -22,6 +22,7 @@ function wp_nonce_url( $url, $action ) { return $url . ( strpos( $url, '?' ) ===
 function wp_nonce_field( $action, $name = '_wpnonce', $referer = true, $echo = true ) { $f = '<input type="hidden" name="' . $name . '" value="nonce-' . $action . '">'; if ( $echo ) echo $f; return $f; }
 function date_i18n( $format, $ts = null ) { return 'datum'; }
 function wp_date( $format, $ts = null ) { return 'wpdate:' . $ts; }
+function current_time( $type, $gmt = 0 ) { return $type === 'timestamp' ? time() : date( $type === 'mysql' ? 'Y-m-d H:i:s' : 'c' ); }
 function get_current_user_id() { return 7; }
 function get_current_screen() { return (object) array( 'id' => $GLOBALS['cm_test_screen'] ); }
 $GLOBALS['cm_test_transients'] = array();
@@ -113,5 +114,81 @@ $GLOBALS['cm_test_screen'] = 'toplevel_page_cookiebaas';
 ob_start(); cm_admin_license_notice(); $h = ob_get_clean();
 cm_assert( 'geldige licentie → geen melding', $h === '' );
 $GLOBALS['cm_test_valid'] = false;
+
+cm_test_group( 'Backup maken' );
+update_option( 'cm_settings', array_merge( cm_default_settings(), array( 'api_key' => str_repeat( 'a', 40 ), 'gtm_container_id' => 'GTM-ABC' ) ) );
+$b = cm_backup_payload();
+cm_assert( 'metadata van Cookiebaas', $b['_meta']['plugin'] === 'cookiebaas' && isset( $b['_meta']['version'], $b['_meta']['exported'] ) );
+cm_assert( 'instellingen zonder API-sleutel', $b['settings']['gtm_container_id'] === 'GTM-ABC' && ! array_key_exists( 'api_key', $b['settings'] ) );
+cm_assert( 'cookielijst en privacy gaan mee', array_key_exists( 'cookie_list', $b ) && array_key_exists( 'privacy', $b ) );
+
+cm_test_group( 'Ongeldig bestand wijzigt niets (Review Focus 2)' );
+$snap = $GLOBALS['cm_test_options'];
+$junk = array(
+    'leeg'            => '',
+    'geen JSON'       => 'geen json',
+    'zonder _meta'    => json_encode( array( 'settings' => array( 'gtm_container_id' => 'X' ) ) ),
+    'andere plugin'   => json_encode( array( '_meta' => array( 'plugin' => 'andere-plugin' ), 'settings' => array( 'gtm_container_id' => 'X' ) ) ),
+    'zonder inhoud'   => json_encode( array( '_meta' => array( 'plugin' => 'cookiebaas' ) ) ),
+);
+foreach ( $junk as $label => $raw ) {
+    $r = cm_import_backup( $raw );
+    cm_assert( "geweigerd: $label", $r['ok'] === false && $r['message'] !== '' );
+}
+cm_assert( 'geen enkele option gewijzigd', $GLOBALS['cm_test_options'] === $snap );
+
+cm_test_group( 'Import gaat door dezelfde sanitizing als opslaan' );
+$purges = $GLOBALS['cm_test_purges'];
+$export = array(
+    '_meta'       => array( 'plugin' => 'cookiemelding', 'version' => '2.4.4' ),
+    'settings'    => array( 'txt_banner_title' => '<script>alert(1)</script>Hallo', 'txt_banner_body' => '<a href="/p">Lees</a><script>x</script>', 'onbekende_sleutel' => 'x', 'google_load_default' => '1', 'analytics_default' => '0' ),
+    'cookie_list' => array( array( 'name' => '<b>_ga</b>', 'category' => 'bogus' ), array( 'name' => '' ) ),
+    'privacy'     => array( 'pv_doorgifte' => "A\nB", 'pv_bedrijfsnaam' => '<i>X</i>' ),
+);
+$r = cm_import_backup( json_encode( $export ) );
+$s = get_option( 'cm_settings' );
+cm_assert( 'import slaagt, ook een oude export (cookiemelding)', $r['ok'] === true && strpos( $r['message'], 'instellingen' ) !== false );
+cm_assert( 'script-tag uit tekstveld verwijderd', $s['txt_banner_title'] === 'alert(1)Hallo' );
+cm_assert( 'HTML-veld houdt link, verliest script', $s['txt_banner_body'] === '<a href="/p">Lees</a>x' );
+cm_assert( 'onbekende sleutel niet opgeslagen', ! array_key_exists( 'onbekende_sleutel', $s ) );
+cm_assert( 'ontbrekende sleutels krijgen de standaard', $s['gtm_container_id'] === '' );
+cm_assert( 'google_load_default forceert analytics_default', (int) $s['analytics_default'] === 1 );
+cm_assert( 'de huidige API-sleutel blijft staan', $s['api_key'] === str_repeat( 'a', 40 ) );
+$cl = get_option( 'cm_cookie_list' );
+cm_assert( 'cookielijst gesanitized: lege naam weg, tags weg, categorie gevalideerd', count( $cl ) === 1 && $cl[0]['name'] === '_ga' && $cl[0]['category'] === 'functional' );
+$pv = get_option( 'cm_privacy' );
+cm_assert( 'privacy: regeleinde behouden, tags weg', $pv['pv_doorgifte'] === "A\nB" && $pv['pv_bedrijfsnaam'] === 'X' );
+cm_assert( 'privacy: ontbrekende checkbox krijgt de standaard', $pv['pv_ap_tonen'] === cm_default_privacy()['pv_ap_tonen'] );
+cm_assert( 'paginacache geleegd na import', $GLOBALS['cm_test_purges'] > $purges );
+
+cm_test_group( 'Ongeldige waarde in de backup → melding' );
+$GLOBALS['cm_test_errors'] = array();
+$r = cm_import_backup( json_encode( array( '_meta' => array( 'plugin' => 'cookiebaas' ), 'settings' => array( 'color_popup_bg' => 'rood' ) ) ) );
+cm_assert( 'import slaagt, met een waarschuwing', $r['ok'] === true && strpos( $r['message'], 'ongeldig' ) !== false );
+cm_assert( 'ongeldige kleur wordt de standaard', get_option( 'cm_settings' )['color_popup_bg'] === cm_default_settings()['color_popup_bg'] );
+
+cm_test_group( 'Alles resetten (Review Focus 4)' );
+update_option( 'cm_settings', array_merge( cm_default_settings(), array( 'gtm_container_id' => 'GTM-WEG' ) ) );
+update_option( 'cm_cookie_list', array( array( 'name' => 'x' ) ) );
+update_option( 'cm_license_data', array( 'key' => 'K' ) );
+update_option( 'cm_consent_version', 2 );
+$wpdb->result = 0;
+cm_assert( 'alles gelukt → geen fouten', cm_reset_everything() === array() );
+cm_assert( 'instellingen terug naar de standaard', get_option( 'cm_settings' )['gtm_container_id'] === '' );
+cm_assert( 'cookielijst leeg', get_option( 'cm_cookie_list' ) === array() );
+cm_assert( 'privacy terug naar de standaard', get_option( 'cm_privacy' ) === cm_default_privacy() );
+cm_assert( 'consent log leeggemaakt', strpos( end( $wpdb->queries ), 'TRUNCATE' ) === 0 );
+cm_assert( 'iedereen kiest opnieuw', (int) get_option( 'cm_consent_version' ) === 3 );
+cm_assert( 'licentie lokaal gewist', get_option( 'cm_license_data' ) === false );
+$wpdb->result = false;
+cm_assert( 'mislukte log → gemeld, niet "alles gelukt"', cm_reset_everything() === array( 'consent log' ) );
+$wpdb->result = 0;
+
+cm_test_group( 'Tabs Backup en Reset' );
+cm_assert( 'volgorde Licentie, Backup, Reset', array_keys( cm_tabs_beheer() ) === array( 'licentie', 'backup', 'reset' ) );
+ob_start(); cm_render_beheer_backup(); $h = ob_get_clean();
+cm_assert( 'download en upload', strpos( $h, 'action=cm_export_backup' ) !== false && strpos( $h, 'enctype="multipart/form-data"' ) !== false && strpos( $h, 'name="cm_backup"' ) !== false );
+ob_start(); cm_render_beheer_reset(); $h = ob_get_clean();
+cm_assert( 'alles resetten en licentie wissen, met bevestiging', strpos( $h, 'value="cm_reset_all"' ) !== false && strpos( $h, 'value="cm_license_reset"' ) !== false && substr_count( $h, 'data-cm-confirm=' ) === 2 );
 
 exit( cm_test_summary() );

@@ -9,6 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 function cm_tabs_beheer() {
     return array(
         'licentie' => array( 'label' => 'Licentie', 'render' => 'cm_render_beheer_licentie' ),
+        'backup'   => array( 'label' => 'Backup', 'render' => 'cm_render_beheer_backup' ),
+        'reset'    => array( 'label' => 'Reset', 'render' => 'cm_render_beheer_reset' ),
     );
 }
 
@@ -79,6 +81,107 @@ function cm_admin_license_notice() {
     echo '<div class="notice notice-warning"><p><strong>Cookiebaas:</strong> ' . esc_html( $text ) . ' <a href="' . esc_url( cm_admin_page_url( 'cookiebaas-beheer', 'licentie' ) ) . '">' . esc_html( $link ) . '</a></p></div>';
 }
 
+/** Inhoud van de backup: alles wat de admin instelt, zonder API-sleutel en licentie. */
+function cm_backup_payload() {
+    $settings = get_option( 'cm_settings', cm_default_settings() );
+    $settings = is_array( $settings ) ? $settings : array();
+    unset( $settings['api_key'] );
+    return array(
+        '_meta'       => array(
+            'plugin'   => 'cookiebaas',
+            'version'  => CM_VERSION,
+            'exported' => current_time( 'c' ),
+            'site'     => get_bloginfo( 'url' ),
+        ),
+        'settings'    => $settings,
+        'cookie_list' => get_option( 'cm_cookie_list', array() ),
+        'privacy'     => get_option( 'cm_privacy', cm_default_privacy() ),
+    );
+}
+
+/**
+ * Backup terugzetten. Een ongeldig bestand schrijft niets. Alles gaat door
+ * dezelfde sanitizers als opslaan; ongeldige waarden worden de standaard.
+ * De huidige API-sleutel blijft staan: die zit niet in een backup.
+ */
+function cm_import_backup( $raw ) {
+    $data = is_string( $raw ) && $raw !== '' ? json_decode( $raw, true ) : null;
+    $meta = is_array( $data ) && isset( $data['_meta'] ) && is_array( $data['_meta'] ) ? $data['_meta'] : array();
+    if ( ! isset( $meta['plugin'] ) || ! in_array( $meta['plugin'], array( 'cookiebaas', 'cookiemelding' ), true ) ) {
+        return array( 'ok' => false, 'message' => 'Dit is geen backup van Cookiebaas. Er is niets gewijzigd.' );
+    }
+    $has = function ( $k ) use ( $data ) { return isset( $data[ $k ] ) && is_array( $data[ $k ] ); };
+    if ( ! $has( 'settings' ) && ! $has( 'cookie_list' ) && ! $has( 'privacy' ) ) {
+        return array( 'ok' => false, 'message' => 'De backup bevat geen instellingen, cookielijst of privacyverklaring. Er is niets gewijzigd.' );
+    }
+
+    $errors = count( get_settings_errors() );
+    $done   = array();
+    if ( $has( 'settings' ) ) {
+        $base = array_merge( cm_default_settings(), array( 'api_key' => (string) cm_get( 'api_key' ) ) );
+        update_option( 'cm_settings', cm_sanitize_settings( $data['settings'], $base ) );
+        $done[] = 'instellingen';
+    }
+    if ( $has( 'cookie_list' ) ) {
+        $list = cm_sanitize_cookie_list( $data['cookie_list'] );
+        update_option( 'cm_cookie_list', $list );
+        $done[] = count( $list ) === 1 ? '1 cookie' : count( $list ) . ' cookies';
+    }
+    if ( $has( 'privacy' ) ) {
+        update_option( 'cm_privacy', cm_sanitize_privacy( array_merge( cm_default_privacy(), $data['privacy'] ) ) );
+        $done[] = 'privacyverklaring';
+    }
+    $message = 'Teruggezet: ' . implode( ', ', $done ) . '.';
+    if ( count( get_settings_errors() ) > $errors ) {
+        $message .= ' Sommige waarden in de backup waren ongeldig; daar staat nu de standaardwaarde.';
+    }
+    return array( 'ok' => true, 'message' => $message );
+}
+
+function cm_license_reset_local() {
+    delete_option( 'cm_license_data' );
+    delete_option( 'cm_license_api_url' );
+}
+
+/** Zet alles terug. Geeft de onderdelen terug die mislukten (leeg = alles gelukt). */
+function cm_reset_everything() {
+    $failed = array();
+    update_option( 'cm_settings', cm_default_settings() );
+    update_option( 'cm_cookie_list', array() );
+    update_option( 'cm_privacy', cm_default_privacy() );
+    if ( ! cm_log_clear() ) $failed[] = 'consent log';
+    cm_bump_consent_version( 'Alles gereset' );
+    cm_license_reset_local();
+    return $failed;
+}
+
+function cm_render_beheer_backup() {
+    echo '<h2>Backup maken</h2>';
+    echo '<p>Download de instellingen, de cookielijst en de privacyverklaring als één JSON-bestand: als backup, of om over te zetten naar een andere website. De consent log, de cookiedatabase, de licentie en de API-sleutel gaan niet mee.</p>';
+    echo '<p><a class="button button-primary" href="' . esc_url( cm_admin_action_url( 'export_backup' ) ) . '">Backup downloaden (.json)</a></p>';
+
+    echo '<h2>Backup terugzetten</h2>';
+    echo '<p>Zet een eerder gemaakte backup terug. Ongeldige waarden worden de standaardwaarde; een bestand dat geen backup van Cookiebaas is, wijzigt niets.</p>';
+    echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" enctype="multipart/form-data" class="cm-action-form" data-cm-confirm="' . esc_attr( 'De huidige instellingen, cookielijst en privacyverklaring worden overschreven door de backup. Doorgaan?' ) . '">';
+    echo '<input type="hidden" name="action" value="cm_import_backup">';
+    wp_nonce_field( 'cm_import_backup' );
+    echo '<p><label for="cm-backup-file">Backupbestand (.json)</label><br><input type="file" id="cm-backup-file" name="cm_backup" accept=".json,application/json" required></p>';
+    echo '<button type="submit" class="button">Terugzetten en overschrijven</button>';
+    echo '</form>';
+}
+
+function cm_render_beheer_reset() {
+    echo '<p>Losse onderdelen zet u op hun eigen plek terug: de kleuren onder Banner › Vormgeving, de cookielijst onder Cookies, de privacyverklaring op de pagina Privacyverklaring, en de consent log onder Consent log › Bewaren en opnieuw vragen.</p>';
+
+    echo '<h2>Licentie lokaal wissen</h2>';
+    echo '<p>Wist de licentiegegevens op deze website, zonder de licentieserver te benaderen. Gebruik dit als deactiveren niet lukt. De cookiebanner en de scriptblokkering blijven werken; de cookiescan pauzeert.</p>';
+    echo '<div>' . cm_admin_action_form( 'license_reset', 'Licentie lokaal wissen', array(), 'De licentiegegevens op deze website wissen?' ) . '</div>';
+
+    echo '<h2>Alles resetten</h2>';
+    echo '<p>Zet alles in één keer terug. De instellingen (ook de API-sleutel), de cookielijst en de privacyverklaring gaan naar de standaard, de consent log wordt leeggemaakt, elke bezoeker ziet de banner opnieuw en de licentie wordt lokaal gewist. Dit kan niet ongedaan worden gemaakt.</p>';
+    echo '<div>' . cm_admin_action_form( 'reset_all', 'Alles resetten', array(), 'Alles resetten? Instellingen, cookielijst, privacyverklaring, consent log en licentie worden gewist. Dit kan niet ongedaan worden gemaakt.', 'button button-link-delete' ) . '</div>';
+}
+
 if ( function_exists( 'cm_admin_register_action' ) ) {
     cm_admin_register_action( 'license_activate', function () {
         cm_license_flash( cm_license_activate_request( isset( $_POST['license_key'] ) ? sanitize_text_field( wp_unslash( $_POST['license_key'] ) ) : '' ) );
@@ -93,5 +196,34 @@ if ( function_exists( 'cm_admin_register_action' ) ) {
     cm_admin_register_action( 'license_deactivate', function () {
         cm_license_flash( cm_license_deactivate() );
         return '';
+    } );
+    cm_admin_register_action( 'export_backup', function () {
+        nocache_headers();
+        header( 'Content-Type: application/json; charset=utf-8' );
+        header( 'Content-Disposition: attachment; filename="cookiebaas-backup-' . wp_date( 'Y-m-d' ) . '.json"' );
+        echo wp_json_encode( cm_backup_payload(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+        exit;
+    } );
+    cm_admin_register_action( 'import_backup', function () {
+        $f   = isset( $_FILES['cm_backup'] ) && is_array( $_FILES['cm_backup'] ) ? $_FILES['cm_backup'] : array();
+        $ok  = isset( $f['error'], $f['size'], $f['tmp_name'] ) && (int) $f['error'] === UPLOAD_ERR_OK
+            && (int) $f['size'] <= MB_IN_BYTES && is_uploaded_file( $f['tmp_name'] );
+        if ( ! $ok ) {
+            cm_admin_flash( 'error', 'Kies een backupbestand (.json, maximaal 1 MB). Er is niets gewijzigd.' );
+            return '';
+        }
+        $r = cm_import_backup( (string) file_get_contents( $f['tmp_name'] ) );
+        cm_admin_flash( $r['ok'] ? ( strpos( $r['message'], 'ongeldig' ) !== false ? 'warning' : 'success' ) : 'error', $r['message'] );
+        return '';
+    } );
+    cm_admin_register_action( 'reset_all', function () {
+        $failed = cm_reset_everything();
+        if ( ! $failed ) return 'reset-all-done';
+        cm_admin_flash( 'error', 'Niet gelukt: ' . implode( ', ', $failed ) . '. De rest is wel teruggezet.' );
+        return '';
+    } );
+    cm_admin_register_action( 'license_reset', function () {
+        cm_license_reset_local();
+        return 'license-cleared';
     } );
 }

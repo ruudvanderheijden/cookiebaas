@@ -22,6 +22,8 @@ function cm_admin_notice_messages() {
         'log-none-selected'   => array( 'info',    'Er is niets geselecteerd. Vink eerst de registraties aan die u wilt verwijderen.' ),
         'consent-version-bumped' => array( 'success', 'De consent-versie is verhoogd. Elke bezoeker ziet de banner opnieuw.' ),
         'log-cleared'            => array( 'success', 'De consent log is leeggemaakt.' ),
+        'reset-all-done'         => array( 'success', 'Alles is teruggezet naar de standaard. Elke bezoeker ziet de banner opnieuw.' ),
+        'license-cleared'        => array( 'success', 'De licentiegegevens zijn van deze website gewist. De cookiescan pauzeert tot u opnieuw een licentie activeert.' ),
     );
 }
 

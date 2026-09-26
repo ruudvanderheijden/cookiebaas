@@ -23,7 +23,7 @@ php tests/test-cache-safety.php
 
 | Suite | Borgt |
 |-------|-------|
-| `test-admin-fixes.php` | Admin-fixes v2.4.5: reset-handler geregistreerd, regeleinden privacyverklaring, categorie automatische scan, kleur-defaults geldig voor `input type=color`, import gaat door de sanitizing, cache-purge na elke inhoudswijziging, serverside logfilter. |
+| `test-admin-fixes.php` | Admin-fixes v2.4.5 die buiten de nieuwe admin vallen (privacy-regeleinden, categorie bij de automatische scan, embeds "none"). Reset, import, logfilter en cache-purge worden sinds 3.0 bij hun nieuwe plek getest. |
 | `test-admin3-frame.php` | Nieuwe admin: tab-whitelist, en broncheck (geen `style="`, emoji of hex-kleuren in `includes/admin/`). |
 | `test-admin3-fields.php` | Renderer: label/for, verborgen 0 bij checkboxes, kleurvelden, optionele kleuren, show_if, checkboxlijsten. |
 | `test-admin3-settings.php` | Type-bewuste sanitizing, gedeeltelijke tab-invoer, idempotentie, Settings API-callback, cache-purge via option-hooks. |
@@ -34,7 +34,7 @@ php tests/test-cache-safety.php
 | `test-admin3-cookies.php` | Pagina Cookies: cookielijst via de Settings API (alles verwijderen = leeg), F12-import, CSV, AJAX-nonces, scanresultaten samenvoegen zonder overschrijven. |
 | `test-admin3-privacy.php` | Privacyverklaring: rijtabellen blijven JSON, oude admin blijft werken, oude grondslag behouden, verwerkingsregister, sectievolgorde. |
 | `test-admin3-log.php` | Consent log: serverside filter en zoeken, alleen geldige consent-ID's verwijderen, bulkactie uit het bovenste én onderste keuzemenu, rij-acties, bewijs met alle velden, CSV-export (datumbereik, geen terugkerende bezoeken, kolommen zoals in 2.4), bewaartermijn op de tab Bewaren, consent-versie verhogen met geschiedenis (max. 50), log leegmaken, lijsttabel laadt niet zonder WordPress. |
-| `test-admin3-beheer.php` | Beheer: licentiestatus in woorden, meldingen met de tekst van de licentieserver (één keer, nooit "gelukt" bij een fout), lege sleutel niet naar de server, licentiemelding alleen op Cookiebaas-schermen. |
+| `test-admin3-beheer.php` | Beheer: licentiestatus in woorden, meldingen met de tekst van de licentieserver (één keer, nooit "gelukt" bij een fout), lege sleutel niet naar de server, licentiemelding alleen op Cookiebaas-schermen; backup zonder API-sleutel, ongeldig bestand wijzigt niets, import door dezelfde sanitizing als opslaan (API-sleutel blijft), "Alles resetten" meldt een mislukt onderdeel. |
 | `test-dark-zero.php` | Donker thema: 0 voor knop- en popupafronding en overlay blijft 0 (v2.4.6). |
 | `test-cache-safety.php` | **Belangrijkste.** De HTML is identiek voor elke bezoeker — geen consent-status in de server-side output (privacylek-fix v1.7.7). Advanced én basic mode. |
 | `test-consent-mode.php` | Consent Mode v2 head-injectie: advanced laadt altijd, client-side cookie-lezer, `url_passthrough` optioneel, JS-delay-bescherming. |

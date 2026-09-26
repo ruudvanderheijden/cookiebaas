@@ -53,12 +53,6 @@ function cm_test_ajax( $handler, array $post ) {
     return null;
 }
 
-cm_test_group( 'Reset instellingen' );
-cm_assert( 'wp_ajax_cm_reset_settings is geregistreerd', has_action( 'wp_ajax_cm_reset_settings' ) );
-update_option( 'cm_settings', array_merge( cm_default_settings(), array( 'gtm_container_id' => 'GTM-WEG' ) ) );
-cm_test_ajax( 'cm_ajax_reset_settings', array() );
-cm_assert( 'reset zet instellingen terug naar defaults', get_option( 'cm_settings' )['gtm_container_id'] === '' );
-
 cm_test_group( 'Privacyverklaring bewaart regeleinden' );
 $purges = $GLOBALS['cm_test_purges'];
 $r = cm_test_ajax( 'cm_ajax_save_privacy', array( 'pv_doorgifte' => "Regel een\nRegel twee", 'pv_bedrijfsnaam' => "Bedrijf\nBV" ) );
@@ -105,28 +99,5 @@ cm_test_set_settings( array( 'embed_blocked_services' => 'none' ) );
 cm_assert( '"none" → YouTube niet geblokkeerd', cm_match_embed_domain( 'https://www.youtube.com/embed/abc' ) === null );
 cm_test_set_settings( array( 'embed_blocked_services' => '' ) );
 cm_assert( 'leeg → YouTube geblokkeerd', cm_match_embed_domain( 'https://www.youtube.com/embed/abc' ) !== null );
-
-cm_test_group( 'Import gaat door dezelfde sanitizing als opslaan' );
-$purges = $GLOBALS['cm_test_purges'];
-$export = array(
-    '_meta'       => array( 'plugin' => 'cookiebaas', 'version' => '2.4.4' ),
-    'settings'    => array( 'txt_banner_title' => '<script>alert(1)</script>Hallo', 'txt_banner_body' => '<a href="/p">Lees</a><script>x</script>', 'onbekende_sleutel' => 'x', 'google_load_default' => '1', 'analytics_default' => '0' ),
-    'cookie_list' => array( array( 'name' => '<b>_ga</b>', 'category' => 'bogus' ), array( 'name' => '' ) ),
-    'privacy'     => array( 'pv_doorgifte' => "A\nB", 'pv_bedrijfsnaam' => '<i>X</i>' ),
-);
-$r = cm_test_ajax( 'cm_ajax_import_settings', array( 'data' => json_encode( $export ) ) );
-$s = get_option( 'cm_settings' );
-cm_assert( 'import slaagt', $r && $r->ok );
-cm_assert( 'script-tag uit tekstveld verwijderd', $s['txt_banner_title'] === 'alert(1)Hallo' );
-cm_assert( 'HTML-veld houdt link, verliest script', $s['txt_banner_body'] === '<a href="/p">Lees</a>x' );
-cm_assert( 'onbekende sleutel niet opgeslagen', ! array_key_exists( 'onbekende_sleutel', $s ) );
-cm_assert( 'ontbrekende sleutels krijgen default', $s['gtm_container_id'] === '' );
-cm_assert( 'google_load_default forceert analytics_default', (int) $s['analytics_default'] === 1 );
-$cl = get_option( 'cm_cookie_list' );
-cm_assert( 'cookielijst gesanitized: lege naam weg, tags weg, categorie gevalideerd', count( $cl ) === 1 && $cl[0]['name'] === '_ga' && $cl[0]['category'] === 'functional' );
-$pv = get_option( 'cm_privacy' );
-cm_assert( 'privacy: regeleinde behouden, tags weg', $pv['pv_doorgifte'] === "A\nB" && $pv['pv_bedrijfsnaam'] === 'X' );
-cm_assert( 'privacy: ontbrekende checkbox krijgt default', $pv['pv_ap_tonen'] === cm_default_privacy()['pv_ap_tonen'] );
-cm_assert( 'paginacache geleegd na import', $GLOBALS['cm_test_purges'] > $purges );
 
 exit( cm_test_summary() );
