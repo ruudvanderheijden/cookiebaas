@@ -21,6 +21,7 @@ define( 'CM_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 require_once CM_PLUGIN_DIR . 'includes/defaults.php';
 require_once CM_PLUGIN_DIR . 'includes/admin.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/menu.php';
+require_once CM_PLUGIN_DIR . 'includes/admin/fields.php';
 require_once CM_PLUGIN_DIR . 'includes/admin/page-overzicht.php';
 require_once CM_PLUGIN_DIR . 'includes/frontend.php';
 require_once CM_PLUGIN_DIR . 'includes/privacy.php';

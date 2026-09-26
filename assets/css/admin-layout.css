@@ -1,0 +1,12 @@
+/* Cookiebaas 3 — alleen layout. Kleuren en typografie komen van WordPress core. */
+.cm-admin .form-table tr[hidden] { display: none; }
+.cm-cols { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 24px; align-items: start; }
+@media (max-width: 1280px) { .cm-cols { grid-template-columns: 1fr; } }
+.cm-color { display: inline-flex; gap: 8px; align-items: center; }
+.cm-color input[type=color] { width: 40px; height: 30px; padding: 2px; cursor: pointer; }
+.cm-color.cm-color-empty input[type=color] { opacity: .35; }
+.cm-details { margin: 0 0 10px; }
+.cm-details > summary { padding: 12px; font-weight: 600; font-size: 14px; cursor: pointer; }
+.cm-details-body { padding: 0 12px 8px; }
+.cm-media-img { max-width: 64px; max-height: 64px; vertical-align: middle; }
+.cm-switch { float: none; margin: 0 0 12px; }
