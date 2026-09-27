@@ -64,6 +64,7 @@ Na een beveiligingsaudit:
 - **Opslaan** gaat via de standaardformulieren van WordPress; acties (exports, resets, licentie, API-sleutel) via gewone knoppen met een duidelijke melding. Een ongeldige waarde houdt de oude waarde en geeft een melding per veld.
 - **De API-sleutel** wordt op de server gemaakt en ingetrokken, en staat niet meer in de JavaScript van de admin.
 - **De licentiemelding** staat alleen nog op de pagina's van Cookiebaas.
+- **Ingebouwde cookies:** alleen nog `cc_cm_consent`, de cookie die Cookiebaas zelf zet, met als aanbieder "Deze website" en de looptijd uit de instelling Geldigheid. `PHPSESSID` stond er onterecht: Cookiebaas start geen PHP-sessie. Gebruikt uw site die cookie wel, dan vindt de scan hem en voegt u hem toe aan de cookielijst.
 - **De backup** heet `cookiebaas-backup-JJJJ-MM-DD.json`. Terugzetten behoudt uw API-sleutel.
 
 ### Verwijderd

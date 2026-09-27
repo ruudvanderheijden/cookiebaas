@@ -503,23 +503,17 @@ function cm_match_embed_domain( $src ) {
  * Dit zijn de cookies die de plugin zelf en WordPress altijd plaatst.
  */
 function cm_default_cookies() {
-    // Taalafhankelijke teksten voor de ingebouwde plugin-cookies
-    $lang = cm_detect_lang();
-    if ( $lang === 'en' ) {
+    // Alleen de cookie die Cookiebaas zelf zet. (Een PHP-sessie start Cookiebaas
+    // niet; gebruikt een site toch PHPSESSID, dan vindt de scan die.) De looptijd
+    // volgt de instelling "Geldigheid" (expiry_months).
+    $months = max( 1, (int) cm_get( 'expiry_months' ) );
+    if ( cm_detect_lang() === 'en' ) {
         return array(
             array(
                 'name'     => 'cc_cm_consent',
-                'provider' => 'Cookie Plugin',
-                'purpose'  => 'Stores your cookie preferences so you are not asked again on every visit.',
-                'duration' => '12 months',
-                'category' => 'functional',
-                'builtin'  => true,
-            ),
-            array(
-                'name'     => 'PHPSESSID',
                 'provider' => 'This website',
-                'purpose'  => 'Maintains your session during your visit to the website.',
-                'duration' => 'Session',
+                'purpose'  => 'Stores your cookie preferences so you are not asked again on every visit.',
+                'duration' => $months === 1 ? '1 month' : $months . ' months',
                 'category' => 'functional',
                 'builtin'  => true,
             ),
@@ -528,17 +522,9 @@ function cm_default_cookies() {
     return array(
         array(
             'name'     => 'cc_cm_consent',
-            'provider' => 'Cookiemelding Plugin',
-            'purpose'  => 'Slaat uw cookievoorkeuren op zodat u niet bij elk bezoek opnieuw gevraagd wordt.',
-            'duration' => '12 maanden',
-            'category' => 'functional',
-            'builtin'  => true,
-        ),
-        array(
-            'name'     => 'PHPSESSID',
             'provider' => 'Deze website',
-            'purpose'  => 'Houdt uw sessie bij tijdens uw bezoek aan de website.',
-            'duration' => 'Sessie',
+            'purpose'  => 'Slaat uw cookievoorkeuren op zodat u niet bij elk bezoek opnieuw gevraagd wordt.',
+            'duration' => $months === 1 ? '1 maand' : $months . ' maanden',
             'category' => 'functional',
             'builtin'  => true,
         ),

@@ -208,4 +208,13 @@ $GLOBALS['cm_test_license_ok'] = true;
 cm_assert( 'met licentie: automatisch kiezen mag', cm_sanitize_field_value( $f, 'auto', 'off' ) === 'auto' );
 cm_assert( 'onbekende waarde blijft geweigerd', cm_sanitize_field_value( $f, 'x', 'off' ) === 'off' );
 
+cm_test_group( 'Ingebouwde cookies: alleen wat Cookiebaas zelf zet' );
+cm_assert( 'alleen cc_cm_consent (Cookiebaas start geen PHP-sessie)', array_column( cm_default_cookies(), 'name' ) === array( 'cc_cm_consent' ) );
+cm_test_set_settings( array_merge( cm_default_settings(), array( 'expiry_months' => 6 ) ) );
+cm_assert( 'looptijd volgt de instelling Geldigheid', cm_default_cookies()[0]['duration'] === '6 maanden' );
+cm_test_set_settings( array_merge( cm_default_settings(), array( 'expiry_months' => 1 ) ) );
+cm_assert( 'enkelvoud bij 1 maand', cm_default_cookies()[0]['duration'] === '1 maand' );
+cm_assert( 'aanbieder: deze website (geen oude pluginnaam)', cm_default_cookies()[0]['provider'] === 'Deze website' );
+cm_test_set_settings( cm_default_settings() );
+
 exit( cm_test_summary() );
