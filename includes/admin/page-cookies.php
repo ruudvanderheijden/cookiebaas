@@ -28,7 +28,7 @@ function cm_tab_cookies_scannen() {
             array( 'title' => 'Cookiedatabase', 'content' => 'cm_render_cookie_db_status' ),
             array(
                 'title'   => 'Automatische scan',
-                'intro'   => 'Bekijkt periodiek de homepage en de tien nieuwste pagina’s op nieuwe cookies, net als de knop Cookies scannen: HTTP-headers, bekende scripts en embeds. Cookies die scripts pas in de browser zetten, vindt alleen de browserscan; het Overzicht herinnert u eraan als die lang geleden is. Automatisch toevoegen en de melding per e-mail vragen een licentie; zonder licentie slaat Cookiebaas de automatische scan over.',
+                'intro'   => 'Bekijkt periodiek de homepage en de tien nieuwste pagina’s op nieuwe cookies, net als de snelle scan: HTTP-headers, bekende scripts en embeds. Cookies die scripts pas in de browser zetten, vindt alleen de uitgebreide scan; het Overzicht herinnert u eraan als die lang geleden is. Automatisch toevoegen en de melding per e-mail vragen een licentie; zonder licentie slaat Cookiebaas de automatische scan over.',
                 'content' => 'cm_render_auto_scan_status',
                 'fields'  => array(
                     cm_field( 'auto_scan_mode', 'radio', 'Werkwijze', array(
@@ -57,10 +57,13 @@ function cm_tab_cookies_scannen() {
 }
 
 function cm_render_manual_scan() {
-    echo '<p><button type="button" class="button button-primary" id="cm-scan-start">Cookies scannen</button> <span class="description">Doorloopt alle gepubliceerde pagina’s op het domein van deze website zoals een niet-ingelogde bezoeker ze ziet, en herkent cookies via HTTP-headers en scripts.</span></p>';
-    echo '<p><button type="button" class="button" id="cm-bscan-start">Scan in de browser</button> '
-       . '<label><input type="checkbox" id="cm-bscan-all"> alle pagina’s (anders de homepage en 20 andere)</label></p>';
-    echo '<p class="description">Laadt de pagina’s onzichtbaar in uw eigen browser, zoals een niet-ingelogde bezoeker ze ziet, in twee rondes. Eerst als nieuwe bezoeker die nog niets koos: zo controleert de scan of er vóór toestemming al iets wordt geplaatst of geladen. Daarna alsof de bezoeker alles accepteert: scripts, Google Tag Manager en embeds draaien echt, zodat de scan ook cookies vindt die JavaScript zet, opslag in de browser en diensten die via GTM laden. Wat pas gebeurt na een handeling (iets in de winkelwagen leggen, een formulier versturen, een chat openen) ziet geen enkele scan; vul dat aan via F12. Cookies van deze website die de scan in uw browser zet, ruimt hij achteraf op; cookies van derden (bijv. van Meta) blijven staan. De bezochte pagina’s kunnen als bezoek in uw statistieken verschijnen.</p>';
+    echo '<p><button type="button" class="button button-primary" id="cm-bscan-start">Uitgebreide scan</button> '
+       . '<label><input type="checkbox" id="cm-bscan-all"> alle pagina’s (anders de homepage en 20 andere)</label><br>'
+       . '<span class="description"><strong>Aanbevolen.</strong> Laadt de pagina’s echt in uw browser: controleert wat er vóór toestemming gebeurt en vindt ook cookies die scripts en Google Tag Manager zetten. Duurt een paar minuten.</span></p>';
+    echo '<p><button type="button" class="button" id="cm-scan-start">Snelle scan</button><br>'
+       . '<span class="description">Leest alle pagina’s vanaf de server: vindt cookies uit HTTP-headers en bekende scripts, niet wat scripts in de browser doen. Handig als de uitgebreide scan niet werkt.</span></p>';
+    echo '<details class="cm-details postbox"><summary>Hoe werkt de uitgebreide scan?</summary><div class="cm-details-body"><p>De scan laadt de pagina’s onzichtbaar in uw eigen browser, zoals een niet-ingelogde bezoeker ze ziet, in twee rondes. Eerst als nieuwe bezoeker die nog niets koos: zo controleert de scan of er vóór toestemming al iets wordt geplaatst of geladen. Daarna alsof de bezoeker alles accepteert: scripts, Google Tag Manager en embeds draaien echt, zodat de scan ook cookies vindt die JavaScript zet, opslag in de browser en diensten die via GTM laden.</p>'
+       . '<p>Wat pas gebeurt na een handeling (iets in de winkelwagen leggen, een formulier versturen, een chat openen) ziet geen enkele scan; vul dat aan via F12. Cookies van deze website die de scan in uw browser zet, ruimt hij achteraf op; cookies van derden (bijv. van Meta) blijven staan. De bezochte pagina’s kunnen als bezoek in uw statistieken verschijnen.</p></div></details>';
     echo '<div id="cm-scan-result" aria-live="polite"></div>';
 }
 

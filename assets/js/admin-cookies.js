@@ -130,7 +130,7 @@
       tr.insertCell().appendChild(add);
     });
     result.appendChild(table);
-    result.appendChild(el('p', 'HTTP-header: gezet door de server. Script: afgeleid uit trackingscripts (de browser zet de cookie). Embed: gezet door een ingesloten dienst (bijv. een video). Browser: gevonden in uw browser tijdens de browserscan. Opslag: localStorage of sessionStorage. Extern script: afgeleid uit een geladen dienst. Onbekend: kies eerst een categorie, dan kunt u de cookie toevoegen. Functioneel alleen als de site zonder deze cookie niet werkt; twijfelt u, kies dan Marketing, dan vraagt de banner altijd toestemming.', 'description'));
+    result.appendChild(el('p', 'HTTP-header: gezet door de server. Script: afgeleid uit trackingscripts (de browser zet de cookie). Embed: gezet door een ingesloten dienst (bijv. een video). Browser: gevonden in uw browser tijdens de uitgebreide scan. Opslag: localStorage of sessionStorage. Extern script: afgeleid uit een geladen dienst. Onbekend: kies eerst een categorie, dan kunt u de cookie toevoegen. Functioneel alleen als de site zonder deze cookie niet werkt; twijfelt u, kies dan Marketing, dan vraagt de banner altijd toestemming.', 'description'));
   }
 
   result.addEventListener('change', function (e) {
@@ -470,7 +470,7 @@
       if (!r || !r.success) throw new Error('lookup');
       found = r.data.cookies || [];
       if (urls.length > 0 && failed === urls.length) {
-        notice(result, 'error', 'De browserscan kon geen enkele pagina laden. Mogelijk verbiedt de website het laden in een frame (X-Frame-Options of frame-ancestors), of draait het beheer op een ander domein dan de website. Gebruik dan de gewone scan.');
+        notice(result, 'error', 'De uitgebreide scan kon geen enkele pagina laden. Mogelijk verbiedt de website het laden in een frame (X-Frame-Options of frame-ancestors), of draait het beheer op een ander domein dan de website. Gebruik dan de snelle scan.');
         return;
       }
       renderResults(urls.length, failed);
@@ -482,7 +482,7 @@
         result.appendChild(el('p', 'Ook geladen, maar niet in de kennisbank: ' + r.data.hosts.join(', ') + '. Controleer of deze diensten cookies zetten.', 'description'));
       }
     }).catch(function (err) {
-      notice(result, 'error', err && err.cmKnown ? err.message : 'De browserscan is mislukt.');
+      notice(result, 'error', err && err.cmKnown ? err.message : 'De uitgebreide scan is mislukt.');
     }).then(function () {
       holder.remove();
       bscanBtn.disabled = false;
