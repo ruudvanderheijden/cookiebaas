@@ -105,4 +105,11 @@ $sel = row( cm_field( 'pv_cf_grondslag', 'select', 'Rechtsgrondslag', array( 'op
 cm_assert( 'de huidige waarde blijft zichtbaar en geselecteerd', strpos( $sel, '<option value="Oude vrije tekst" selected>Oude vrije tekst</option>' ) !== false );
 cm_assert( 'geen andere optie geselecteerd', substr_count( $sel, ' selected' ) === 1 );
 
+cm_test_group( 'Tussenkop binnen een sectie' );
+$sub = row( cm_field( '', 'subheading', 'Akkoord', array( 'store' => false ) ), array() );
+cm_assert( 'tussenkop als kop over de hele rij', strpos( $sub, '<h3>Akkoord</h3>' ) !== false && strpos( $sub, 'colspan="2"' ) !== false );
+cm_assert( 'geen invoerveld', strpos( $sub, '<input' ) === false && strpos( $sub, 'name=' ) === false );
+$list = cm_admin_field_list( 'cm_settings', array( 'p' => array( 't' => array( 'sections' => array( array( 'fields' => array( cm_field( '', 'subheading', 'X', array( 'store' => false ) ) ) ) ) ) ) ) );
+cm_assert( 'tussenkop telt niet als instelling', $list === array() );
+
 exit( cm_test_summary() );

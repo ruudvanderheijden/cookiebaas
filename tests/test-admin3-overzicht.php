@@ -77,4 +77,13 @@ cm_assert( 'melding met link naar "Waar staat wat?"', strpos( $h, 'notice-info' 
 ob_start(); cm_render_admin3_welcome_notice(); $h = ob_get_clean();
 cm_assert( 'maar één keer', $h === '' );
 
+cm_test_group( 'Statuskleuren' );
+$cards = cm_overzicht_cards( array( 'license' => 'Actief', 'license_ok' => true, 'cookies' => 3, 'last_scan' => '', 'accept' => 0, 'reject' => 0, 'custom' => 0, 'version' => 1 ) );
+cm_assert( 'licentie actief en cookies in de lijst → groen', $cards[0][5] === 'ok' && $cards[1][5] === 'ok' );
+cm_assert( 'toestemmingen en versie neutraal', $cards[2][5] === '' && $cards[3][5] === '' );
+$cards = cm_overzicht_cards( array( 'license' => 'Geen licentie', 'license_ok' => false, 'cookies' => 0, 'last_scan' => '', 'accept' => 0, 'reject' => 0, 'custom' => 0, 'version' => 1 ) );
+cm_assert( 'geen licentie of lege lijst → oranje', $cards[0][5] === 'warn' && $cards[1][5] === 'warn' );
+ob_start(); cm_render_compliance_table( $checks ); $h = ob_get_clean();
+cm_assert( 'elke controle krijgt een statusklasse', substr_count( $h, '<tr class="cm-check-' ) === 15 );
+
 exit( cm_test_summary() );

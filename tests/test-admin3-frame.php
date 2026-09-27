@@ -44,6 +44,11 @@ $files = array_merge(
 foreach ( $files as $file ) {
     $src = file_get_contents( $file );
     $rel = str_replace( CM_PLUGIN_ROOT . '/', '', $file );
+    // Uitzondering: de statuskleuren van WordPress core, op één plek in admin-layout.css
+    if ( substr( $rel, -16 ) === 'admin-layout.css' ) {
+        cm_assert( "$rel: statuskleuren in één blok", substr_count( $src, '/* cm-statuskleuren' ) === 1 && substr_count( $src, '/* /cm-statuskleuren */' ) === 1 );
+        $src = preg_replace( '#/\* cm-statuskleuren.*?/\* /cm-statuskleuren \*/#s', '', $src );
+    }
     cm_assert( "$rel: geen style=\"",         strpos( $src, 'style="' ) === false );
     cm_assert( "$rel: geen emoji",            ! preg_match( '/[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]/u', $src ) );
     cm_assert( "$rel: geen hex-kleur #rrggbb", ! preg_match( '/#[0-9a-fA-F]{6}\b/', $src ) );

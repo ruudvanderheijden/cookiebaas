@@ -1,4 +1,13 @@
-/* Cookiebaas 3 — alleen layout. Kleuren en typografie komen van WordPress core. */
+/* Cookiebaas — layout. Kleuren en typografie komen van WordPress core; alleen de
+   statuskleuren hieronder zijn eigen tokens, met de waarden van WordPress core. */
+/* cm-statuskleuren */
+.cm-admin {
+  --cm-ok: #00a32a;
+  --cm-warn: #dba617;
+  --cm-bad: #d63638;
+  --cm-warn-bg: #fcf9e8;
+}
+/* /cm-statuskleuren */
 .cm-admin .form-table tr[hidden] { display: none; }
 .cm-cols { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 24px; align-items: start; }
 @media (max-width: 1280px) { .cm-cols { grid-template-columns: 1fr; } }
@@ -30,3 +39,30 @@
 .cm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin: 16px 0 24px; }
 .cm-cards .card { margin: 0; max-width: none; }
 .cm-checks .cm-check-status { width: 160px; white-space: nowrap; }
+
+/* Overzicht: statuskleuren op kaarten en in de compliance-check */
+.cm-cards .cm-card-ok { border-left: 4px solid var(--cm-ok); }
+.cm-cards .cm-card-warn { border-left: 4px solid var(--cm-warn); background: var(--cm-warn-bg); }
+.cm-checks .cm-check-ok .dashicons { color: var(--cm-ok); }
+.cm-checks .cm-check-warn .dashicons { color: var(--cm-warn); }
+.cm-checks .cm-check-fail .dashicons { color: var(--cm-bad); }
+.cm-checks .cm-check-warn td:first-child { box-shadow: inset 4px 0 0 var(--cm-warn); }
+.cm-checks .cm-check-fail td:first-child { box-shadow: inset 4px 0 0 var(--cm-bad); }
+
+/* Kop van de preview: dezelfde ruimte als de kaders van WordPress */
+.cm-preview .postbox-header .hndle { padding: 8px 12px; margin: 0; font-size: 14px; }
+
+/* Knoppen naast de paginatitel: ruimte ten opzichte van de titel en elkaar */
+.cm-admin h1.wp-heading-inline { margin-right: 12px; }
+.cm-admin .page-title-action { margin-left: 0; margin-right: 6px; }
+
+/* Rij met kleine actieknoppen (bijv. standaardkleuren herstellen) */
+.cm-inline-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 16px 0; }
+
+/* Tussenkoppen binnen een sectie (bijv. per soort knop) */
+.cm-admin .form-table .cm-subheading th { padding: 20px 10px 4px 0; }
+.cm-admin .form-table .cm-subheading:first-child th { padding-top: 8px; }
+.cm-admin .form-table .cm-subheading h3 { margin: 0; font-size: 1em; }
+
+/* Premium-melding zonder licentie */
+.cm-premium { margin: 16px 0; }

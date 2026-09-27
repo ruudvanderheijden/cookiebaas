@@ -35,7 +35,10 @@ function cm_color_sections( $theme ) {
     $theme_label = $theme === 'dark' ? 'Donker thema' : 'Licht thema';
     $pane  = array( 'data-cm-pane' => 'theme:' . $theme, 'class' => 'postbox' );
     $c     = function ( $key, $label, array $extra = array() ) use ( $p ) { return cm_field( $p . $key, 'color', $label, $extra ); };
-    $o     = function ( $key, $label, $ph ) use ( $p ) { return cm_field( $p . $key, 'color_optional', $label, array( 'placeholder' => $ph ) ); };
+    $o     = function ( $key, $label, $ph, array $extra = array() ) use ( $p ) { return cm_field( $p . $key, 'color_optional', $label, array_merge( array( 'placeholder' => $ph ), $extra ) ); };
+    $h     = function ( $label ) { return cm_field( '', 'subheading', $label, array( 'store' => false ) ); };
+    // Knoppen: per soort een tussenkop; de soort staat als context in foutmeldingen
+    $in    = function ( $button ) use ( $theme_label ) { return array( 'context' => $theme_label . ' › ' . $button ); };
     $sections = array(
         array( 'title' => 'Venster', 'collapsible' => true, 'open' => true, 'attrs' => $pane, 'fields' => array(
             $c( 'popup_bg', 'Achtergrond' ),
@@ -46,31 +49,37 @@ function cm_color_sections( $theme ) {
             cm_field( $r . 'overlay_opacity', 'number', 'Donkerte achtergrond', array( 'min' => 0, 'max' => 90, 'unit' => '%', 'description' => 'Hoe donker de pagina achter het venster wordt.' ) ),
         ) ),
         array( 'title' => 'Knoppen', 'collapsible' => true, 'attrs' => $pane, 'fields' => array(
-            $c( 'accept_bg', 'Akkoord — achtergrond' ),
-            $c( 'accept_text', 'Akkoord — tekst' ),
-            $c( 'accept_hover_bg', 'Akkoord — achtergrond bij hover' ),
-            $c( 'accept_hover_text', 'Akkoord — tekst bij hover' ),
-            $o( 'accept_border', 'Akkoord — rand', 'Geen rand' ),
-            $c( 'reject_bg', 'Weigeren — achtergrond' ),
-            $c( 'reject_text', 'Weigeren — tekst' ),
-            $c( 'reject_hover_bg', 'Weigeren — achtergrond bij hover' ),
-            $c( 'reject_hover_text', 'Weigeren — tekst bij hover' ),
-            $o( 'reject_border', 'Weigeren — rand', 'Geen rand' ),
-            $c( 'prefs_border', 'Cookie voorkeuren — rand' ),
-            $c( 'prefs_text', 'Cookie voorkeuren — tekst' ),
-            $c( 'prefs_hover_border', 'Cookie voorkeuren — rand bij hover' ),
-            $c( 'prefs_hover_text', 'Cookie voorkeuren — tekst bij hover' ),
-            $c( 'allowall_bg', 'Alles toestaan — achtergrond' ),
-            $c( 'allowall_text', 'Alles toestaan — tekst' ),
-            $c( 'allowall_hover_bg', 'Alles toestaan — achtergrond bij hover' ),
-            $c( 'allowall_hover_text', 'Alles toestaan — tekst bij hover' ),
-            $o( 'allowall_border', 'Alles toestaan — rand', 'Geen rand' ),
-            $c( 'outline_border', 'Alles afwijzen — rand' ),
-            $c( 'outline_text', 'Alles afwijzen — tekst' ),
-            $c( 'outline_hover_border', 'Alles afwijzen — rand bij hover' ),
-            $c( 'outline_hover_text', 'Alles afwijzen — tekst bij hover' ),
-            $o( 'outline_hover_bg', 'Alles afwijzen — achtergrond bij hover', 'Geen achtergrond' ),
-            cm_field( $r . 'radius_btn', 'number', 'Hoekafronding knoppen', array( 'min' => 0, 'max' => 60, 'unit' => 'px', 'description' => 'Geldt voor alle knoppen.' ) ),
+            $h( 'Akkoord' ),
+            $c( 'accept_bg', 'Achtergrond', $in( 'Akkoord' ) ),
+            $c( 'accept_text', 'Tekst', $in( 'Akkoord' ) ),
+            $c( 'accept_hover_bg', 'Achtergrond bij hover', $in( 'Akkoord' ) ),
+            $c( 'accept_hover_text', 'Tekst bij hover', $in( 'Akkoord' ) ),
+            $o( 'accept_border', 'Rand', 'Geen rand', $in( 'Akkoord' ) ),
+            $h( 'Weigeren' ),
+            $c( 'reject_bg', 'Achtergrond', $in( 'Weigeren' ) ),
+            $c( 'reject_text', 'Tekst', $in( 'Weigeren' ) ),
+            $c( 'reject_hover_bg', 'Achtergrond bij hover', $in( 'Weigeren' ) ),
+            $c( 'reject_hover_text', 'Tekst bij hover', $in( 'Weigeren' ) ),
+            $o( 'reject_border', 'Rand', 'Geen rand', $in( 'Weigeren' ) ),
+            $h( 'Cookievoorkeuren' ),
+            $c( 'prefs_border', 'Rand', $in( 'Cookievoorkeuren' ) ),
+            $c( 'prefs_text', 'Tekst', $in( 'Cookievoorkeuren' ) ),
+            $c( 'prefs_hover_border', 'Rand bij hover', $in( 'Cookievoorkeuren' ) ),
+            $c( 'prefs_hover_text', 'Tekst bij hover', $in( 'Cookievoorkeuren' ) ),
+            $h( 'Alles toestaan (voorkeurenvenster)' ),
+            $c( 'allowall_bg', 'Achtergrond', $in( 'Alles toestaan' ) ),
+            $c( 'allowall_text', 'Tekst', $in( 'Alles toestaan' ) ),
+            $c( 'allowall_hover_bg', 'Achtergrond bij hover', $in( 'Alles toestaan' ) ),
+            $c( 'allowall_hover_text', 'Tekst bij hover', $in( 'Alles toestaan' ) ),
+            $o( 'allowall_border', 'Rand', 'Geen rand', $in( 'Alles toestaan' ) ),
+            $h( 'Alles afwijzen (voorkeurenvenster)' ),
+            $c( 'outline_border', 'Rand', $in( 'Alles afwijzen' ) ),
+            $c( 'outline_text', 'Tekst', $in( 'Alles afwijzen' ) ),
+            $c( 'outline_hover_border', 'Rand bij hover', $in( 'Alles afwijzen' ) ),
+            $c( 'outline_hover_text', 'Tekst bij hover', $in( 'Alles afwijzen' ) ),
+            $o( 'outline_hover_bg', 'Achtergrond bij hover', 'Geen achtergrond', $in( 'Alles afwijzen' ) ),
+            $h( 'Alle knoppen' ),
+            cm_field( $r . 'radius_btn', 'number', 'Hoekafronding', array( 'min' => 0, 'max' => 60, 'unit' => 'px' ) ),
         ) ),
         array( 'title' => 'Voorkeurenvenster en cookielijst', 'collapsible' => true, 'attrs' => $pane, 'fields' => array(
             $c( 'close_bg', 'Sluitknop — achtergrond' ),
@@ -147,11 +156,10 @@ function cm_tab_banner_vormgeving() {
         'preview'    => true,
         'sections'   => array_merge( $head, cm_color_sections( 'light' ), cm_color_sections( 'dark' ) ),
         'after_form' => function () {
-            echo '<p>Standaardkleuren herstellen: ';
+            echo '<div class="cm-inline-actions"><span>Standaardkleuren herstellen:</span>';
             echo cm_admin_action_form( 'reset_theme', 'Licht', array( 'theme' => 'light' ), 'De kleuren van het lichte thema teruggezet naar de standaard?', 'button button-small' );
-            echo ' ';
             echo cm_admin_action_form( 'reset_theme', 'Donker', array( 'theme' => 'dark' ), 'De kleuren van het donkere thema teruggezet naar de standaard?', 'button button-small' );
-            echo '</p>';
+            echo '</div>';
         },
     );
 }

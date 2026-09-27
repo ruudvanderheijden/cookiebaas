@@ -38,16 +38,16 @@ function cm_overzicht_data() {
     );
 }
 
-/** Statusblokken: array( titel, waarde, toelichting, url, linktekst ). */
+/** Statusblokken: array( titel, waarde, toelichting, url, linktekst, status ok|warn|'' ). */
 function cm_overzicht_cards( array $d ) {
     $scan = $d['last_scan'] !== ''
         ? 'Laatste automatische scan: ' . wp_date( 'j F Y', strtotime( $d['last_scan'] . ' UTC' ) ) . '.'
         : 'Nog geen automatische scan.';
     return array(
-        array( 'Licentie', $d['license'], $d['license_ok'] ? 'Alle functies zijn beschikbaar.' : 'Banner, blokkering en handmatige scan werken; voor de premiumfuncties is een licentie nodig.', cm_admin_page_url( 'cookiebaas-beheer', 'licentie' ), 'Licentie beheren' ),
-        array( 'Cookies', $d['cookies'] === 1 ? '1 cookie' : $d['cookies'] . ' cookies', $scan, cm_admin_page_url( 'cookiebaas-cookies', 'lijst' ), 'Cookielijst bekijken' ),
-        array( 'Toestemmingen', (string) ( $d['accept'] + $d['reject'] + $d['custom'] ), 'Laatste 30 dagen: ' . $d['accept'] . ' akkoord, ' . $d['reject'] . ' geweigerd, ' . $d['custom'] . ' aangepast.', cm_admin_page_url( 'cookiebaas-log', 'registraties' ), 'Consent log openen' ),
-        array( 'Consent-versie', (string) $d['version'], 'Verhoog de versie om iedereen opnieuw te laten kiezen.', cm_admin_page_url( 'cookiebaas-log', 'bewaren' ), 'Opnieuw laten kiezen' ),
+        array( 'Licentie', $d['license'], $d['license_ok'] ? 'Alle functies zijn beschikbaar.' : 'Banner, blokkering en handmatige scan werken; voor de premiumfuncties is een licentie nodig.', cm_admin_page_url( 'cookiebaas-beheer', 'licentie' ), 'Licentie beheren', $d['license_ok'] ? 'ok' : 'warn' ),
+        array( 'Cookies', $d['cookies'] === 1 ? '1 cookie' : $d['cookies'] . ' cookies', $scan, cm_admin_page_url( 'cookiebaas-cookies', 'lijst' ), 'Cookielijst bekijken', $d['cookies'] > 0 ? 'ok' : 'warn' ),
+        array( 'Toestemmingen', (string) ( $d['accept'] + $d['reject'] + $d['custom'] ), 'Laatste 30 dagen: ' . $d['accept'] . ' akkoord, ' . $d['reject'] . ' geweigerd, ' . $d['custom'] . ' aangepast.', cm_admin_page_url( 'cookiebaas-log', 'registraties' ), 'Consent log openen', '' ),
+        array( 'Consent-versie', (string) $d['version'], 'Verhoog de versie om iedereen opnieuw te laten kiezen.', cm_admin_page_url( 'cookiebaas-log', 'bewaren' ), 'Opnieuw laten kiezen', '' ),
     );
 }
 
@@ -123,7 +123,7 @@ function cm_render_compliance_table( array $checks ) {
             echo '<tr><th colspan="3" scope="colgroup"><strong>' . esc_html( $group ) . '</strong></th></tr>';
         }
         list( $icon, $label ) = $status[ $c['status'] ];
-        echo '<tr>';
+        echo '<tr class="cm-check-' . esc_attr( $c['status'] ) . '">';
         echo '<td class="cm-check-status"><span class="dashicons dashicons-' . esc_attr( $icon ) . '" aria-hidden="true"></span> ' . esc_html( $label ) . '</td>';
         echo '<td><strong>' . esc_html( $c['title'] ) . '</strong><br>' . esc_html( $c['desc'] );
         if ( $c['status'] !== 'ok' && $c['detail'] !== '' ) echo '<br><em>' . esc_html( $c['detail'] ) . '</em>';
@@ -149,7 +149,7 @@ function cm_admin_render_overzicht() {
     cm_render_admin3_welcome_notice();
     echo '<div class="cm-cards">';
     foreach ( cm_overzicht_cards( cm_overzicht_data() ) as $card ) {
-        echo '<div class="card"><h2 class="title">' . esc_html( $card[0] ) . '</h2>'
+        echo '<div class="card' . ( $card[5] !== '' ? ' cm-card-' . esc_attr( $card[5] ) : '' ) . '"><h2 class="title">' . esc_html( $card[0] ) . '</h2>'
            . '<p><strong>' . esc_html( $card[1] ) . '</strong></p>'
            . '<p>' . esc_html( $card[2] ) . '</p>'
            . '<p><a href="' . esc_url( $card[3] ) . '">' . esc_html( $card[4] ) . '</a></p></div>';

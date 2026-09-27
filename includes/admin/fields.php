@@ -170,6 +170,11 @@ function cm_admin_render_section( array $section, array $values ) {
 }
 
 function cm_admin_render_field_row( array $f, array $values ) {
+    // Tussenkop binnen een sectie (alleen weergave, store => false)
+    if ( $f['type'] === 'subheading' ) {
+        echo '<tr class="cm-subheading"><th colspan="2" scope="colgroup"><h3>' . esc_html( $f['label'] ) . '</h3></th></tr>';
+        return;
+    }
     $key   = $f['key'];
     $id    = 'cm-f-' . $key;
     $name  = ( isset( $f['option'] ) ? $f['option'] : 'cm_settings' ) . '[' . $key . ']';
