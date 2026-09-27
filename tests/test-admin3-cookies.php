@@ -133,7 +133,7 @@ $GLOBALS['cm_test_can'] = true;
 cm_test_group( 'Scanresultaat toevoegen (Review Focus 2 en 4)' );
 $r = cm_scan_result_to_row( array( 'name' => '_ga', 'type' => 'analytics', 'provider' => 'Google Analytics', 'description' => 'Meet', 'duration' => '2 jaar', 'how' => 'server' ) );
 cm_assert( 'scanvelden → lijstvelden', $r === array( 'name' => '_ga', 'provider' => 'Google Analytics', 'purpose' => 'Meet', 'duration' => '2 jaar', 'category' => 'analytics' ) );
-cm_assert( 'onbekend type wordt functioneel, lege looptijd "Sessie"', cm_scan_result_to_row( array( 'name' => 'x', 'type' => 'unknown' ) )['category'] === 'functional' && cm_scan_result_to_row( array( 'name' => 'x' ) )['duration'] === 'Sessie' );
+cm_assert( 'onbekend type wordt functioneel (de scantabel laat eerst kiezen), onbekende looptijd blijft leeg i.p.v. "Sessie" (3.1)', cm_scan_result_to_row( array( 'name' => 'x', 'type' => 'unknown' ) )['category'] === 'functional' && cm_scan_result_to_row( array( 'name' => 'x' ) )['duration'] === '' );
 cm_assert( 'naam als array wordt overgeslagen (geen rij "Array")', cm_scan_result_to_row( array( 'name' => array( 'x' ) ) ) === null );
 cm_assert( 'lege of ontbrekende naam wordt overgeslagen', cm_scan_result_to_row( array( 'name' => '' ) ) === null && cm_scan_result_to_row( array() ) === null );
 $m = cm_merge_cookie_list( array( array( 'name' => '_ga', 'purpose' => 'eigen tekst' ) ), array( array( 'name' => '_ga', 'purpose' => 'scan' ), array( 'name' => '_fbp' ), array( 'name' => '_fbp' ), array( 'name' => '' ) ) );

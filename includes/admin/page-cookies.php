@@ -28,13 +28,13 @@ function cm_tab_cookies_scannen() {
             array( 'title' => 'Cookiedatabase', 'content' => 'cm_render_cookie_db_status' ),
             array(
                 'title'   => 'Automatische scan',
-                'intro'   => 'Bekijkt periodiek de homepage op nieuwe cookies. Automatisch toevoegen en de melding per e-mail vragen een licentie; zonder licentie slaat Cookiebaas de automatische scan over.',
+                'intro'   => 'Bekijkt periodiek de homepage en de tien nieuwste pagina’s op nieuwe cookies, net als de knop Cookies scannen: HTTP-headers, bekende scripts en embeds. Cookies die scripts pas in de browser zetten, vindt alleen de browserscan; het Overzicht herinnert u eraan als die lang geleden is. Automatisch toevoegen en de melding per e-mail vragen een licentie; zonder licentie slaat Cookiebaas de automatische scan over.',
                 'content' => 'cm_render_auto_scan_status',
                 'fields'  => array(
                     cm_field( 'auto_scan_mode', 'radio', 'Werkwijze', array(
                         'options'  => array(
                             'off'    => 'Handmatig: alleen scannen via de knop hierboven',
-                            'auto'   => 'Automatisch toevoegen (met licentie): nieuw gevonden cookies komen direct in de cookielijst',
+                            'auto'   => 'Automatisch toevoegen (met licentie): bekende nieuwe cookies komen direct in de cookielijst; voor onbekende kiest u de categorie op het Overzicht',
                             'notify' => 'Melding per e-mail (met licentie): een bericht als er nieuwe cookies zijn gevonden',
                         ),
                         'sanitize' => 'cm_sanitize_auto_scan_mode',
@@ -60,7 +60,7 @@ function cm_render_manual_scan() {
     echo '<p><button type="button" class="button button-primary" id="cm-scan-start">Cookies scannen</button> <span class="description">Doorloopt alle gepubliceerde pagina’s op het domein van deze website zoals een niet-ingelogde bezoeker ze ziet, en herkent cookies via HTTP-headers en scripts.</span></p>';
     echo '<p><button type="button" class="button" id="cm-bscan-start">Scan in de browser</button> '
        . '<label><input type="checkbox" id="cm-bscan-all"> alle pagina’s (anders de homepage en 20 andere)</label></p>';
-    echo '<p class="description">Laadt de pagina’s onzichtbaar in uw eigen browser, alsof een bezoeker alles accepteert: scripts, Google Tag Manager en embeds draaien echt. Zo vindt de scan ook cookies die JavaScript zet en diensten die via GTM laden. Cookies van deze website die daarbij in uw browser worden gezet, ruimt de scan achteraf op; cookies van derden (bijv. van Meta) blijven in uw browser staan. Let op: de bezochte pagina’s kunnen als bezoek in uw statistieken verschijnen.</p>';
+    echo '<p class="description">Laadt de pagina’s onzichtbaar in uw eigen browser, zoals een niet-ingelogde bezoeker ze ziet, in twee rondes. Eerst als nieuwe bezoeker die nog niets koos: zo controleert de scan of er vóór toestemming al iets wordt geplaatst of geladen. Daarna alsof de bezoeker alles accepteert: scripts, Google Tag Manager en embeds draaien echt, zodat de scan ook cookies vindt die JavaScript zet, opslag in de browser en diensten die via GTM laden. Wat pas gebeurt na een handeling (iets in de winkelwagen leggen, een formulier versturen, een chat openen) ziet geen enkele scan; vul dat aan via F12. Cookies van deze website die de scan in uw browser zet, ruimt hij achteraf op; cookies van derden (bijv. van Meta) blijven staan. De bezochte pagina’s kunnen als bezoek in uw statistieken verschijnen.</p>';
     echo '<div id="cm-scan-result" aria-live="polite"></div>';
 }
 

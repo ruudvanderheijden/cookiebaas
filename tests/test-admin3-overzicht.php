@@ -38,7 +38,7 @@ cm_test_group( 'Compliance-check' );
 $s      = cm_default_settings();
 $pv     = cm_default_privacy();
 $checks = cm_compliance_checks( $s, $pv, cm_default_cookies() );
-cm_assert( 'alle vijftien controles uit 2.4', count( $checks ) === 15 );
+cm_assert( 'alle vijftien controles uit 2.4, plus "Cookielijst recent gecontroleerd" (3.1)', count( $checks ) === 16 );
 cm_assert( 'alleen de statussen ok, warn en fail', ! array_diff( array_unique( array_column( $checks, 'status' ) ), array( 'ok', 'warn', 'fail' ) ) );
 $tabs = cm_admin_tabs();
 $bad  = array();
@@ -62,7 +62,7 @@ cm_assert( 'lege bedrijfsnaam → niet in orde', $by['Bedrijfsnaam ingevuld']['s
 
 cm_test_group( 'Weergave van de check' );
 ob_start(); cm_render_compliance_table( $checks ); $h = ob_get_clean();
-cm_assert( 'statusicoon per controle', substr_count( $h, 'class="dashicons dashicons-' ) === 15 );
+cm_assert( 'statusicoon per controle', substr_count( $h, 'class="dashicons dashicons-' ) === 16 );
 cm_assert( '"Oplossen" alleen bij wat niet in orde is', substr_count( $h, 'Oplossen:' ) === count( array_filter( $checks, function ( $c ) { return $c['status'] !== 'ok'; } ) ) );
 
 cm_test_group( 'Eenmalige melding na de update (spec §6.4)' );
@@ -84,6 +84,6 @@ cm_assert( 'toestemmingen en versie neutraal', $cards[2][5] === '' && $cards[3][
 $cards = cm_overzicht_cards( array( 'license' => 'Geen licentie', 'license_ok' => false, 'cookies' => 0, 'last_scan' => '', 'accept' => 0, 'reject' => 0, 'custom' => 0, 'version' => 1 ) );
 cm_assert( 'geen licentie of lege lijst → oranje', $cards[0][5] === 'warn' && $cards[1][5] === 'warn' );
 ob_start(); cm_render_compliance_table( $checks ); $h = ob_get_clean();
-cm_assert( 'elke controle krijgt een statusklasse', substr_count( $h, '<tr class="cm-check-' ) === 15 );
+cm_assert( 'elke controle krijgt een statusklasse', substr_count( $h, '<tr class="cm-check-' ) === 16 );
 
 exit( cm_test_summary() );

@@ -2,28 +2,41 @@
 
 ## [3.1.0] - nog niet uitgebracht
 
-### Nieuw: scan in de browser
+### Nieuw: scan in de browser, met controle vóór toestemming
 
-Naast de bestaande scan staat onder Cookies › Scannen de knop **Scan in de browser**. Die laadt de pagina's onzichtbaar in uw eigen browser, alsof een bezoeker alles accepteert. Scripts, Google Tag Manager en embeds draaien daarbij echt. Zo vindt de scan ook cookies die JavaScript zet, gegevens in localStorage en sessionStorage, en diensten die via GTM laden. De resultaten komen in dezelfde tabel met **Toevoegen**. Geladen domeinen die Cookiebaas niet kent, staan eronder, zodat u ze kunt nakijken.
+Naast de bestaande scan staat onder Cookies › Scannen de knop **Scan in de browser**. Die laadt de pagina's onzichtbaar in uw eigen browser, zoals een niet-ingelogde bezoeker ze ziet, in twee rondes.
 
+1. **Vóór toestemming.** Eerst bekijkt de scan de site als nieuwe bezoeker die nog niets koos. Plaatst of laadt de site dan al iets waarvoor toestemming nodig is, dan meldt de scan dat in rood. Denk aan een analytische cookie, of een pixel die niet geblokkeerd wordt. Bij een dienst die te vroeg laadt, staat de knop **Blokkeren**: die zet de host bij Blokkering › Patronen, zodat hij pas na toestemming laadt. Onbekende cookies en diensten meldt de scan als "controleren".
+2. **Na toestemming.** Daarna bekijkt de scan de site alsof de bezoeker alles accepteert. Scripts, Google Tag Manager en embeds draaien echt. Zo vindt hij ook cookies die JavaScript zet, gegevens in localStorage en sessionStorage, en diensten die via GTM laden. De resultaten komen in dezelfde tabel met **Toevoegen**.
+
+- De controle **Niets vóór toestemming** op het Overzicht gebruikt nu deze meting in plaats van alleen de instellingen. Zonder meting, of als die ouder is dan drie maanden, vraagt het Overzicht om de scan te draaien. De nieuwe controle **Cookielijst recent gecontroleerd** herinnert eraan als de laatste browserscan langer dan drie maanden geleden is.
+- Looptijden kloppen beter. De scan leest de echte vervaldatum van cookies uit, waar de browser dat toelaat. localStorage heet "Blijvend (tot verwijderd)" en sessionStorage "Sessie". Is de looptijd onbekend, dan blijft het veld leeg en vult u het zelf in; het werd niet langer ongemerkt "Sessie".
+- Diensten die geen cookies zetten maar wel het IP-adres van de bezoeker ontvangen, zoals Google Fonts en CDN's, meldt de scan apart. Vermeld ze in de privacyverklaring of host de bestanden op uw eigen website.
 - Standaard scant hij de homepage en 20 andere pagina's; vink **alle pagina's** aan voor een volledige scan.
-- De scanmodus werkt alleen voor een ingelogde beheerder met een geldige, persoonlijke code. Bezoekers kunnen hem niet aanzetten. Pagina's in scanmodus komen nooit in de paginacache, tonen geen banner en leggen niets vast in de consent log.
+- De scanmodus werkt alleen voor een ingelogde beheerder met een geldige, persoonlijke code. Bezoekers kunnen hem niet aanzetten. Pagina's in scanmodus komen nooit in de paginacache en leggen niets vast in de consent log. Uw eigen cookiekeuze op de site blijft ongewijzigd.
 - Cookies van uw eigen site die tijdens de scan in uw browser worden gezet, ruimt de scan achteraf op. Cookies van derden blijven in uw browser staan.
-- Tags die in Google Tag Manager op het Cookiebaas-event vuren (zoals Meta), vuren tijdens de scan ook.
+- Tags die in Google Tag Manager op het Cookiebaas-event vuren (zoals Meta), vuren in de ronde na toestemming ook.
 - Lazy-loaded embeds laden mee: de scan scrollt door elke pagina.
-- Google Fonts meldt de scan apart. Het zet geen cookies, maar stuurt wel het IP-adres van de bezoeker naar Google.
 - Cookies die al in uw browser stonden, meldt de scan alleen als Cookiebaas ze kent. Onbekende cookies komen vaak van plugins in de admin.
+- Wat pas gebeurt na een handeling (winkelwagen, formulier, chat), ziet geen enkele scan. Vul dat aan via F12.
 - De bezochte pagina's kunnen als bezoek in uw statistieken verschijnen. De scancode staat dan niet in het adres.
 - De scan is gratis.
 
 ### Onbekende cookies: eerst een categorie kiezen
 
-Kent Cookiebaas een gevonden cookie niet, dan kiest u in de resultatentabel zelf de categorie voordat u hem toevoegt. Dat geldt voor beide scans. Voorheen kwam zo'n cookie ongemerkt als Functioneel in de lijst, en dat is een categorie die zonder toestemming mag. **Alle gevonden cookies toevoegen** slaat onbekende cookies zonder gekozen categorie over en meldt hoeveel dat er zijn.
+Kent Cookiebaas een gevonden cookie niet, dan kiest u in de resultatentabel zelf de categorie voordat u hem toevoegt. Dat geldt voor beide scans. Voorheen kwam zo'n cookie ongemerkt als Functioneel in de lijst, en dat is een categorie die zonder toestemming mag. **Alle gevonden cookies toevoegen** slaat onbekende cookies zonder gekozen categorie over en meldt hoeveel dat er zijn. Bij de keuze staat een hint: Functioneel alleen als de site zonder de cookie niet werkt; twijfelt u, kies dan Marketing.
 
-### Automatische scan: onbekende cookies op het Overzicht
+Cookies die de Open Cookie Database als "Personalization" indeelt, zijn niet meer vanzelf functioneel. Personalisatie van inhoud of advertenties vraagt toestemming, dus u kiest zelf. Na de update haalt Cookiebaas de database daarvoor één keer opnieuw op.
 
+### Opslag in de browser opruimen bij weigeren
+
+Weigert of trekt een bezoeker zijn toestemming in, dan verwijdert Cookiebaas nu ook localStorage en sessionStorage met dezelfde namen als de cookies van die categorie. Tracking-ID's in opslag in de browser bleven voorheen staan.
+
+### Automatische scan
+
+- De automatische scan werkt nu als de knop **Cookies scannen**: hij kijkt naar HTTP-headers, bekende scripts (ook geblokkeerde) en embeds, op de homepage en de tien nieuwste pagina's. Voorheen keek hij alleen naar de headers van de homepage en vond hij weinig.
 - **Automatisch toevoegen** neemt alleen cookies op waarvan Cookiebaas de categorie kent. Een onbekende cookie komt niet meer ongemerkt als Functioneel in de lijst. Hij verschijnt als melding op het **Overzicht** en komt pas in de cookielijst als u daar een categorie kiest. Kiest u **Negeren**, dan voegt de scan hem niet toe en meldt hij hem niet opnieuw.
-- De automatische scan gebruikt nu ook de ingebouwde kennisbank, net als de handmatige scans. Daardoor blijven er minder cookies onbekend.
+- De automatische scan gebruikt ook de ingebouwde kennisbank, net als de handmatige scans.
 - De mail bij **Melding per e-mail** gebruikt Nederlandse categorienamen, zet bij onbekende cookies "kies zelf een categorie" en linkt naar Cookies › Scannen.
 
 ## [3.0.0] - 2026-09-27

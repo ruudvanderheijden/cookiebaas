@@ -883,7 +883,7 @@ function cm_autoscan_entry( $name, $row ) {
     if ( ! $row ) {
         return array( 'name' => $name, 'provider' => 'Onbekend', 'purpose' => '', 'duration' => '', 'category' => 'functional' );
     }
-    $cat = in_array( $row['category'] ?? '', array( 'functional', 'analytics', 'marketing' ), true ) ? $row['category'] : 'functional';
+    $cat = in_array( $row['category'] ?? '', array( 'functional', 'analytics', 'marketing' ), true ) ? $row['category'] : 'unknown'; // bijv. personalisatie: de beheerder kiest
     return array(
         'name'     => $name,
         'provider' => ( $row['platform'] ?? '' ) ?: ( ( $row['controller'] ?? '' ) ?: 'Onbekend' ),

@@ -29,7 +29,7 @@ function cm_scan_result_to_row( array $ck ) {
         'name'     => (string) $ck['name'],
         'provider' => isset( $ck['provider'] ) ? (string) $ck['provider'] : '',
         'purpose'  => isset( $ck['description'] ) ? (string) $ck['description'] : '',
-        'duration' => isset( $ck['duration'] ) && (string) $ck['duration'] !== '' ? (string) $ck['duration'] : 'Sessie',
+        'duration' => isset( $ck['duration'] ) ? (string) $ck['duration'] : '', // onbekend blijft leeg (zelf aanvullen), niet "Sessie"
         'category' => in_array( $type, array( 'functional', 'analytics', 'marketing' ), true ) ? $type : 'functional',
     );
 }

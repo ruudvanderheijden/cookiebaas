@@ -12,7 +12,16 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 add_action( 'wp_ajax_cm_import_cookie_db', 'cm_ajax_import_cookie_db' );
 function cm_ajax_import_cookie_db() {
     cm_admin_verify_ajax( 'import_cookie_db' );
+    $r = cm_cookie_db_import();
+    if ( ! $r['ok'] ) wp_send_json_error( array( 'msg' => $r['msg'] ) );
+    wp_send_json_success( $r );
+}
 
+/**
+ * Open Cookie Database downloaden en de tabel vervangen. Ook voor de cron na een
+ * update die de indeling wijzigt. @return array( ok, msg, imported, skipped )
+ */
+function cm_cookie_db_import() {
     global $wpdb;
     $table = $wpdb->prefix . 'cm_cookie_db';
 
@@ -24,20 +33,17 @@ function cm_ajax_import_cookie_db() {
     ));
 
     if ( is_wp_error( $response ) ) {
-        wp_send_json_error( array( 'msg' => 'Download mislukt: ' . $response->get_error_message() ) );
-        return;
+        return array( 'ok' => false, 'msg' => 'Download mislukt: ' . $response->get_error_message() );
     }
     if ( (int) wp_remote_retrieve_response_code( $response ) !== 200 ) {
-        wp_send_json_error( array( 'msg' => 'Download mislukt (HTTP ' . (int) wp_remote_retrieve_response_code( $response ) . '). De bestaande database is niet gewijzigd.' ) );
-        return;
+        return array( 'ok' => false, 'msg' => 'Download mislukt (HTTP ' . (int) wp_remote_retrieve_response_code( $response ) . '). De bestaande database is niet gewijzigd.' );
     }
 
     // Eerst alles controleren en inlezen; pas bij een geldig bestand de tabel vervangen
     // (een foutpagina of half bestand zou de database anders leegmaken)
     $parsed = cm_cookie_db_parse( wp_remote_retrieve_body( $response ) );
     if ( count( $parsed['rows'] ) < 500 ) {
-        wp_send_json_error( array( 'msg' => 'Het gedownloade bestand lijkt niet op de Open Cookie Database. De bestaande database is niet gewijzigd.' ) );
-        return;
+        return array( 'ok' => false, 'msg' => 'Het gedownloade bestand lijkt niet op de Open Cookie Database. De bestaande database is niet gewijzigd.' );
     }
 
     // Zorg dat tabel bestaat
@@ -58,11 +64,12 @@ function cm_ajax_import_cookie_db() {
     update_option( 'cm_cookie_db_updated', current_time('mysql') );
     update_option( 'cm_cookie_db_count', $imported );
 
-    wp_send_json_success( array(
+    return array(
+        'ok'       => true,
         'imported' => $imported,
         'skipped'  => $skipped,
         'msg'      => "Database bijgewerkt: {$imported} cookies geïmporteerd.",
-    ));
+    );
 }
 
 /**
@@ -78,7 +85,9 @@ function cm_cookie_db_parse( $body ) {
         'Functional'      => 'functional',
         'Analytics'       => 'analytics',
         'Marketing'       => 'marketing',
-        'Personalization' => 'functional',
+        // Personalisatie is alleen functioneel als de bezoeker er zelf om vraagt (taal, winkelwagen);
+        // voor inhoud of advertenties is toestemming nodig. Niet raden: de beheerder kiest.
+        'Personalization' => 'unknown',
         'Security'        => 'functional',
     );
     foreach ( explode( "\n", str_replace( "\r\n", "\n", (string) $body ) ) as $line ) {
@@ -156,7 +165,12 @@ add_action( 'wp_ajax_cm_scan_urls', 'cm_ajax_scan_urls' );
  */
 function cm_ajax_scan_urls() {
     cm_admin_verify_ajax( 'scan' );
+    $urls = cm_scan_collect_urls();
+    wp_send_json_success( array( 'urls' => $urls, 'total' => count($urls) ) );
+}
 
+/** Homepage plus alle gepubliceerde pagina's en berichten (zonder dubbelen). */
+function cm_scan_collect_urls() {
     $home = trailingslashit( home_url('/') );
     $urls = array( $home );
     $visited = array( $home => true );
@@ -177,8 +191,7 @@ function cm_ajax_scan_urls() {
             $urls[] = $url;
         }
     }
-
-    wp_send_json_success( array( 'urls' => $urls, 'total' => count($urls) ) );
+    return $urls;
 }
 
 add_action( 'wp_ajax_cm_scan_batch', 'cm_ajax_scan_batch' );
@@ -208,7 +221,15 @@ function cm_ajax_scan_batch() {
 
     $urls = cm_scan_filter_urls( isset( $_POST['urls'] ) ? (array) wp_unslash( $_POST['urls'] ) : array() );
     if ( empty($urls) ) wp_send_json_success( array( 'cookies' => array(), 'scanned' => 0 ) );
+    wp_send_json_success( cm_scan_pages( $urls ) );
+}
 
+/**
+ * Serverscan van een reeks eigen URL's (als niet-ingelogde bezoeker): Set-Cookie-
+ * headers, bekende scripts (ook geblokkeerde) en embeds. Gedeeld door de
+ * handmatige scan en de automatische scan.
+ */
+function cm_scan_pages( array $urls ) {
     // Hergebruik de kennisbank en lookup-logica uit de hoofdscanner
     $db_count = (int) get_option('cm_cookie_db_count', 0);
     $use_db   = $db_count > 0;
@@ -413,12 +434,12 @@ function cm_ajax_scan_batch() {
         if ( ! $already ) $all[] = $entry;
     }
 
-    wp_send_json_success( array(
+    return array(
         'cookies'       => $all,
         'scanned'       => $pages_scanned,
         'http_count'    => count($http_cookies),
         'script_count'  => count($script_cookies),
-    ));
+    );
 }
 
 /**
@@ -649,37 +670,77 @@ function cm_secs_to_human( $secs ) {
 
 /* ================================================================
    BROWSERSCAN (3.1) — wat de verborgen iframes in de browser vonden
-   (cookienamen, opslag-sleutels, geladen externe adressen) omzetten naar
-   dezelfde resultaatrijen als de serverscan.
+   (cookies, opslag, geladen externe adressen) omzetten naar dezelfde
+   resultaatrijen als de serverscan, plus de controle vóór toestemming.
 ================================================================ */
 
-/** Omschrijving van een cookienaam: eerst de cookiedatabase, dan de ingebouwde kennisbank. */
+/** Omschrijving van een cookienaam: de cookiedatabase, met de categorie van de eigen kennisbank als die er is. */
 function cm_scan_cookie_info( $name ) {
+    $fb  = function_exists( 'cm_cookie_fallback_info' ) ? cm_cookie_fallback_info( $name ) : null;
     $row = function_exists( 'cm_lookup_cookie' ) ? cm_lookup_cookie( $name ) : false;
     if ( $row ) {
         $e = cm_autoscan_entry( $name, $row );
-        return array( 'type' => $e['category'], 'provider' => $e['provider'], 'duration' => $e['duration'], 'description' => $e['purpose'] );
+        return array( 'type' => $fb ? $fb[0] : $e['category'], 'provider' => $e['provider'], 'duration' => $e['duration'], 'description' => $e['purpose'] );
     }
-    $fb = function_exists( 'cm_cookie_fallback_info' ) ? cm_cookie_fallback_info( $name ) : null;
     if ( $fb ) return array( 'type' => $fb[0], 'provider' => $fb[1], 'duration' => $fb[2], 'description' => $fb[3] );
     return null;
 }
 
+/** Diensten die geen cookies zetten maar wel het IP-adres van de bezoeker ontvangen (AVG: ontvanger). */
+function cm_scan_cookieless_hosts() {
+    return array( 'fonts.googleapis.com', 'fonts.gstatic.com', 'ajax.googleapis.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'unpkg.com', 's.w.org', 'use.typekit.net', 'p.typekit.net', 'use.fontawesome.com', 'kit.fontawesome.com' );
+}
+
+/** Eigen opslag van Cookiebaas en de ingebouwde cookie: nooit als bevinding melden. */
+function cm_scan_own_names() {
+    return array( 'cm_sid' => true, 'cm_logged' => true, 'cm_revoke' => true, 'cc_cm_consent' => true );
+}
+
 /**
- * @param string[] $cookies   nieuwe cookienamen (document.cookie)
- * @param string[] $storage   nieuwe sleutels in localStorage/sessionStorage
- * @param string[] $resources geladen adressen (zonder querystring)
- * @param string[] $existing  cookies die al vóór de scan in de browser stonden: alleen gemeld als ze bekend
- *                            zijn (bijv. _ga van een eerder bezoek); onbekende zijn vaak van plugins in de admin
- * @return array( 'cookies' => rijen, 'hosts' => onbekende externe domeinen )
+ * Wat een geladen adres zegt: array( host, soort, aanbieder, categorie, signaturen ).
+ * Soort: 'own' (deze site), 'cookieless', 'known' (herkende dienst) of 'unknown'.
  */
-function cm_browser_scan_rows( array $cookies, array $storage, array $resources, array $existing = array() ) {
-    $skip = array( 'cm_sid' => true, 'cm_logged' => true, 'cm_revoke' => true ); // eigen opslag van Cookiebaas
+function cm_scan_resource( $url ) {
+    $url  = strtok( (string) $url, '?#' );
+    $host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+    $home = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+    if ( $host === '' || $host === $home ) return array( $host, 'own', '', '', array() );
+    if ( in_array( $host, cm_scan_cookieless_hosts(), true ) ) return array( $host, 'cookieless', '', '', array() );
+    $sigs = array();
+    foreach ( cm_script_signatures() as $pattern => $list ) {
+        if ( stripos( $url, $pattern ) !== false ) $sigs = array_merge( $sigs, $list );
+    }
+    if ( ! $sigs ) return array( $host, 'unknown', '', '', array() );
+    $rank = array( 'functional' => 0, 'analytics' => 1, 'marketing' => 2 );
+    $cat  = 'functional';
+    foreach ( $sigs as $sig ) {
+        if ( isset( $rank[ $sig[1] ] ) && $rank[ $sig[1] ] > $rank[ $cat ] ) $cat = $sig[1];
+    }
+    return array( $host, 'known', $sigs[0][2], $cat, $sigs );
+}
+
+/** Looptijd uit de browser (seconden; 0 = sessie) → leesbare tekst, of '' als onbekend. */
+function cm_scan_measured_duration( array $durations, $name ) {
+    if ( ! isset( $durations[ $name ] ) || ! is_numeric( $durations[ $name ] ) ) return '';
+    return cm_secs_to_human( (int) $durations[ $name ] );
+}
+
+/**
+ * Resultaten van de ronde met alles geaccepteerd.
+ * $d: cookies (nieuw), existing (stonden er al: alleen gemeld als ze bekend zijn;
+ * onbekende komen vaak van plugins in de admin), local, session (nieuwe sleutels),
+ * durations (naam => seconden, uit de browser), resources (geladen externe adressen).
+ * @return array( 'cookies' => rijen, 'hosts' => onbekende domeinen, 'external' => ontvangers zonder cookies )
+ */
+function cm_browser_scan_rows( array $d ) {
+    $get  = function ( $k ) use ( $d ) { return isset( $d[ $k ] ) && is_array( $d[ $k ] ) ? $d[ $k ] : array(); };
+    $durations = $get( 'durations' );
+    $skip = cm_scan_own_names();
     foreach ( cm_get_cookie_list() as $ck ) { // incl. de ingebouwde cookie
         if ( isset( $ck['name'] ) ) $skip[ strtolower( (string) $ck['name'] ) ] = true;
     }
     $rows = array();
-    $add  = function ( $name, $how, $info = null, array $fallback = array() ) use ( &$rows, &$skip ) {
+    $add  = function ( $name, $how, $info = null, array $fallback = array(), $duration = '' ) use ( &$rows, &$skip ) {
         $name = sanitize_text_field( (string) $name );
         $key  = strtolower( $name );
         if ( $name === '' || strlen( $name ) > 128 || isset( $skip[ $key ] ) || cm_is_admin_only_cookie( $name ) ) return;
@@ -689,52 +750,41 @@ function cm_browser_scan_rows( array $cookies, array $storage, array $resources,
             'name'        => $name,
             'type'        => isset( $info['type'] ) ? $info['type'] : 'unknown',
             'provider'    => isset( $info['provider'] ) ? $info['provider'] : '',
-            'duration'    => isset( $info['duration'] ) ? $info['duration'] : '',
+            // Gemeten looptijd gaat voor; geen meting en onbekend → leeg (zelf aanvullen), niet "Sessie"
+            'duration'    => $duration !== '' ? $duration : ( isset( $info['duration'] ) ? $info['duration'] : '' ),
             'description' => isset( $info['description'] ) ? $info['description'] : '',
             'how'         => $how,
         );
     };
 
-    foreach ( $cookies as $name ) $add( $name, 'browser', cm_scan_cookie_info( $name ) );
-    foreach ( $existing as $name ) {
+    foreach ( $get( 'cookies' ) as $name ) $add( $name, 'browser', cm_scan_cookie_info( $name ), array(), cm_scan_measured_duration( $durations, $name ) );
+    foreach ( $get( 'existing' ) as $name ) {
         $info = cm_scan_cookie_info( $name );
-        if ( $info ) $add( $name, 'browser', $info );
+        if ( $info ) $add( $name, 'browser', $info, array(), cm_scan_measured_duration( $durations, $name ) );
     }
-    foreach ( $storage as $name ) $add( $name, 'storage', cm_scan_cookie_info( $name ) );
+    // localStorage blijft staan tot het gewist wordt; sessionStorage verdwijnt met het tabblad
+    foreach ( $get( 'local' ) as $name ) $add( $name, 'storage', cm_scan_cookie_info( $name ), array( 'description' => 'Opslag in de browser (localStorage).' ), 'Blijvend (tot verwijderd)' );
+    foreach ( $get( 'session' ) as $name ) $add( $name, 'storage', cm_scan_cookie_info( $name ), array( 'description' => 'Opslag in de browser (sessionStorage).' ), 'Sessie' );
 
-    // Geladen externe adressen: bekende diensten → hun cookies; de rest als onbekend domein
-    $home    = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
-    $unknown = array();
-    $known   = array();
-    $fonts   = false;
-    // Zetten zelf geen cookies (CDN's voor lettertypen en bibliotheken)
-    $cookieless = array( 'fonts.googleapis.com', 'fonts.gstatic.com', 'ajax.googleapis.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'unpkg.com', 's.w.org', 'use.typekit.net', 'p.typekit.net' );
-    foreach ( $resources as $url ) {
-        $url  = strtok( (string) $url, '?#' );
-        $host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
-        if ( $host === '' || $host === $home ) continue;
-        if ( in_array( $host, $cookieless, true ) ) {
-            if ( strpos( $host, 'fonts.g' ) === 0 ) $fonts = true;
-            continue;
+    // Geladen externe adressen: bekende diensten → hun cookies; zonder cookies → ontvanger; de rest onbekend
+    $unknown  = array();
+    $known    = array();
+    $external = array();
+    foreach ( $get( 'resources' ) as $url ) {
+        list( $host, $kind, , , $sigs ) = cm_scan_resource( $url );
+        if ( $kind === 'own' ) continue;
+        if ( $kind === 'cookieless' ) { $external[ $host ] = true; continue; }
+        if ( $kind === 'unknown' ) { $unknown[ $host ] = true; continue; }
+        $known[ $host ] = true;
+        foreach ( $sigs as $sig ) {
+            if ( substr( $sig[0], -1 ) === '_' && cm_browser_scan_has_prefix( $rows, $skip, $sig[0] ) ) continue; // _ga_ als _ga_ABC123 al gevonden of in de lijst is
+            $add( $sig[0], 'host', cm_scan_cookie_info( $sig[0] ), array( 'type' => $sig[1], 'provider' => $sig[2], 'duration' => $sig[3], 'description' => 'Gezet door ' . $sig[2] . ' (geladen van ' . $host . ').' ) );
         }
-        $matched = false;
-        foreach ( cm_script_signatures() as $pattern => $sigs ) {
-            if ( stripos( $url, $pattern ) === false ) continue;
-            $matched = true;
-            foreach ( $sigs as $sig ) {
-                if ( substr( $sig[0], -1 ) === '_' && cm_browser_scan_has_prefix( $rows, $skip, $sig[0] ) ) continue; // _ga_ als _ga_ABC123 al gevonden of in de lijst is
-                $add( $sig[0], 'host', cm_scan_cookie_info( $sig[0] ), array( 'type' => $sig[1], 'provider' => $sig[2], 'duration' => $sig[3], 'description' => 'Gezet door ' . $sig[2] . ' (geladen van ' . $host . ').' ) );
-            }
-        }
-        if ( $matched ) $known[ $host ] = true;
-        else $unknown[ $host ] = true;
     }
-    $notes = array();
-    if ( $fonts ) $notes[] = 'Google Fonts wordt van de servers van Google geladen. Dat zet geen cookies, maar stuurt wel het IP-adres van de bezoeker naar Google. Host de lettertypen bij voorkeur op uw eigen website.';
     return array(
-        'cookies' => $rows,
-        'hosts'   => array_slice( array_keys( array_diff_key( $unknown, $known ) ), 0, 50 ),
-        'notes'   => $notes,
+        'cookies'  => $rows,
+        'hosts'    => array_slice( array_keys( array_diff_key( $unknown, $known ) ), 0, 50 ),
+        'external' => array_slice( array_keys( $external ), 0, 50 ),
     );
 }
 
@@ -748,16 +798,133 @@ function cm_browser_scan_has_prefix( array $rows, array $skip, $prefix ) {
     return false;
 }
 
+/**
+ * Controle vóór toestemming: wat de site plaatste of laadde bij een nieuwe
+ * bezoeker die nog niets koos. $pre: cookies (nieuw of gewijzigd), local, session,
+ * resources. Functioneel mag; analytisch/marketing niet (error); onbekend: controleren
+ * (warn); diensten zonder cookies ontvangen wel het IP-adres (info).
+ * @return array( 'items' => array, 'errors' => int, 'warnings' => int )
+ */
+function cm_browser_scan_preconsent( array $pre ) {
+    $get   = function ( $k ) use ( $pre ) { return isset( $pre[ $k ] ) && is_array( $pre[ $k ] ) ? $pre[ $k ] : array(); };
+    $own   = cm_scan_own_names();
+    $label = array( 'analytics' => 'Analytisch', 'marketing' => 'Marketing' );
+    $listed = array();
+    foreach ( cm_get_cookie_list() as $ck ) { // de eigen indeling van de beheerder gaat voor
+        if ( isset( $ck['name'], $ck['category'] ) ) $listed[ (string) $ck['name'] ] = (string) $ck['category'];
+    }
+    $items = array();
+    $seen  = array();
+    $store = function ( $name, $kind ) use ( &$items, &$seen, $own, $label, $listed ) {
+        $name = sanitize_text_field( (string) $name );
+        if ( $name === '' || strlen( $name ) > 128 || isset( $own[ $name ] ) || isset( $seen[ $kind . $name ] ) || cm_is_admin_only_cookie( $name ) ) return;
+        $seen[ $kind . $name ] = true;
+        $info = cm_scan_cookie_info( $name );
+        $cat  = isset( $listed[ $name ] ) ? $listed[ $name ] : ( $info ? $info['type'] : 'unknown' );
+        if ( $cat === 'functional' ) return; // strikt noodzakelijk: mag zonder toestemming
+        $what = $kind === 'cookie' ? 'Cookie' : 'Opslag in de browser';
+        $known = isset( $label[ $cat ] );
+        $items[] = array(
+            'kind'     => $kind,
+            'name'     => $name,
+            'provider' => $info ? (string) $info['provider'] : '',
+            'level'    => $known ? 'error' : 'warn',
+            'text'     => $known
+                ? $what . ' (' . $label[ $cat ] . ') wordt vóór toestemming geplaatst.'
+                : $what . ' die Cookiebaas niet kent, wordt vóór toestemming geplaatst. Controleer of die strikt noodzakelijk is.',
+            'block'    => '',
+        );
+    };
+    foreach ( $get( 'cookies' ) as $n ) $store( $n, 'cookie' );
+    foreach ( array_merge( $get( 'local' ), $get( 'session' ) ) as $n ) $store( $n, 'storage' );
+
+    $advanced = (bool) cm_get( 'google_consent_mode_advanced' ) && ! cm_get( 'google_load_default' );
+    $hosts    = array();
+    foreach ( $get( 'resources' ) as $url ) {
+        list( $host, $kind, $provider, $cat ) = cm_scan_resource( $url );
+        if ( $kind === 'own' || isset( $hosts[ $host ] ) ) continue;
+        if ( $kind === 'known' && $cat === 'functional' ) continue;
+        $hosts[ $host ] = true;
+        if ( $kind === 'cookieless' ) {
+            $items[] = array( 'kind' => 'host', 'name' => $host, 'provider' => '', 'level' => 'info', 'text' => 'Geen cookies, maar ontvangt vóór toestemming wel het IP-adres van de bezoeker. Vermeld dit in de privacyverklaring of host het bestand op uw eigen website.', 'block' => '' );
+        } elseif ( $kind === 'known' && $advanced && preg_match( '/(^|\.)(googletagmanager|google-analytics)\.com$/', $host ) ) {
+            $items[] = array( 'kind' => 'host', 'name' => $host, 'provider' => $provider, 'level' => 'info', 'text' => 'De Google-tag laadt vóór toestemming zonder cookies: zo werkt Consent Mode advanced, die u heeft aangezet.', 'block' => '' );
+        } elseif ( $kind === 'known' ) {
+            $items[] = array( 'kind' => 'host', 'name' => $host, 'provider' => $provider, 'level' => 'error', 'text' => $provider . ' (' . $label[ $cat ] . ') laadt vóór toestemming.', 'block' => $cat );
+        } else {
+            $items[] = array( 'kind' => 'host', 'name' => $host, 'provider' => '', 'level' => 'warn', 'text' => 'Laadt vóór toestemming. Cookiebaas kent deze dienst niet: controleer of hij cookies zet of gegevens verzamelt.', 'block' => 'marketing' );
+        }
+    }
+    $count = function ( $level ) use ( $items ) {
+        return count( array_filter( $items, function ( $i ) use ( $level ) { return $i['level'] === $level; } ) );
+    };
+    return array( 'items' => array_slice( $items, 0, 100 ), 'errors' => $count( 'error' ), 'warnings' => $count( 'warn' ) );
+}
+
 add_action( 'wp_ajax_cm_browser_scan_lookup', 'cm_ajax_browser_scan_lookup' );
 function cm_ajax_browser_scan_lookup() {
     cm_admin_verify_ajax( 'scan' );
     $data = isset( $_POST['data'] ) && is_string( $_POST['data'] ) ? json_decode( wp_unslash( $_POST['data'] ), true ) : null;
     if ( ! is_array( $data ) ) wp_send_json_error( array( 'msg' => 'Ongeldige scangegevens.' ) );
-    $list = function ( $key, $max ) use ( $data ) {
-        $v = isset( $data[ $key ] ) && is_array( $data[ $key ] ) ? $data[ $key ] : array();
+    $list = function ( array $src, $key, $max ) {
+        $v = isset( $src[ $key ] ) && is_array( $src[ $key ] ) ? $src[ $key ] : array();
         return array_slice( array_values( array_filter( $v, 'is_string' ) ), 0, $max );
     };
-    wp_send_json_success( cm_browser_scan_rows( $list( 'cookies', 200 ), $list( 'storage', 200 ), $list( 'resources', 500 ), $list( 'existing', 200 ) ) );
+    $durations = array();
+    if ( isset( $data['durations'] ) && is_array( $data['durations'] ) ) {
+        foreach ( array_slice( $data['durations'], 0, 400, true ) as $name => $secs ) {
+            if ( is_string( $name ) && is_numeric( $secs ) ) $durations[ $name ] = (int) $secs;
+        }
+    }
+    $rows = cm_browser_scan_rows( array(
+        'cookies'   => $list( $data, 'cookies', 200 ),
+        'existing'  => $list( $data, 'existing', 200 ),
+        'local'     => $list( $data, 'local', 200 ),
+        'session'   => $list( $data, 'session', 200 ),
+        'durations' => $durations,
+        'resources' => $list( $data, 'resources', 500 ),
+    ) );
+    $pre_in = isset( $data['pre'] ) && is_array( $data['pre'] ) ? $data['pre'] : array();
+    $pre    = cm_browser_scan_preconsent( array(
+        'cookies'   => $list( $pre_in, 'cookies', 200 ),
+        'local'     => $list( $pre_in, 'local', 200 ),
+        'session'   => $list( $pre_in, 'session', 200 ),
+        'resources' => $list( $pre_in, 'resources', 500 ),
+    ) );
+    $pages = isset( $data['pages'] ) ? max( 0, (int) $data['pages'] ) : 0;
+    if ( $pages > 0 ) {
+        // Voor het Overzicht: de meting vervangt de controle op instellingen
+        update_option( 'cm_browser_scan_last', gmdate( 'Y-m-d H:i:s' ), false );
+        update_option( 'cm_preconsent_check', array( 'date' => gmdate( 'Y-m-d H:i:s' ), 'pages' => $pages, 'errors' => $pre['errors'], 'warnings' => $pre['warnings'] ), false );
+    }
+    $rows['preconsent'] = $pre;
+    wp_send_json_success( $rows );
+}
+
+/**
+ * Een host die vóór toestemming laadde, toevoegen aan de blokkeerpatronen
+ * (Blokkering › Patronen). Scripts van die host laden daarna pas na toestemming.
+ */
+function cm_block_host( $host, $cat ) {
+    $host = strtolower( trim( (string) $host ) );
+    if ( ! preg_match( '/^[a-z0-9-]+(\.[a-z0-9-]+)+$/', $host ) || ! in_array( $cat, array( 'analytics', 'marketing' ), true ) ) return false;
+    $settings = cm_get_settings();
+    $key      = 'block_' . $cat . '_patterns';
+    $current  = array_filter( array_map( 'trim', explode( ',', isset( $settings[ $key ] ) ? (string) $settings[ $key ] : '' ) ) );
+    if ( in_array( $host, $current, true ) ) return true;
+    $current[] = $host;
+    $settings[ $key ] = implode( ', ', $current );
+    update_option( 'cm_settings', $settings );
+    return true;
+}
+
+add_action( 'wp_ajax_cm_block_host', 'cm_ajax_block_host' );
+function cm_ajax_block_host() {
+    cm_admin_verify_ajax( 'scan' );
+    $host = isset( $_POST['host'] ) && is_string( $_POST['host'] ) ? wp_unslash( $_POST['host'] ) : '';
+    $cat  = isset( $_POST['category'] ) && is_string( $_POST['category'] ) ? wp_unslash( $_POST['category'] ) : '';
+    if ( ! cm_block_host( $host, $cat ) ) wp_send_json_error( array( 'msg' => 'Deze host kan niet worden geblokkeerd.' ) );
+    wp_send_json_success();
 }
 
 /* ---- Automatische scan: onbekende cookies wachten op een keuze (Overzicht) ---- */
@@ -786,25 +953,30 @@ function cm_auto_scan_add_pending( array $unknown ) {
 }
 
 /**
- * Splitst gevonden cookienamen in bekende (database of kennisbank) en onbekende.
- * Namen die al in de lijst staan, op een keuze wachten, genegeerd zijn of alleen
- * voor beheerders gelden, vallen weg. @return array( bekend[], onbekend[] )
+ * Splitst gevonden cookies in bekende (met categorie) en onbekende. Elk item is
+ * een scanrij (name, type, provider, duration, description) of een losse naam
+ * (dan database en kennisbank). Namen die al in de lijst staan, op een keuze
+ * wachten, genegeerd zijn of alleen voor beheerders gelden, vallen weg.
+ * @return array( bekend[], onbekend[] )
  */
-function cm_auto_scan_classify( array $names, array $existing_names ) {
+function cm_auto_scan_classify( array $found, array $existing_names ) {
     foreach ( array_merge( array_keys( cm_auto_scan_pending() ), cm_auto_scan_ignored() ) as $name ) {
         $existing_names[ $name ] = true;
     }
     $known   = array();
     $unknown = array();
-    foreach ( $names as $name ) {
-        if ( isset( $existing_names[ $name ] ) || cm_is_admin_only_cookie( $name ) ) continue;
+    foreach ( $found as $item ) {
+        $name = is_array( $item ) ? ( isset( $item['name'] ) ? (string) $item['name'] : '' ) : (string) $item;
+        if ( $name === '' || isset( $existing_names[ $name ] ) || cm_is_admin_only_cookie( $name ) ) continue;
         $existing_names[ $name ] = true;
-        $info  = cm_scan_cookie_info( $name );
+        $row   = is_array( $item ) ? $item : array();
+        $info  = isset( $row['type'] ) && $row['type'] !== 'unknown' ? $row : cm_scan_cookie_info( $name );
         $entry = array(
             'name'     => $name,
             'provider' => $info ? (string) $info['provider'] : '',
             'purpose'  => $info ? (string) $info['description'] : '',
-            'duration' => $info ? (string) $info['duration'] : '',
+            // Onbekend: de gemeten looptijd uit de header blijft bewaard voor als de beheerder hem toevoegt
+            'duration' => $info ? (string) $info['duration'] : ( isset( $row['duration'] ) ? (string) $row['duration'] : '' ),
             'category' => $info ? (string) $info['type'] : '',
         );
         if ( in_array( $entry['category'], array( 'functional', 'analytics', 'marketing' ), true ) ) $known[] = $entry;

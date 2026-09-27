@@ -1469,7 +1469,24 @@ function cm_render_frontend() {
                 });
             });
 
+            deleteStorageKeys(names, prefixes);
             return toDelete; // geef terug voor logging
+        }
+
+        // Opslag in de browser (localStorage/sessionStorage) valt net als cookies onder de cookiewet:
+        // bij weigeren of intrekken dezelfde namen en prefixen weghalen
+        function deleteStorageKeys(names, prefixes) {
+            [window.localStorage, window.sessionStorage].forEach(function(store) {
+                try {
+                    for (var i = store.length - 1; i >= 0; i--) {
+                        var k = store.key(i);
+                        if (!k || k.indexOf('cm_') === 0) continue; // eigen opslag van Cookiebaas
+                        var hit = names.indexOf(k) !== -1;
+                        for (var j = 0; !hit && j < prefixes.length; j++) hit = k.indexOf(prefixes[j]) === 0;
+                        if (hit) store.removeItem(k);
+                    }
+                } catch(e) {}
+            });
         }
 
         // Bij pageload: check of er een revoke-flag staat en verwijder direct, vóór GA-init
@@ -2108,6 +2125,8 @@ function cm_render_frontend() {
                 });
             });
 
+            deleteStorageKeys(names, names.map(function(b) { return b + '_'; }));
+
             // Zet toggles van verwijderde cookies ook uit zodat UI klopt
             allNames.forEach(function(name) {
                 var cb = document.querySelector('.cm-cookie-toggle[data-cookie="' + name + '"]');
@@ -2139,6 +2158,7 @@ function cm_render_frontend() {
         }
 
         function logConsent(analytics, marketing, method) {
+            if (window.cmScanFresh) return; // browserscan als nieuwe bezoeker: nooit iets vastleggen
             if (!AJAX_URL) { console.warn('[CM] logConsent: geen AJAX_URL'); return; }
             markLoggedThisSession();
             try {

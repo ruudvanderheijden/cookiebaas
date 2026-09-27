@@ -70,3 +70,6 @@
 /* Browserscan: pagina's onzichtbaar maar wél in beeld laden (anders laden lazy-load embeds niet), op volle breedte */
 .cm-bscan-holder { position: fixed; left: 0; top: 0; width: 1280px; height: 900px; overflow: hidden; opacity: 0; pointer-events: none; z-index: -1; }
 .cm-bscan-frame { width: 1280px; height: 900px; border: 0; }
+/* Browserscan: controle vóór toestemming */
+.cm-preconsent { list-style: disc; margin: 0 0 8px 20px; }
+.cm-preconsent li { margin: 4px 0; }

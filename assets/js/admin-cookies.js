@@ -130,7 +130,7 @@
       tr.insertCell().appendChild(add);
     });
     result.appendChild(table);
-    result.appendChild(el('p', 'HTTP-header: gezet door de server. Script: afgeleid uit trackingscripts (de browser zet de cookie). Embed: gezet door een ingesloten dienst (bijv. een video). Browser: gevonden in uw browser tijdens de browserscan. Opslag: localStorage of sessionStorage. Extern script: afgeleid uit een geladen dienst. Onbekend: kies eerst een categorie, dan kunt u de cookie toevoegen.', 'description'));
+    result.appendChild(el('p', 'HTTP-header: gezet door de server. Script: afgeleid uit trackingscripts (de browser zet de cookie). Embed: gezet door een ingesloten dienst (bijv. een video). Browser: gevonden in uw browser tijdens de browserscan. Opslag: localStorage of sessionStorage. Extern script: afgeleid uit een geladen dienst. Onbekend: kies eerst een categorie, dan kunt u de cookie toevoegen. Functioneel alleen als de site zonder deze cookie niet werkt; twijfelt u, kies dan Marketing, dan vraagt de banner altijd toestemming.', 'description'));
   }
 
   result.addEventListener('change', function (e) {
@@ -246,32 +246,46 @@
     }).then(function () { scanBtn.disabled = false; if (bscanBtn) bscanBtn.disabled = false; });
   });
 
-  /* ---- Browserscan (3.1): pagina's in een verborgen iframe, alsof alles is
-   * geaccepteerd (scanmodus, alleen voor de ingelogde beheerder). Meet wat er
-   * echt gebeurt: nieuwe cookies en opslag, en welke externe adressen laden. */
+  /* ---- Browserscan (3.1): pagina's in een verborgen iframe, in twee rondes.
+   * Ronde 1 als nieuwe bezoeker die nog niets koos (controle vóór toestemming),
+   * ronde 2 alsof alles is geaccepteerd (wat er echt laadt, voor de cookielijst).
+   * Alleen voor de ingelogde beheerder; de pagina's zien hem als niet-ingelogd. */
   var bscanBtn = document.getElementById('cm-bscan-start');
 
-  function cookieNames() {
+  function cookieMap() {
     var out = {};
     document.cookie.split(';').forEach(function (p) {
-      var n = p.split('=')[0].trim();
-      if (n) out[n] = true;
+      var i = p.indexOf('=');
+      var n = (i === -1 ? p : p.slice(0, i)).trim();
+      if (n) out[n] = i === -1 ? '' : p.slice(i + 1);
     });
     return out;
   }
-  function storageKeys(store) {
+  function storageMap(store) {
     var out = {};
-    try { for (var i = 0; i < store.length; i++) out[store.key(i)] = true; } catch (e) {}
+    try { for (var i = 0; i < store.length; i++) { var k = store.key(i); out[k] = store.getItem(k); } } catch (e) {}
     return out;
   }
   function newKeys(before, after) {
-    return Object.keys(after).filter(function (k) { return !before[k]; });
+    return Object.keys(after).filter(function (k) { return !(k in before); });
   }
-  function scanUrl(url) {
-    return url + (url.indexOf('?') === -1 ? '?' : '&') + 'cm_browser_scan=' + encodeURIComponent(cfg.browserScan);
+  function changedKeys(before, after) {
+    return Object.keys(after).filter(function (k) { return !(k in before) || before[k] !== after[k]; });
+  }
+  /** Echte looptijd per cookie in seconden (0 = sessie), waar de browser die geeft (cookieStore). */
+  function cookieExpiries() {
+    if (!window.cookieStore || !window.cookieStore.getAll) return Promise.resolve({});
+    return window.cookieStore.getAll().then(function (list) {
+      var out = {};
+      list.forEach(function (c) { out[c.name] = c.expires ? Math.max(0, Math.round((c.expires - Date.now()) / 1000)) : 0; });
+      return out;
+    }).catch(function () { return {}; });
+  }
+  function scanUrl(url, fresh) {
+    return url + (url.indexOf('?') === -1 ? '?' : '&') + 'cm_browser_scan=' + encodeURIComponent(cfg.browserScan) + (fresh ? '&cm_scan_fresh=1' : '');
   }
   /** Eén pagina in een verborgen iframe; geeft de geladen adressen terug, of null als het niet lukte. */
-  function loadInFrame(url, holder) {
+  function loadInFrame(url, holder, fresh) {
     return new Promise(function (resolve) {
       var frame = document.createElement('iframe');
       frame.className = 'cm-bscan-frame';
@@ -299,7 +313,7 @@
         })();
       });
       setTimeout(finish, 25000);
-      frame.src = scanUrl(url);
+      frame.src = scanUrl(url, fresh);
       holder.appendChild(frame);
     });
   }
@@ -310,6 +324,64 @@
     document.cookie = name + past;
     for (var i = 0; i < parts.length - 1; i++) document.cookie = name + past + '; domain=.' + parts.slice(i).join('.');
   }
+  /** Opruimen na een ronde: nieuwe cookies en opslag weg, gewijzigde opslag terug naar de oude waarde. */
+  function tidy(before, after) {
+    newKeys(before.c, after.c).forEach(clearCookie);
+    [['l', window.localStorage], ['s', window.sessionStorage]].forEach(function (p) {
+      try {
+        changedKeys(before[p[0]], after[p[0]]).forEach(function (k) {
+          if (k in before[p[0]]) p[1].setItem(k, before[p[0]][k]); else p[1].removeItem(k);
+        });
+      } catch (e) {}
+    });
+  }
+  function snapshot() {
+    return { c: cookieMap(), l: storageMap(window.localStorage), s: storageMap(window.sessionStorage) };
+  }
+
+  function renderPreconsent(pre) {
+    var wrap = el('div');
+    wrap.appendChild(el('h3', 'Vóór toestemming'));
+    var box = el('div');
+    var items = pre.items || [];
+    var count = function (n, one, more) { return n + ' ' + (n === 1 ? one : more); };
+    if (pre.errors) notice(box, 'error', 'Vóór toestemming gebeurt er ' + count(pre.errors, 'ding', 'dingen') + ' waarvoor toestemming nodig is. Dat mag niet.');
+    else if (pre.warnings) notice(box, 'warning', 'Vóór toestemming laadt of plaatst de site ' + count(pre.warnings, 'onbekende cookie of dienst', 'onbekende cookies of diensten') + '. Controleer of dat strikt noodzakelijk is.');
+    else notice(box, 'success', 'Vóór toestemming plaatst of laadt de site niets waarvoor toestemming nodig is.');
+    if (items.length) {
+      var ul = el('ul', null, 'cm-preconsent');
+      items.forEach(function (it) {
+        var li = el('li', null, 'cm-preconsent-' + it.level);
+        li.appendChild(el('code', it.name));
+        li.appendChild(document.createTextNode(' ' + it.text));
+        if (it.block) {
+          var b = el('button', 'Blokkeren', 'button button-small cm-block-host');
+          b.type = 'button';
+          b.setAttribute('data-host', it.name);
+          b.setAttribute('data-cat', it.block);
+          li.appendChild(document.createTextNode(' '));
+          li.appendChild(b);
+        }
+        ul.appendChild(li);
+      });
+      box.appendChild(ul);
+    }
+    if (pre.errors || pre.warnings) {
+      box.appendChild(el('p', 'Blokkeren zet de host bij Blokkering › Patronen: scripts van die host laden dan pas na toestemming. Komt het via Google Tag Manager? Laat de tag dan vuren op het event cm_consent_update (zie Blokkering › Google). Een cookie zonder host komt van een script op uw eigen site: zet dat script bij de patronen. Draai de scan daarna opnieuw.'));
+    }
+    wrap.appendChild(box);
+    wrap.appendChild(el('h3', 'Na toestemming'));
+    return wrap;
+  }
+
+  result.addEventListener('click', function (e) {
+    var b = e.target.closest('.cm-block-host');
+    if (!b) return;
+    b.disabled = true;
+    post('cm_block_host', { nonce: cfg.nonces.scan, host: b.getAttribute('data-host'), category: b.getAttribute('data-cat') }).then(function (r) {
+      b.textContent = r && r.success ? 'Geblokkeerd' : 'Mislukt';
+    }).catch(function () { b.textContent = 'Mislukt'; });
+  });
 
   if (bscanBtn) bscanBtn.addEventListener('click', function () {
     if (!cfg.browserScan) return;
@@ -328,12 +400,28 @@
     var holder = el('div', null, 'cm-bscan-holder');
     document.body.appendChild(holder);
 
-    var beforeC = cookieNames();
-    var beforeL = storageKeys(window.localStorage);
-    var beforeS = storageKeys(window.sessionStorage);
-    var resources = {};
+    var urls = [];
+    var pre = {};
+    var failedPre = 0;
     var failed = 0;
-    var total = 0;
+
+    function round(fresh, text, offset) {
+      var resources = {};
+      var bad = 0;
+      var i = 0;
+      function next() {
+        if (i >= urls.length) return Promise.resolve({ resources: resources, failed: bad });
+        label.textContent = text + ': pagina ' + (i + 1) + ' van ' + urls.length + '…';
+        return loadInFrame(urls[i], holder, fresh).then(function (list) {
+          if (list === null) bad++;
+          else list.forEach(function (u) { if (u.indexOf(location.origin + '/') !== 0) resources[u] = true; }); // alleen externe adressen
+          i++;
+          progress.value = Math.round((offset + i) / (urls.length * 2) * 100);
+          return next();
+        });
+      }
+      return next();
+    }
 
     post('cm_scan_urls', { nonce: cfg.nonces.scan }).then(function (r) {
       if (!r || !r.success) {
@@ -341,45 +429,50 @@
         e.cmKnown = true;
         throw e;
       }
-      var urls = r.data.urls || [];
+      urls = r.data.urls || [];
       if (!document.getElementById('cm-bscan-all').checked) urls = urls.slice(0, 21); // homepage + 20
-      total = urls.length;
-      var i = 0;
-      function next() {
-        if (i >= urls.length) return Promise.resolve();
-        label.textContent = 'Pagina ' + (i + 1) + ' van ' + urls.length + ' laden in de browser…';
-        return loadInFrame(urls[i], holder).then(function (list) {
-          if (list === null) failed++;
-          else list.forEach(function (u) { if (u.indexOf(location.origin + '/') !== 0) resources[u] = true; }); // alleen externe adressen
-          i++;
-          progress.value = Math.round(i / urls.length * 100);
-          return next();
-        });
-      }
-      return next();
+      var before = snapshot();
+      return round(true, 'Ronde 1 van 2, als nieuwe bezoeker', 0).then(function (res) {
+        var after = snapshot();
+        // Nieuw of gewijzigd: een tracker die al een cookie had (bijv. _ga_ van een eerder bezoek) werkt die bij
+        pre = { cookies: changedKeys(before.c, after.c), local: changedKeys(before.l, after.l), session: changedKeys(before.s, after.s), resources: Object.keys(res.resources) };
+        failedPre = res.failed;
+        tidy(before, after);
+      });
     }).then(function () {
-      var after = cookieNames();
-      var local = newKeys(beforeL, storageKeys(window.localStorage));
-      var session = newKeys(beforeS, storageKeys(window.sessionStorage));
-      // Opruimen wat de scan in deze browser achterliet (van deze site); wat er al stond blijft staan
-      newKeys(beforeC, after).forEach(clearCookie);
-      try { local.forEach(function (k) { window.localStorage.removeItem(k); }); } catch (e) {}
-      try { session.forEach(function (k) { window.sessionStorage.removeItem(k); }); } catch (e) {}
-      // Nieuwe cookies altijd; cookies die er al stonden (bijv. _ga van een eerder bezoek) meldt de server alleen
-      // als ze bekend zijn: onbekende komen vaak van plugins in de admin. Opslag alleen nieuw.
-      var fresh = newKeys(beforeC, after);
-      var existing = Object.keys(after).filter(function (n) { return fresh.indexOf(n) === -1; });
-      var data = { cookies: fresh, existing: existing, storage: local.concat(session), resources: Object.keys(resources) };
-      return post('cm_browser_scan_lookup', { nonce: cfg.nonces.scan, data: JSON.stringify(data) });
+      var before = snapshot();
+      return round(false, 'Ronde 2 van 2, alles geaccepteerd', urls.length).then(function (res) {
+        failed = res.failed;
+        return cookieExpiries().then(function (durations) {
+          var after = snapshot();
+          var fresh = newKeys(before.c, after.c);
+          // Cookies die er al stonden meldt de server alleen als ze bekend zijn: onbekende komen vaak van plugins in de admin
+          var data = {
+            cookies: fresh,
+            existing: Object.keys(after.c).filter(function (n) { return fresh.indexOf(n) === -1; }),
+            local: newKeys(before.l, after.l),
+            session: newKeys(before.s, after.s),
+            durations: durations,
+            resources: Object.keys(res.resources),
+            pre: pre,
+            pages: urls.length - failedPre
+          };
+          tidy(before, after);
+          return post('cm_browser_scan_lookup', { nonce: cfg.nonces.scan, data: JSON.stringify(data) });
+        });
+      });
     }).then(function (r) {
       if (!r || !r.success) throw new Error('lookup');
       found = r.data.cookies || [];
-      if (total > 0 && failed === total) {
+      if (urls.length > 0 && failed === urls.length) {
         notice(result, 'error', 'De browserscan kon geen enkele pagina laden. Mogelijk verbiedt de website het laden in een frame (X-Frame-Options of frame-ancestors), of draait het beheer op een ander domein dan de website. Gebruik dan de gewone scan.');
         return;
       }
-      renderResults(total, failed);
-      (r.data.notes || []).forEach(function (t) { result.appendChild(el('p', t, 'description')); });
+      renderResults(urls.length, failed);
+      if (r.data.preconsent) result.insertBefore(renderPreconsent(r.data.preconsent), result.firstChild);
+      if (r.data.external && r.data.external.length) {
+        result.appendChild(el('p', 'Geen cookies, wel het IP-adres van de bezoeker: ' + r.data.external.join(', ') + '. Vermeld deze ontvangers in de privacyverklaring, of host de bestanden (zoals lettertypen) op uw eigen website.', 'description'));
+      }
       if (r.data.hosts && r.data.hosts.length) {
         result.appendChild(el('p', 'Ook geladen, maar niet in de kennisbank: ' + r.data.hosts.join(', ') + '. Controleer of deze diensten cookies zetten.', 'description'));
       }

@@ -19,7 +19,7 @@ function cm_uninstall_site() {
         'cm_license_data', 'cm_license_api_url', 'cm_license_valid_seen',
         'cm_github_token',
         'cm_auto_scan_next', 'cm_auto_scan_last', 'cm_auto_scan_last_added', 'cm_auto_scan_last_found',
-        'cm_auto_scan_pending', 'cm_auto_scan_ignored',
+        'cm_auto_scan_pending', 'cm_auto_scan_ignored', 'cm_browser_scan_last', 'cm_preconsent_check',
         'cm_cookie_db_count', 'cm_cookie_db_updated',
         'cm_log_hash_key', 'cm_show_admin3_notice',
     ) as $option ) {
@@ -34,7 +34,7 @@ function cm_uninstall_site() {
     $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}cm_cookie_db" );
 
     // Geplande cron-events
-    foreach ( array( 'cm_log_retention_cron', 'cm_auto_scan_cron', 'cm_license_cron' ) as $hook ) {
+    foreach ( array( 'cm_log_retention_cron', 'cm_auto_scan_cron', 'cm_license_cron', 'cm_cookie_db_refresh' ) as $hook ) {
         $timestamp = wp_next_scheduled( $hook );
         while ( $timestamp ) {
             wp_unschedule_event( $timestamp, $hook );

@@ -15,6 +15,7 @@ class CM_Test_Wpdb { // geen cookietabel → kennisbank-fallback
 }
 $GLOBALS['wpdb'] = new CM_Test_Wpdb();
 function wp_date( $f, $t = null ) { return gmdate( $f, $t === null ? time() : $t ); }
+function sanitize_textarea_field( $s ) { return is_scalar( $s ) ? trim( strip_tags( (string) $s ) ) : ''; }
 function wp_nonce_field( $a ) { echo '<input type="hidden" name="_wpnonce" value="' . $a . '">'; }
 
 require __DIR__ . '/bootstrap.php';
@@ -57,6 +58,29 @@ list( $k2, $u2 ) = cm_auto_scan_classify( array( 'redux_x' ), array() );
 cm_assert( 'genegeerde cookie komt niet terug', $k2 === array() && $u2 === array() );
 ob_start(); cm_render_pending_cookies();
 cm_assert( 'Overzicht zonder wachtende cookies: geen melding', ob_get_clean() === '' );
+
+cm_test_group( 'Automatische scan gebruikt de volledige serverscan (3.1)' );
+list( $k3, $u3 ) = cm_auto_scan_classify( array(
+    array( 'name' => '_fbp', 'type' => 'marketing', 'provider' => 'Meta', 'duration' => '3 maanden', 'description' => 'Pixel', 'how' => 'script' ),
+    array( 'name' => 'srv_x', 'type' => 'unknown', 'provider' => 'Onbekend', 'duration' => '1 jaar', 'description' => '', 'how' => 'server' ),
+), array() );
+cm_assert( 'scanrij met categorie → bekend, gegevens uit de scan', count( $k3 ) === 1 && $k3[0]['category'] === 'marketing' && $k3[0]['provider'] === 'Meta' && $k3[0]['duration'] === '3 maanden' );
+cm_assert( 'scanrij onbekend → wachtlijst, gemeten looptijd bewaard', count( $u3 ) === 1 && $u3[0]['name'] === 'srv_x' && $u3[0]['duration'] === '1 jaar' );
+$main = file_get_contents( CM_PLUGIN_ROOT . '/cookiemelding.php' );
+cm_assert( 'achtergrondscan: homepage + tien nieuwste pagina’s via cm_scan_pages (scripts, embeds, headers)', strpos( $main, 'array_slice( cm_scan_collect_urls(), 0, 11 )' ) !== false && strpos( $main, 'cm_scan_pages( $urls )' ) !== false );
+
+cm_test_group( 'Indeling: personalisatie niet vanzelf functioneel (3.1)' );
+$csv = "ID,Platform,Category,Cookie / Data Key name,Domain,Description,Retention period,Data Controller,User Privacy & GDPR Rights Portals,Wildcard match\n"
+     . "1,X,Personalization,pers_x,x.com,Onthoudt voorkeuren,1 year,X,https://x.com,0\n"
+     . "2,Y,Security,sec_y,y.com,Beveiliging,session,Y,https://y.com,0\n";
+$parsed = cm_cookie_db_parse( $csv );
+cm_assert( 'Personalization → onbekend (beheerder kiest), Security blijft functioneel', $parsed['rows'][0]['category'] === 'unknown' && $parsed['rows'][1]['category'] === 'functional' );
+cm_assert( 'onbekende DB-categorie wordt niet stil functioneel', cm_autoscan_entry( 'pers_x', array( 'platform' => 'X', 'controller' => 'X', 'category' => 'unknown', 'description' => '', 'retention' => '' ) )['category'] === 'unknown' );
+cm_assert( 'bij de update naar 3.1 de database opnieuw ophalen (cron)', strpos( $main, "version_compare( \$stored_version, '3.1.0', '<' )" ) !== false && strpos( $main, "add_action( 'cm_cookie_db_refresh', 'cm_cookie_db_import' )" ) !== false );
+
+cm_test_group( 'Opslag opruimen bij weigeren (3.1)' );
+$fe = file_get_contents( CM_PLUGIN_ROOT . '/includes/frontend.php' );
+cm_assert( 'localStorage en sessionStorage met dezelfde namen en prefixen weg, eigen opslag niet', strpos( $fe, 'function deleteStorageKeys(names, prefixes)' ) !== false && substr_count( $fe, 'deleteStorageKeys(' ) === 3 && strpos( $fe, "k.indexOf('cm_') === 0" ) !== false );
 
 cm_test_group( 'Automatische scan en mail' );
 $main = file_get_contents( CM_PLUGIN_ROOT . '/cookiemelding.php' );

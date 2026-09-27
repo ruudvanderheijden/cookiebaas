@@ -134,6 +134,10 @@ add_action( 'plugins_loaded', function() {
         if ( function_exists( 'cm_flag_admin3_notice' ) ) cm_flag_admin3_notice( $stored_version );
         // 3.0: het adres van de licentieserver staat vast; de oude optie uit 2.x opruimen
         if ( version_compare( $stored_version, '3.0.0', '<' ) ) delete_option( 'cm_license_api_url' );
+        // 3.1: personalisatie-cookies uit de cookiedatabase zijn niet meer vanzelf functioneel → database opnieuw ophalen
+        if ( version_compare( $stored_version, '3.1.0', '<' ) && (int) get_option( 'cm_cookie_db_count', 0 ) > 0 && ! wp_next_scheduled( 'cm_cookie_db_refresh' ) ) {
+            wp_schedule_single_event( time() + 60, 'cm_cookie_db_refresh' );
+        }
 
         // Tabellen aanmaken/upgraden — alleen bij versie-wissel, niet op elke
         // pageload (dbDelta + INFORMATION_SCHEMA query zijn relatief duur)
@@ -345,6 +349,7 @@ function cm_force_reset_auto_scan_cron() {
     update_option( 'cm_auto_scan_next', gmdate( 'Y-m-d H:i:s', time() + ( $interval * DAY_IN_SECONDS ) ) );
 }
 
+add_action( 'cm_cookie_db_refresh', 'cm_cookie_db_import' );
 add_action( 'cm_auto_scan_cron', 'cm_run_auto_scan' );
 function cm_run_auto_scan() {
     $mode  = cm_get('auto_scan_mode');
@@ -424,49 +429,26 @@ function cm_run_auto_scan() {
 }
 
 /**
- * Voert een achtergrond cookie scan uit.
- * Haalt de homepage op en detecteert cookies via script-signatures.
- * Geeft array terug met nieuwe_cookies en bestaande lijst.
+ * Achtergrondscan: dezelfde serverscan als de handmatige scan (headers, bekende
+ * scripts, ook geblokkeerde, en embeds) op de homepage en de tien nieuwste
+ * pagina's en berichten. JavaScript draait hier niet: cookies die scripts zelf
+ * zetten vindt alleen de browserscan (het Overzicht herinnert daaraan).
  */
 function cm_perform_background_scan() {
-    $url      = home_url('/');
-    $response = wp_remote_get( $url, array(
-        'timeout'    => 30,
-        'user-agent' => 'Mozilla/5.0 (compatible; CookiebaasBot/1.0)',
-    ));
+    @set_time_limit( 180 );
+    $urls = cm_scan_filter_urls( array_slice( cm_scan_collect_urls(), 0, 11 ) );
+    if ( ! $urls ) return false;
+    $scan = cm_scan_pages( $urls );
+    if ( empty( $scan['scanned'] ) ) return false;
 
-    if ( is_wp_error($response) ) return false;
-
-    $body = wp_remote_retrieve_body($response);
-    if ( empty($body) ) return false;
-
-    // Hergebruik de script_signatures uit de bestaande scan-functie
-    // door de body te laten verwerken via een vereenvoudigde detectie
     $existing_list = get_option( 'cm_cookie_list', array() );
     if ( ! is_array($existing_list) ) $existing_list = array();
-
-    // Bouw een set van bestaande cookienamen voor snelle vergelijking
     $existing_names = array();
-    foreach ( $existing_list as $ck ) {
+    foreach ( array_merge( $existing_list, cm_default_cookies() ) as $ck ) {
         if ( ! empty($ck['name']) ) $existing_names[ $ck['name'] ] = true;
     }
-    // Voeg ook ingebouwde cookies toe
-    foreach ( cm_default_cookies() as $ck ) {
-        $existing_names[ $ck['name'] ] = true;
-    }
 
-    // Detecteer via wp_remote_get de Set-Cookie headers
-    $headers     = wp_remote_retrieve_headers($response);
-    $set_cookies = array();
-    if ( isset($headers['set-cookie']) ) {
-        $raw = is_array($headers['set-cookie']) ? $headers['set-cookie'] : array($headers['set-cookie']);
-        foreach ( $raw as $cookie_line ) {
-            $name = trim( explode('=', $cookie_line)[0] );
-            if ( $name ) $set_cookies[] = $name;
-        }
-    }
-
-    list( $new_cookies, $unknown ) = cm_auto_scan_classify( $set_cookies, $existing_names );
+    list( $new_cookies, $unknown ) = cm_auto_scan_classify( $scan['cookies'], $existing_names );
 
     return array(
         'new_cookies'   => $new_cookies,

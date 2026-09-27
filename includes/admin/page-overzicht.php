@@ -90,7 +90,8 @@ function cm_compliance_checks( array $s, array $pv, array $cookies ) {
     $add( $g, '9. Link naar de privacyverklaring', 'De bannertekst linkt naar de privacyverklaring, zodat bezoekers zich vóór hun keuze kunnen informeren.', 'AP-vuistregel 9 · AVG art. 13/14', $has_link ? 'ok' : 'warn', $banner( 'teksten' ), 'Bannertekst aanpassen' );
 
     $g = 'Techniek';
-    $add( $g, 'Scripts geblokkeerd vóór toestemming', 'Drie lagen: de output-buffer in PHP, een MutationObserver in JavaScript en Google Consent Mode v2. Scripts laden pas na toestemming.', 'Tw art. 11.7a · ePrivacyrichtlijn', $blocking ? 'ok' : 'warn', $block( 'google' ), 'Blokkering instellen', $blocking ? '' : 'Er is geen GA4- of GTM-ID en geen blokkeerpatroon ingesteld.' );
+    list( $pre_status, $pre_detail ) = cm_preconsent_status( get_option( 'cm_preconsent_check', array() ), $blocking );
+    $add( $g, 'Niets vóór toestemming', 'Gemeten met de browserscan: bij een nieuwe bezoeker die nog niets koos, plaatst of laadt de site niets waarvoor toestemming nodig is. De blokkering werkt in drie lagen: de output-buffer in PHP, een MutationObserver in JavaScript en Google Consent Mode v2.', 'Tw art. 11.7a · ePrivacyrichtlijn', $pre_status, cm_admin_page_url( 'cookiebaas-cookies', 'scannen' ), 'Browserscan uitvoeren', $pre_detail );
     $add( $g, 'Embeds geblokkeerd vóór toestemming', 'YouTube, Vimeo, Google Maps, Spotify, TikTok en meer worden automatisch geblokkeerd en vervangen door een placeholder.', 'Tw art. 11.7a · AP-standpunt over ingesloten content', ! empty( $s['embed_blocker_enabled'] ) ? 'ok' : 'warn', $block( 'embeds' ), 'Embedblokkering inschakelen' );
     $add( $g, 'Google Consent Mode v2', 'Automatische koppeling met GA4 en GTM: standaard “denied”, na toestemming “granted”.', 'Google EU User Consent Policy · Digital Markets Act', $self_load ? 'ok' : 'warn', $block( 'google' ), 'GA4- of GTM-ID invullen', $self_load ? '' : 'Vul een GA4- of GTM-ID in voor automatische Consent Mode v2.' );
     $add( $g, 'Toestemming verloopt binnen 12 maanden', 'De toestemmingscookie verloopt na de ingestelde periode. De AP adviseert maximaal 12 maanden.', 'AP-handhavingscriteria · EDPB-aanbeveling', $expiry <= 12 ? 'ok' : 'warn', $banner( 'gedrag' ), 'Geldigheid aanpassen', $expiry <= 12 ? '' : 'Nu ingesteld: ' . $expiry . ' maanden.' );
@@ -98,6 +99,9 @@ function cm_compliance_checks( array $s, array $pv, array $cookies ) {
     $g = 'Verantwoordingsplicht (AVG art. 5 lid 2)';
     $ret_ok = $retention > 0 && $retention <= 36;
     $add( $g, 'Registraties worden automatisch opgeschoond', 'Registraties in de consent log worden dagelijks verwijderd na de ingestelde bewaartermijn.', 'AVG art. 5 lid 1e (opslagbeperking)', $ret_ok ? 'ok' : 'warn', cm_admin_page_url( 'cookiebaas-log', 'bewaren' ), 'Bewaartermijn instellen', $retention === 0 ? 'Registraties worden nooit automatisch verwijderd.' : ( $retention > 36 ? 'Overweeg een kortere bewaartermijn.' : '' ) );
+    $last_scan = (string) get_option( 'cm_browser_scan_last', '' );
+    $scan_age  = $last_scan !== '' ? ( time() - strtotime( $last_scan . ' UTC' ) ) / DAY_IN_SECONDS : null;
+    $add( $g, 'Cookielijst recent gecontroleerd', 'De browserscan is in de afgelopen drie maanden gedraaid, zodat de cookielijst past bij wat de site nu echt plaatst.', 'AVG art. 5 lid 2 · Tw art. 11.7a lid 1', $scan_age !== null && $scan_age <= 90 ? 'ok' : 'warn', cm_admin_page_url( 'cookiebaas-cookies', 'scannen' ), 'Browserscan uitvoeren', $scan_age === null ? 'De browserscan is nog niet gedraaid.' : 'De laatste browserscan is van ' . wp_date( 'j F Y', strtotime( $last_scan . ' UTC' ) ) . '.' );
     $cookie_ok = count( $managed ) > 0 && count( $incomplete ) === 0;
     $add( $g, 'Elke cookie heeft een doel en looptijd', 'Per cookie staan het doel en de bewaartermijn in het voorkeurenvenster.', 'AVG art. 13 · Tw art. 11.7a lid 1', $cookie_ok ? 'ok' : 'warn', cm_admin_page_url( 'cookiebaas-cookies', 'lijst' ), 'Cookielijst aanvullen', count( $managed ) === 0 ? 'Er staan nog geen eigen cookies in de lijst.' : ( count( $incomplete ) > 0 ? count( $incomplete ) . ' cookie(s) missen een doel of looptijd.' : '' ) );
 
@@ -107,6 +111,24 @@ function cm_compliance_checks( array $s, array $pv, array $cookies ) {
     $add( $g, 'Datum van bijwerken ingevuld', 'Bezoekers zien wanneer de privacyverklaring voor het laatst is bijgewerkt.', 'AVG art. 13 · transparantiebeginsel', ! empty( $pv['pv_datum'] ) ? 'ok' : 'warn', $privacy, 'Datum invullen' );
 
     return $checks;
+}
+
+/**
+ * Status van "Niets vóór toestemming": de laatste meting van de browserscan gaat
+ * voor; zonder meting (of na drie maanden) valt hij terug op de instellingen.
+ * @return array( status, toelichting )
+ */
+function cm_preconsent_status( $check, $blocking ) {
+    if ( ! is_array( $check ) || empty( $check['date'] ) ) {
+        return array( 'warn', 'Nog niet gemeten: draai de browserscan.' . ( $blocking ? '' : ' Er is ook geen GA4- of GTM-ID en geen blokkeerpatroon ingesteld.' ) );
+    }
+    $when = wp_date( 'j F Y', strtotime( $check['date'] . ' UTC' ) );
+    $errors   = isset( $check['errors'] ) ? (int) $check['errors'] : 0;
+    $warnings = isset( $check['warnings'] ) ? (int) $check['warnings'] : 0;
+    if ( $errors > 0 ) return array( 'fail', 'Bij de meting van ' . $when . ' gebeurde er ' . $errors . ' keer iets vóór toestemming waarvoor toestemming nodig is.' );
+    if ( $warnings > 0 ) return array( 'warn', 'Bij de meting van ' . $when . ' laadde de site ' . $warnings . ' onbekende cookie(s) of dienst(en) vóór toestemming: controleer ze.' );
+    if ( ( time() - strtotime( $check['date'] . ' UTC' ) ) / DAY_IN_SECONDS > 90 ) return array( 'warn', 'De laatste meting is van ' . $when . '. Draai de browserscan opnieuw.' );
+    return array( 'ok', '' );
 }
 
 function cm_render_compliance_table( array $checks ) {
@@ -152,7 +174,7 @@ function cm_render_pending_cookies() {
     $n = count( $pending );
     echo '<div class="notice notice-warning inline cm-pending"><p><strong>'
        . esc_html( $n === 1 ? 'De automatische scan vond 1 cookie die Cookiebaas niet kent.' : 'De automatische scan vond ' . $n . ' cookies die Cookiebaas niet kent.' )
-       . '</strong> Kies een categorie; pas dan komt de cookie in de cookielijst. Negeren: niet toevoegen en niet opnieuw melden.</p>';
+       . '</strong> Kies een categorie; pas dan komt de cookie in de cookielijst. Functioneel alleen als de site zonder deze cookie niet werkt; twijfelt u, kies dan Marketing, dan vraagt de banner altijd toestemming. Negeren: niet toevoegen en niet opnieuw melden.</p>';
     echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
     echo '<input type="hidden" name="action" value="cm_resolve_pending">';
     wp_nonce_field( 'cm_resolve_pending' );
