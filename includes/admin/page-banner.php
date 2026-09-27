@@ -403,7 +403,7 @@ function cm_tab_banner_gedrag() {
                     cm_field( 'exclude_url_patterns', 'text', 'URL-patronen', array(
                         'class'       => 'large-text',
                         'placeholder' => '/bedankt, /privacyverklaring, /checkout',
-                        'description' => 'Komma-gescheiden stukjes URL. Op elke pagina waarvan de URL zo\'n stukje bevat, verschijnt geen banner. Gebruikt u TranslatePress met vertaalde slugs, voeg dan ook de vertaalde varianten toe.',
+                        'description' => 'Komma-gescheiden stukjes van het pad. Op elke pagina waarvan het pad zo\'n stukje bevat, verschijnt geen banner. Alleen het pad telt, niet de querystring (dus geen ?page_id=12). Gebruikt u TranslatePress met vertaalde slugs, voeg dan ook de vertaalde varianten toe.',
                     ) ),
                 ),
             ),

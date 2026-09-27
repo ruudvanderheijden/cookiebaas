@@ -63,7 +63,14 @@ cm_assert( 'cm_client_ip negeert X-Forwarded-For', cm_client_ip() === '203.0.113
 $n = count( $wpdb->inserts );
 for ( $i = 0; $i < 25; $i++ ) log_request( array( 'method' => 'accept-all', 'analytics' => '1', 'url' => 'https://example.test/' ), array( 'HTTP_X_FORWARDED_FOR' => '10.0.0.' . $i ) );
 // De bootstrap-transients bewaren niets; controleer daarom de sleutel: die hangt alleen van REMOTE_ADDR af
-cm_assert( 'wisselende X-Forwarded-For geeft steeds dezelfde rate-limit-sleutel (alleen REMOTE_ADDR telt)', count( $wpdb->inserts ) - $n === 25 && strpos( file_get_contents( CM_PLUGIN_ROOT . '/includes/consent.php' ), 'HTTP_X_FORWARDED_FOR' ) === false );
+$_SERVER = array( 'REMOTE_ADDR' => '203.0.113.9', 'HTTP_X_FORWARDED_FOR' => '10.0.0.24' );
+cm_assert( 'met een publiek REMOTE_ADDR telt X-Forwarded-For nooit mee (ook niet na 25 wisselende verzoeken)', count( $wpdb->inserts ) - $n === 25 && cm_client_ip() === '203.0.113.9' );
+
+$_SERVER = array( 'REMOTE_ADDR' => '127.0.0.1', 'HTTP_X_FORWARDED_FOR' => '6.6.6.6, 198.51.100.5' );
+cm_assert( 'achter een lokale reverse proxy: de laatste hop (door de proxy gezet), niet de vervalste eerste', cm_client_ip() === '198.51.100.5' );
+$_SERVER = array( 'REMOTE_ADDR' => '10.0.0.2', 'HTTP_X_FORWARDED_FOR' => 'geen-ip' );
+cm_assert( 'ongeldige hop → REMOTE_ADDR', cm_client_ip() === '10.0.0.2' );
+cm_assert( 'rate-limit per IPv6-/64 (één aansluiting), per volledig IPv4-adres', cm_rate_limit_ip( '2001:db8:1:2:aaaa::1' ) === '2001:db8:1:2::' && cm_rate_limit_ip( '203.0.113.9' ) === '203.0.113.9' );
 
 cm_test_group( 'Consent log: andere websites geweigerd' );
 $n = count( $wpdb->inserts );
@@ -73,6 +80,11 @@ $r = log_request( array( 'method' => 'accept-all' ), array( 'HTTP_ORIGIN' => 'ht
 cm_assert( 'eigen site (ook met www) → opgeslagen', $r && $r->ok && ! isset( $r->data['skipped'] ) );
 $r = log_request( array( 'method' => 'accept-all' ), array( 'HTTP_ORIGIN' => 'null' ) );
 cm_assert( 'Origin "null" (sandbox-iframe elders) → overgeslagen', $r && $r->data['skipped'] === 'origin' );
+$r = log_request( array( 'method' => 'accept-all' ), array( 'HTTP_ORIGIN' => 'null', 'HTTP_SEC_FETCH_SITE' => 'same-origin' ) );
+cm_assert( 'eigen site met Sec-Fetch-Site same-origin → opgeslagen, ook als de Origin "null" is', $r && $r->ok && ! isset( $r->data['skipped'] ) );
+$r = log_request( array( 'method' => 'accept-all' ), array( 'HTTP_ORIGIN' => 'https://evil.test', 'HTTP_SEC_FETCH_SITE' => 'cross-site' ) );
+cm_assert( 'cross-site van een onbekende host → overgeslagen', $r && $r->data['skipped'] === 'origin' );
+cm_assert( 'de frontend stuurt met fetch + keepalive (echte Origin), niet met sendBeacon', strpos( file_get_contents( CM_PLUGIN_ROOT . '/includes/frontend.php' ), 'keepalive: true' ) !== false && strpos( file_get_contents( CM_PLUGIN_ROOT . '/includes/frontend.php' ), 'navigator.sendBeacon(AJAX_URL' ) === false );
 
 cm_test_group( 'Consent log: dataminimalisatie (audit M3, L3)' );
 log_request( array( 'method' => 'accept-all', 'url' => 'https://example.test/nieuwsbrief/?email=jan@x.nl&token=abc#top' ) );

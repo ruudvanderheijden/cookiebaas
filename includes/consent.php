@@ -30,14 +30,32 @@ function cm_log_methods() {
 }
 
 /**
- * Het IP-adres van de bezoeker: REMOTE_ADDR, nooit een door de client
- * meegestuurde header (X-Forwarded-For is te vervalsen en omzeilde de
- * rate-limit). Achter een betrouwbare proxy (bijv. Cloudflare) kan een site
- * het echte adres via de filter cm_client_ip doorgeven.
+ * Het IP-adres van de bezoeker. Basis is REMOTE_ADDR: een door de client
+ * meegestuurde X-Forwarded-For is te vervalsen en omzeilde de rate-limit.
+ * Alleen als REMOTE_ADDR zelf een lokaal of privé-adres is (een reverse proxy
+ * op dezelfde server of in hetzelfde netwerk, zoals nginx, Varnish of Docker)
+ * gebruiken we de laatste hop uit X-Forwarded-For: die zette de proxy zelf.
+ * Anders zouden alle bezoekers één IP delen en na 20 registraties niets meer
+ * gelogd worden. Voor bijv. Cloudflare zonder real-IP-herstel kan een site het
+ * echte adres via de filter cm_client_ip doorgeven.
  */
 function cm_client_ip() {
     $ip = isset( $_SERVER['REMOTE_ADDR'] ) && is_string( $_SERVER['REMOTE_ADDR'] ) ? trim( $_SERVER['REMOTE_ADDR'] ) : '';
+    $is_public = filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE );
+    if ( ! $is_public && isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) && is_string( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+        $hops = array_map( 'trim', explode( ',', $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
+        $last = end( $hops );
+        if ( filter_var( $last, FILTER_VALIDATE_IP ) ) $ip = $last;
+    }
     return (string) apply_filters( 'cm_client_ip', $ip );
+}
+
+/** Sleutel voor de rate-limit: het volledige IPv4-adres, of het /64-netwerk bij IPv6 (één aansluiting heeft een hele /64). */
+function cm_rate_limit_ip( $ip ) {
+    if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
+        return inet_ntop( substr( inet_pton( $ip ), 0, 8 ) . str_repeat( "\0", 8 ) );
+    }
+    return (string) $ip;
 }
 
 /** IP inkorten vóór het hashen (AVG): IPv4 tot /24, IPv6 tot /48. Ongeldig → ''. */
@@ -73,17 +91,22 @@ function cm_log_clean_url( $raw ) {
 }
 
 /**
- * Komt het verzoek van deze website? Browsers sturen bij een POST de Origin
- * mee; een andere site kan zo geen registraties uit naam van bezoekers
- * insturen. Zonder Origin (oude browsers, scripts) valt het terug op de
- * rate-limit per IP.
+ * Komt het verzoek van deze website? Een andere site mag geen registraties uit
+ * naam van bezoekers insturen. Browsers sturen Sec-Fetch-Site mee (niet te
+ * vervalsen door een pagina); anders de Origin. Zonder beide (oude browsers,
+ * scripts) valt het terug op de rate-limit per IP. Sites met meerdere domeinen
+ * (bijv. een domein per taal) kunnen extra hosts toestaan via de filter
+ * cm_log_allowed_hosts.
  */
 function cm_log_origin_allowed() {
+    $site   = isset( $_SERVER['HTTP_SEC_FETCH_SITE'] ) && is_string( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ? strtolower( trim( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ) : '';
     $origin = isset( $_SERVER['HTTP_ORIGIN'] ) && is_string( $_SERVER['HTTP_ORIGIN'] ) ? trim( $_SERVER['HTTP_ORIGIN'] ) : '';
-    if ( $origin === '' ) return true;
-    $norm = function ( $url ) { return preg_replace( '/^www\./', '', strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) ) ); };
-    $host = $norm( $origin );
-    return $host !== '' && $host === $norm( home_url() );
+    if ( $site === 'same-origin' || $site === 'same-site' ) return true;
+    if ( $site === '' && $origin === '' ) return true;
+    $norm  = function ( $url ) { return preg_replace( '/^www\./', '', strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) ) ); };
+    $hosts = array_map( $norm, (array) apply_filters( 'cm_log_allowed_hosts', array( home_url(), site_url() ) ) );
+    $host  = $norm( $origin );
+    return $host !== '' && in_array( $host, $hosts, true );
 }
 
 add_action( 'wp_ajax_nopriv_cm_log_consent', 'cm_ajax_log_consent' );
@@ -149,7 +172,7 @@ function cm_ajax_log_consent() {
     // (session_id komt uit de request body); deze limiet niet.
     // Geen nonce-check: page caching serveert verouderde nonces waardoor
     // legitieme consents niet meer gelogd zouden worden.
-    $rl_key   = 'cm_rl_' . substr( hash_hmac( 'sha256', $ip_raw, cm_log_hash_key() ), 0, 32 );
+    $rl_key   = 'cm_rl_' . substr( hash_hmac( 'sha256', cm_rate_limit_ip( $ip_raw ), cm_log_hash_key() ), 0, 32 );
     $rl_count = (int) get_transient( $rl_key );
     if ( $rl_count >= 20 ) {
         wp_send_json_success( array( 'skipped' => 'ip_rate_limit' ) );

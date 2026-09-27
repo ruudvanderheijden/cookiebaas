@@ -1525,6 +1525,7 @@ function cm_render_frontend() {
         function safeEmbedUrl(src) {
             try {
                 var u = new URL(src, location.href);
+                if (u.protocol === 'http:') u.protocol = 'https:'; // oude http-embeds van bekende diensten gewoon via https
                 if (u.protocol !== 'https:') return '';
                 var h = u.hostname.toLowerCase();
                 for (var i = 0; i < EMBED_HOSTS.length; i++) {
@@ -1536,7 +1537,7 @@ function cm_render_frontend() {
             } catch (e) {}
             return '';
         }
-        var EMBED_ATTRS = ['width', 'height', 'title', 'name', 'allow', 'allowfullscreen', 'frameborder', 'loading', 'referrerpolicy', 'sandbox', 'class', 'style'];
+        var EMBED_ATTRS = ['width', 'height', 'title', 'allow', 'allowfullscreen', 'frameborder', 'loading', 'referrerpolicy', 'sandbox', 'class', 'style'];
         function buildEmbed(encodedTag) {
             var t = document.createElement('template');
             t.innerHTML = atob(encodedTag);   // inert: in een template draait niets
@@ -2130,11 +2131,15 @@ function cm_render_frontend() {
                     + '&session_id=' + encodeURIComponent(getSessionId())
                     + '&url='        + encodeURIComponent(location.origin + location.pathname); // zonder querystring (kan persoonsgegevens bevatten)
 
-                // sendBeacon overleeft de herlaad na een consentkeuze; XHR kan
-                // door de navigatie afgebroken worden.
-                if (navigator.sendBeacon) {
-                    var blob = new Blob([body], { type: 'application/x-www-form-urlencoded' });
-                    if (navigator.sendBeacon(AJAX_URL, blob)) return;
+                // fetch met keepalive overleeft de herlaad na een consentkeuze
+                // (net als sendBeacon) en stuurt altijd de echte Origin mee;
+                // sendBeacon stuurt bij Referrer-Policy: no-referrer "null".
+                if (window.fetch) {
+                    try {
+                        fetch(AJAX_URL, { method: 'POST', body: body, keepalive: true, credentials: 'same-origin',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+                        return;
+                    } catch (e) {}
                 }
 
                 var xhr = new XMLHttpRequest();
