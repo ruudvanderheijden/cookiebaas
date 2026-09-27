@@ -35,7 +35,7 @@ foreach ( array( 'wp_ajax_cm_scan_urls', 'wp_ajax_cm_scan_batch', 'wp_ajax_cm_im
     cm_assert( "$hook geregistreerd", has_action( $hook ) );
 }
 $main = file_get_contents( CM_PLUGIN_ROOT . '/cookiemelding.php' );
-cm_assert( 'de scanmail linkt naar de nieuwe cookielijst (Review Focus 3)', strpos( $main, "page=cookiebaas-cookies&tab=lijst" ) !== false );
+cm_assert( 'de scanmail linkt naar de nieuwe scanpagina (Review Focus 3; 3.1: daar kiest u ook de categorie van onbekende cookies)', strpos( $main, "page=cookiebaas-cookies&tab=scannen" ) !== false );
 cm_assert( 'cookiemelding.php laadt consent.php en scan.php', strpos( $main, "includes/consent.php" ) !== false && strpos( $main, "includes/admin/scan.php" ) !== false );
 
 cm_test_group( 'Menu' );

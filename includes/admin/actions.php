@@ -13,6 +13,8 @@ function cm_admin_notice_messages() {
         'theme-reset-light' => array( 'success', 'De standaardkleuren van het lichte thema zijn hersteld.' ),
         'theme-reset-dark'  => array( 'success', 'De standaardkleuren van het donkere thema zijn hersteld.' ),
         'action-failed'     => array( 'error',   'De actie is mislukt. Probeer het opnieuw.' ),
+        'pending-resolved'  => array( 'success', 'De gekozen cookies zijn verwerkt. Vul in de cookielijst waar nodig provider en doel aan.' ),
+        'pending-none'      => array( 'info',    'Er is niets gewijzigd: kies bij minstens één cookie een categorie of Negeren.' ),
         'f12-imported'        => array( 'success', 'De geplakte cookies zijn toegevoegd aan de lijst. Vul waar nodig provider en doel aan.' ),
         'f12-none'            => array( 'info',    'Er zijn geen nieuwe cookies herkend. Plak de tabel uit de ontwikkelaarstools (F12 › Applicatie › Cookies).' ),
         'cookie-list-cleared' => array( 'success', 'De cookielijst is leeggemaakt. De ingebouwde cookies blijven staan.' ),

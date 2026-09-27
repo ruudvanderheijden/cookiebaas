@@ -20,6 +20,12 @@ Naast de bestaande scan staat onder Cookies › Scannen de knop **Scan in de bro
 
 Kent Cookiebaas een gevonden cookie niet, dan kiest u in de resultatentabel zelf de categorie voordat u hem toevoegt. Dat geldt voor beide scans. Voorheen kwam zo'n cookie ongemerkt als Functioneel in de lijst, en dat is een categorie die zonder toestemming mag. **Alle gevonden cookies toevoegen** slaat onbekende cookies zonder gekozen categorie over en meldt hoeveel dat er zijn.
 
+### Automatische scan: onbekende cookies op het Overzicht
+
+- **Automatisch toevoegen** neemt alleen cookies op waarvan Cookiebaas de categorie kent. Een onbekende cookie komt niet meer ongemerkt als Functioneel in de lijst. Hij verschijnt als melding op het **Overzicht** en komt pas in de cookielijst als u daar een categorie kiest. Kiest u **Negeren**, dan voegt de scan hem niet toe en meldt hij hem niet opnieuw.
+- De automatische scan gebruikt nu ook de ingebouwde kennisbank, net als de handmatige scans. Daardoor blijven er minder cookies onbekend.
+- De mail bij **Melding per e-mail** gebruikt Nederlandse categorienamen, zet bij onbekende cookies "kies zelf een categorie" en linkt naar Cookies › Scannen.
+
 ## [3.0.0] - 2026-09-27
 
 De admin is opnieuw gebouwd: WordPress-native en per onderwerp ingedeeld. Uw instellingen, cookielijst, privacyverklaring en consent log blijven precies zoals ze waren; de banner en de blokkering op uw website veranderen niet.

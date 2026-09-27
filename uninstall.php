@@ -19,6 +19,7 @@ function cm_uninstall_site() {
         'cm_license_data', 'cm_license_api_url', 'cm_license_valid_seen',
         'cm_github_token',
         'cm_auto_scan_next', 'cm_auto_scan_last', 'cm_auto_scan_last_added', 'cm_auto_scan_last_found',
+        'cm_auto_scan_pending', 'cm_auto_scan_ignored',
         'cm_cookie_db_count', 'cm_cookie_db_updated',
         'cm_log_hash_key', 'cm_show_admin3_notice',
     ) as $option ) {

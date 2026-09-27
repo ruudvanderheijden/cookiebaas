@@ -364,10 +364,11 @@ function cm_run_auto_scan() {
     $scan_result = cm_perform_background_scan();
     if ( ! $scan_result ) return;
 
-    $new_cookies     = $scan_result['new_cookies'];     // cookies niet in huidige lijst
+    $new_cookies     = $scan_result['new_cookies'];     // bekende cookies die nog niet in de lijst staan
+    $unknown         = $scan_result['unknown'];         // cookies die Cookiebaas niet kent: categorie kiest de beheerder
     $existing_list   = $scan_result['existing_list'];
 
-    if ( empty( $new_cookies ) ) {
+    if ( empty( $new_cookies ) && empty( $unknown ) ) {
         // Niets nieuws — opnieuw inplannen en klaar
         cm_maybe_schedule_auto_scan_cron();
         return;
@@ -381,8 +382,10 @@ function cm_run_auto_scan() {
             $managed[] = $ck;
         }
         // Zelfde normalisatie als handmatig opslaan (provider-mapping, builtin-vlag)
-        update_option( 'cm_cookie_list', cm_sanitize_cookie_list( $managed ) );
+        if ( $new_cookies ) update_option( 'cm_cookie_list', cm_sanitize_cookie_list( $managed ) );
         update_option( 'cm_auto_scan_last_added', count($new_cookies) );
+        // Onbekende cookies niet stil als functioneel toevoegen: ze wachten op het Overzicht op een keuze
+        cm_auto_scan_add_pending( $unknown );
 
     } elseif ( $mode === 'notify' ) {
         // Melding per e-mail sturen
@@ -390,26 +393,30 @@ function cm_run_auto_scan() {
         $site    = get_bloginfo('name') ?: get_bloginfo('url');
         $subject = sprintf( '[%s] Nieuwe cookies gevonden — cookielijst bijwerken', $site );
 
+        $labels = array( 'functional' => 'Functioneel', 'analytics' => 'Analytisch', 'marketing' => 'Marketing' );
         $rows = '';
         foreach ( $new_cookies as $ck ) {
             $rows .= sprintf(
                 "  • %s (%s) — %s\n",
                 $ck['name'],
-                $ck['category'],
-                $ck['provider'] ?? 'onbekend'
+                isset( $labels[ $ck['category'] ] ) ? $labels[ $ck['category'] ] : $ck['category'],
+                $ck['provider'] !== '' ? $ck['provider'] : 'aanbieder onbekend'
             );
+        }
+        foreach ( $unknown as $ck ) {
+            $rows .= sprintf( "  • %s — onbekend: kies zelf een categorie\n", $ck['name'] );
         }
 
         $body = sprintf(
             "Hallo,\n\nTijdens de automatische cookie scan van %s zijn %d nieuwe cookies gevonden die nog niet in uw cookielijst staan:\n\n%s\n\nU kunt de cookielijst bijwerken via:\n%s\n\nMet vriendelijke groet,\nCookiebaas Plugin",
             $site,
-            count($new_cookies),
+            count($new_cookies) + count($unknown),
             $rows,
-            admin_url( 'admin.php?page=cookiebaas-cookies&tab=lijst' )
+            admin_url( 'admin.php?page=cookiebaas-cookies&tab=scannen' )
         );
 
         wp_mail( $email, $subject, $body );
-        update_option( 'cm_auto_scan_last_found', count($new_cookies) );
+        update_option( 'cm_auto_scan_last_found', count($new_cookies) + count($unknown) );
     }
 
     // Opnieuw inplannen voor volgende run
@@ -459,15 +466,11 @@ function cm_perform_background_scan() {
         }
     }
 
-    $new_cookies = array();
-    foreach ( $set_cookies as $name ) {
-        if ( isset($existing_names[$name]) ) continue;
-        $new_cookies[] = cm_autoscan_entry( $name, cm_lookup_cookie( $name ) );
-        $existing_names[$name] = true;
-    }
+    list( $new_cookies, $unknown ) = cm_auto_scan_classify( $set_cookies, $existing_names );
 
     return array(
         'new_cookies'   => $new_cookies,
+        'unknown'       => $unknown,
         'existing_list' => $existing_list,
     );
 }

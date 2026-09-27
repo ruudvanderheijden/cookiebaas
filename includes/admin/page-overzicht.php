@@ -145,8 +145,43 @@ function cm_render_admin3_welcome_notice() {
     echo '<div class="notice notice-info is-dismissible"><p>De admin van Cookiebaas heeft een nieuwe indeling: elk onderwerp heeft nu een eigen menu-item. <a href="https://github.com/ruudvanderheijden/cookiebaas/blob/main/CHANGELOG.md#waar-staat-wat" target="_blank" rel="noopener">Waar staat wat?</a></p></div>';
 }
 
+/** Onbekende cookies uit de automatische scan: de beheerder kiest de categorie (of negeert ze). */
+function cm_render_pending_cookies() {
+    $pending = cm_auto_scan_pending();
+    if ( ! $pending ) return;
+    $n = count( $pending );
+    echo '<div class="notice notice-warning inline cm-pending"><p><strong>'
+       . esc_html( $n === 1 ? 'De automatische scan vond 1 cookie die Cookiebaas niet kent.' : 'De automatische scan vond ' . $n . ' cookies die Cookiebaas niet kent.' )
+       . '</strong> Kies een categorie; pas dan komt de cookie in de cookielijst. Negeren: niet toevoegen en niet opnieuw melden.</p>';
+    echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+    echo '<input type="hidden" name="action" value="cm_resolve_pending">';
+    wp_nonce_field( 'cm_resolve_pending' );
+    echo '<table class="widefat striped"><thead><tr><th scope="col">Cookie</th><th scope="col">Gevonden op</th><th scope="col">Categorie</th></tr></thead><tbody>';
+    $options = array( '' => 'Kies…', 'functional' => 'Functioneel', 'analytics' => 'Analytisch', 'marketing' => 'Marketing', 'ignore' => 'Negeren' );
+    $i = 0;
+    foreach ( $pending as $name => $ck ) {
+        $found = isset( $ck['found'] ) ? wp_date( 'j F Y', strtotime( $ck['found'] . ' UTC' ) ) : '';
+        echo '<tr><td><code>' . esc_html( $name ) . '</code><input type="hidden" name="cm_pending_name[' . $i . ']" value="' . esc_attr( $name ) . '"></td>'
+           . '<td>' . esc_html( $found ) . '</td><td><select name="cm_pending_cat[' . $i . ']" aria-label="' . esc_attr( 'Categorie voor ' . $name ) . '">';
+        foreach ( $options as $v => $label ) echo '<option value="' . esc_attr( $v ) . '">' . esc_html( $label ) . '</option>';
+        echo '</select></td></tr>';
+        $i++;
+    }
+    echo '</tbody></table><p><button type="submit" class="button button-primary">Opslaan</button></p></form></div>';
+}
+
+if ( function_exists( 'cm_admin_register_action' ) ) {
+    cm_admin_register_action( 'resolve_pending', function () {
+        return cm_resolve_pending_cookies(
+            isset( $_POST['cm_pending_name'] ) ? (array) wp_unslash( $_POST['cm_pending_name'] ) : array(),
+            isset( $_POST['cm_pending_cat'] ) ? (array) wp_unslash( $_POST['cm_pending_cat'] ) : array()
+        );
+    } );
+}
+
 function cm_admin_render_overzicht() {
     cm_render_admin3_welcome_notice();
+    cm_render_pending_cookies();
     echo '<div class="cm-cards">';
     foreach ( cm_overzicht_cards( cm_overzicht_data() ) as $card ) {
         echo '<div class="card' . ( $card[5] !== '' ? ' cm-card-' . esc_attr( $card[5] ) : '' ) . '"><h2 class="title">' . esc_html( $card[0] ) . '</h2>'

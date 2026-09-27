@@ -654,7 +654,7 @@ function cm_secs_to_human( $secs ) {
 ================================================================ */
 
 /** Omschrijving van een cookienaam: eerst de cookiedatabase, dan de ingebouwde kennisbank. */
-function cm_browser_scan_info( $name ) {
+function cm_scan_cookie_info( $name ) {
     $row = function_exists( 'cm_lookup_cookie' ) ? cm_lookup_cookie( $name ) : false;
     if ( $row ) {
         $e = cm_autoscan_entry( $name, $row );
@@ -695,12 +695,12 @@ function cm_browser_scan_rows( array $cookies, array $storage, array $resources,
         );
     };
 
-    foreach ( $cookies as $name ) $add( $name, 'browser', cm_browser_scan_info( $name ) );
+    foreach ( $cookies as $name ) $add( $name, 'browser', cm_scan_cookie_info( $name ) );
     foreach ( $existing as $name ) {
-        $info = cm_browser_scan_info( $name );
+        $info = cm_scan_cookie_info( $name );
         if ( $info ) $add( $name, 'browser', $info );
     }
-    foreach ( $storage as $name ) $add( $name, 'storage', cm_browser_scan_info( $name ) );
+    foreach ( $storage as $name ) $add( $name, 'storage', cm_scan_cookie_info( $name ) );
 
     // Geladen externe adressen: bekende diensten → hun cookies; de rest als onbekend domein
     $home    = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
@@ -723,7 +723,7 @@ function cm_browser_scan_rows( array $cookies, array $storage, array $resources,
             $matched = true;
             foreach ( $sigs as $sig ) {
                 if ( substr( $sig[0], -1 ) === '_' && cm_browser_scan_has_prefix( $rows, $skip, $sig[0] ) ) continue; // _ga_ als _ga_ABC123 al gevonden of in de lijst is
-                $add( $sig[0], 'host', cm_browser_scan_info( $sig[0] ), array( 'type' => $sig[1], 'provider' => $sig[2], 'duration' => $sig[3], 'description' => 'Gezet door ' . $sig[2] . ' (geladen van ' . $host . ').' ) );
+                $add( $sig[0], 'host', cm_scan_cookie_info( $sig[0] ), array( 'type' => $sig[1], 'provider' => $sig[2], 'duration' => $sig[3], 'description' => 'Gezet door ' . $sig[2] . ' (geladen van ' . $host . ').' ) );
             }
         }
         if ( $matched ) $known[ $host ] = true;
@@ -758,4 +758,93 @@ function cm_ajax_browser_scan_lookup() {
         return array_slice( array_values( array_filter( $v, 'is_string' ) ), 0, $max );
     };
     wp_send_json_success( cm_browser_scan_rows( $list( 'cookies', 200 ), $list( 'storage', 200 ), $list( 'resources', 500 ), $list( 'existing', 200 ) ) );
+}
+
+/* ---- Automatische scan: onbekende cookies wachten op een keuze (Overzicht) ---- */
+
+/** Onbekende cookies uit de automatische scan die op een categoriekeuze wachten: naam => rij. */
+function cm_auto_scan_pending() {
+    $p = get_option( 'cm_auto_scan_pending', array() );
+    return is_array( $p ) ? $p : array();
+}
+
+/** Cookienamen die de beheerder bij de automatische scan heeft genegeerd. */
+function cm_auto_scan_ignored() {
+    $i = get_option( 'cm_auto_scan_ignored', array() );
+    return is_array( $i ) ? array_values( array_filter( $i, 'is_string' ) ) : array();
+}
+
+function cm_auto_scan_add_pending( array $unknown ) {
+    if ( ! $unknown ) return;
+    $pending = cm_auto_scan_pending();
+    foreach ( $unknown as $ck ) {
+        if ( count( $pending ) >= 50 ) break; // ponytail: vaste bovengrens, zodat een vreemde site de optie niet laat groeien
+        $ck['found'] = gmdate( 'Y-m-d' );
+        $pending[ $ck['name'] ] = $ck;
+    }
+    update_option( 'cm_auto_scan_pending', $pending, false );
+}
+
+/**
+ * Splitst gevonden cookienamen in bekende (database of kennisbank) en onbekende.
+ * Namen die al in de lijst staan, op een keuze wachten, genegeerd zijn of alleen
+ * voor beheerders gelden, vallen weg. @return array( bekend[], onbekend[] )
+ */
+function cm_auto_scan_classify( array $names, array $existing_names ) {
+    foreach ( array_merge( array_keys( cm_auto_scan_pending() ), cm_auto_scan_ignored() ) as $name ) {
+        $existing_names[ $name ] = true;
+    }
+    $known   = array();
+    $unknown = array();
+    foreach ( $names as $name ) {
+        if ( isset( $existing_names[ $name ] ) || cm_is_admin_only_cookie( $name ) ) continue;
+        $existing_names[ $name ] = true;
+        $info  = cm_scan_cookie_info( $name );
+        $entry = array(
+            'name'     => $name,
+            'provider' => $info ? (string) $info['provider'] : '',
+            'purpose'  => $info ? (string) $info['description'] : '',
+            'duration' => $info ? (string) $info['duration'] : '',
+            'category' => $info ? (string) $info['type'] : '',
+        );
+        if ( in_array( $entry['category'], array( 'functional', 'analytics', 'marketing' ), true ) ) $known[] = $entry;
+        else $unknown[] = $entry;
+    }
+    return array( $known, $unknown );
+}
+
+/**
+ * Keuzes van het Overzicht verwerken: gekozen categorie → in de cookielijst,
+ * 'ignore' → niet opnieuw melden, geen keuze → blijft wachten. @return meldingscode
+ */
+function cm_resolve_pending_cookies( array $names, array $cats ) {
+    $pending = cm_auto_scan_pending();
+    $ignored = cm_auto_scan_ignored();
+    $add     = array();
+    $changed = false;
+    foreach ( $names as $i => $name ) {
+        if ( ! is_string( $name ) || ! isset( $pending[ $name ] ) ) continue;
+        $cat = isset( $cats[ $i ] ) && is_string( $cats[ $i ] ) ? $cats[ $i ] : '';
+        if ( in_array( $cat, array( 'functional', 'analytics', 'marketing' ), true ) ) {
+            $row = $pending[ $name ];
+            unset( $row['found'] );
+            $row['category'] = $cat;
+            $add[] = $row;
+        } elseif ( $cat === 'ignore' ) {
+            $ignored[] = $name;
+        } else {
+            continue;
+        }
+        unset( $pending[ $name ] );
+        $changed = true;
+    }
+    if ( ! $changed ) return 'pending-none';
+    if ( $add ) {
+        $list   = get_option( 'cm_cookie_list', array() );
+        $merged = cm_merge_cookie_list( is_array( $list ) ? $list : array(), $add );
+        update_option( 'cm_cookie_list', cm_sanitize_cookie_list( $merged['list'] ) );
+    }
+    update_option( 'cm_auto_scan_pending', $pending, false );
+    update_option( 'cm_auto_scan_ignored', array_values( array_unique( $ignored ) ), false );
+    return 'pending-resolved';
 }
