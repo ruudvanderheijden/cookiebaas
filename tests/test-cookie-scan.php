@@ -47,9 +47,9 @@ cm_assert( '__Secure-ENID mapt naar YouTube', $svc && $svc['service'] === 'YouTu
 // --- Omgevingsdetectie: minimale installatie (geen woo/litespeed) ----------
 cm_test_group( 'Omgevingsdetectie — minimale site' );
 $c = cm_server_env_cookies( false );
-cm_assert( 'wordpress_test_cookie altijd aanwezig', isset( $c['wordpress_test_cookie'] ) );
-cm_assert( 'wordpress_logged_in_ altijd aanwezig', isset( $c['wordpress_logged_in_'] ) );
-cm_assert( 'wordpress_sec_ altijd aanwezig', isset( $c['wordpress_sec_'] ) );
+cm_assert( 'geen inlogcookies: de scan toont wat een niet-ingelogde bezoeker krijgt', ! isset( $c['wordpress_test_cookie'] ) && ! isset( $c['wordpress_logged_in_'] ) && ! isset( $c['wordpress_sec_'] ) );
+cm_assert( 'inlog- en admincookies herkend', cm_is_admin_only_cookie( 'wp-settings-1' ) && cm_is_admin_only_cookie( 'wp-settings-time-1' ) && cm_is_admin_only_cookie( 'wordpress_logged_in_abc' ) && cm_is_admin_only_cookie( 'wordpress_sec_abc' ) && cm_is_admin_only_cookie( 'wordpress_test_cookie' ) && cm_is_admin_only_cookie( 'wordpress_' . md5( 'x' ) ) );
+cm_assert( 'gewone cookie niet', ! cm_is_admin_only_cookie( '_ga' ) && ! cm_is_admin_only_cookie( 'wordpress_custom' ) );
 cm_assert( '_lscache_vary AFWEZIG zonder LiteSpeed', ! isset( $c['_lscache_vary'] ) );
 cm_assert( 'comment_author_ afwezig bij gesloten reacties', ! isset( $c['comment_author_'] ) );
 
@@ -73,5 +73,6 @@ cm_assert( 'wp-postpass_ bij wachtwoordbeveiligde post', isset( $c['wp-postpass_
 cm_assert( 'wp_woocommerce_session_ bij WooCommerce', isset( $c['wp_woocommerce_session_'] ) );
 cm_assert( 'sbjs_current (Order Attribution) als analytics', isset( $c['sbjs_current'] ) && $c['sbjs_current'][0] === 'analytics' );
 cm_assert( 'sbjs_session aanwezig', isset( $c['sbjs_session'] ) );
+cm_assert( 'ook met WooCommerce geen inlogcookies (alleen wat anonieme bezoekers krijgen)', ! isset( $c['wordpress_logged_in_'] ) && ! isset( $c['wordpress_test_cookie'] ) );
 
 exit( cm_test_summary() );

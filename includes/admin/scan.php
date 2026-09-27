@@ -492,13 +492,25 @@ function cm_fallback_cookies() {
  * ziet ze nooit omdat ze alleen gezet worden bij inloggen, reageren,
  * winkelwagen-acties of specifieke cache-varianten.
  */
+/**
+ * Cookies die alleen wie inlogt krijgt (de beheerder, redacteuren): de
+ * inlogcookies van WordPress en de admin-instellingen. Die horen niet in de
+ * lijst voor bezoekers, ook niet als de beheerder ze via F12 meeplakt.
+ */
+function cm_is_admin_only_cookie( $name ) {
+    $n = strtolower( (string) $name );
+    return strpos( $n, 'wp-settings-' ) === 0
+        || $n === 'wordpress_test_cookie'
+        || strpos( $n, 'wordpress_logged_in_' ) === 0
+        || strpos( $n, 'wordpress_sec_' ) === 0
+        || (bool) preg_match( '/^wordpress_[0-9a-f]{32}$/', $n );
+}
+
 function cm_server_env_cookies( $litespeed_seen = false ) {
-    $cookies = array(
-        // Elke WordPress-site: inlogpagina + ingelogde gebruikers
-        'wordpress_test_cookie' => array('functional','WordPress','Sessie','Controleert of cookies werken in de browser van de bezoeker. Wordt gezet op de inlogpagina.'),
-        'wordpress_logged_in_'  => array('functional','WordPress','Sessie','Houdt de inlogstatus bij van ingelogde gebruikers.'),
-        'wordpress_sec_'        => array('functional','WordPress','Sessie','Beveiligingscookie voor ingelogde gebruikers.'),
-    );
+    // Alleen cookies die ook een niet-ingelogde bezoeker krijgt. Inlogcookies
+    // (wordpress_logged_in_ e.d.) krijgt alleen wie inlogt: die voegt de scan
+    // niet toe (een ledengebied kan ze zelf aan de lijst toevoegen).
+    $cookies = array();
 
     if ( $litespeed_seen || defined('LSCWP_V') || class_exists('\LiteSpeed\Core') ) {
         $cookies['_lscache_vary'] = array('functional','LiteSpeed Cache','Sessie','Bepaalt welke cache-variant LiteSpeed toont (bijv. ingelogd of uitgelogd). Bevat geen persoonsgegevens.');

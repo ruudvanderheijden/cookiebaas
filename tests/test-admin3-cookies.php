@@ -217,4 +217,9 @@ cm_assert( 'enkelvoud bij 1 maand', cm_default_cookies()[0]['duration'] === '1 m
 cm_assert( 'aanbieder: deze website (geen oude pluginnaam)', cm_default_cookies()[0]['provider'] === 'Deze website' );
 cm_test_set_settings( cm_default_settings() );
 
+cm_test_group( 'F12-plakken: cookies van de beheerder zelf niet overnemen' );
+$raw = "wordpress_logged_in_abc123\tx\t.example.test\t/\tSessie\nwp-settings-1\tx\t.example.test\t/\t2027-01-01\nwordpress_test_cookie\tx\t.example.test\t/\tSessie\n_ga\tx\t.example.test\t/\t2027-01-01";
+$names = array_column( cm_parse_f12_cookies( $raw, array() ), 'name' );
+cm_assert( 'alleen _ga; inlog- en admin-cookies van de beheerder vallen weg', $names === array( '_ga' ) );
+
 exit( cm_test_summary() );

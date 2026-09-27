@@ -57,7 +57,7 @@ function cm_tab_cookies_scannen() {
 }
 
 function cm_render_manual_scan() {
-    echo '<p><button type="button" class="button button-primary" id="cm-scan-start">Cookies scannen</button> <span class="description">Doorloopt alle gepubliceerde pagina’s op het domein van deze website en herkent cookies via HTTP-headers en scripts.</span></p>';
+    echo '<p><button type="button" class="button button-primary" id="cm-scan-start">Cookies scannen</button> <span class="description">Doorloopt alle gepubliceerde pagina’s op het domein van deze website zoals een niet-ingelogde bezoeker ze ziet, en herkent cookies via HTTP-headers en scripts.</span></p>';
     echo '<div id="cm-scan-result" aria-live="polite"></div>';
 }
 
@@ -215,6 +215,7 @@ function cm_parse_f12_cookies( $raw, array $existing_names, $now = null ) {
         if ( $name[0] === '#' || preg_match( '/^(name|naam|cookie|cookienaam)$/i', $name ) ) continue; // kopregel
         $lower = strtolower( $name );
         if ( isset( $seen[ $lower ] ) ) continue;
+        if ( function_exists( 'cm_is_admin_only_cookie' ) && cm_is_admin_only_cookie( $name ) ) continue; // cookies van de beheerder zelf
         $seen[ $lower ] = true;
         $info     = cm_cookie_fallback_info( $name );
         $duration = cm_f12_duration( isset( $parts[4] ) ? $parts[4] : '', $now );

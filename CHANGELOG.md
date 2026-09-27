@@ -65,6 +65,7 @@ Na een beveiligingsaudit:
 - **De API-sleutel** wordt op de server gemaakt en ingetrokken, en staat niet meer in de JavaScript van de admin.
 - **De licentiemelding** staat alleen nog op de pagina's van Cookiebaas.
 - **Ingebouwde cookies:** alleen nog `cc_cm_consent`, de cookie die Cookiebaas zelf zet, met als aanbieder "Deze website" en de looptijd uit de instelling Geldigheid. `PHPSESSID` stond er onterecht: Cookiebaas start geen PHP-sessie. Gebruikt uw site die cookie wel, dan vindt de scan hem en voegt u hem toe aan de cookielijst.
+- **De scan kijkt als een niet-ingelogde bezoeker.** Inlogcookies van WordPress (`wordpress_logged_in_*`, `wordpress_sec_*`, `wordpress_test_cookie`) en `wp-settings-*` stelt hij niet meer voor; die krijgt alleen wie inlogt. Plakken vanuit F12 slaat ze ook over (dat zijn de cookies van de beheerder zelf). Heeft uw site een ledengebied, voeg ze dan zelf toe.
 - **De backup** heet `cookiebaas-backup-JJJJ-MM-DD.json`. Terugzetten behoudt uw API-sleutel.
 
 ### Verwijderd
