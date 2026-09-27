@@ -42,13 +42,26 @@ cm_assert( 'eigen grijze kleur met !important (thema en kleurinstellingen verand
 cm_assert( 'geen CSS-variabele voor de vermelding', ! preg_match( '/\.cm-credit[^{]*\{[^}]*var\(/i', $css ) );
 cm_assert( 'geen instelling in de defaults', ! preg_grep( '/credit/i', array_keys( cm_default_settings() ) ) );
 
+cm_test_group( 'nofollow blijft ook in de browser' );
+$js = file_get_contents( CM_PLUGIN_ROOT . '/includes/frontend.php' );
+cm_assert( 'makeLinksExternal overschrijft geen bestaande rel (anders verdwijnt nofollow)', strpos( $js, "if (!a.getAttribute('rel')) a.setAttribute('rel', 'noopener noreferrer');" ) !== false );
+
 cm_test_group( 'Paginacache alleen bij een andere geldigheid' );
-cm_assert( 'geldig → verlopen is een wijziging', cm_license_validity_changed( $active, $expired ) === true );
-cm_assert( 'alleen last_check anders is geen wijziging', cm_license_validity_changed( $active, array_merge( $active, array( 'last_check' => time() ) ) ) === false );
+update_option( 'cm_license_data', $active );
 $p = $GLOBALS['cm_test_purges'];
 update_option( 'cm_license_data', array_merge( $active, array( 'last_check' => 123 ) ) );
 cm_assert( 'dagelijkse controle zonder wijziging → geen purge', $GLOBALS['cm_test_purges'] === $p );
 update_option( 'cm_license_data', $expired );
 cm_assert( 'licentie verloopt → purge', $GLOBALS['cm_test_purges'] === $p + 1 );
+update_option( 'cm_license_data', $active );
+// De vervaldatum verstrijkt zonder dat er iets wordt opgeslagen: de opgeslagen waarde is nu al ongeldig
+$GLOBALS['cm_test_options']['cm_license_data'] = array_merge( $active, array( 'expires_at' => gmdate( 'Y-m-d', time() - 86400 ) ) );
+$p = $GLOBALS['cm_test_purges'];
+update_option( 'cm_license_data', array_merge( $GLOBALS['cm_test_options']['cm_license_data'], array( 'status' => 'expired' ) ) ); // dagelijkse controle
+cm_assert( 'verlopen op de vervaldatum (oude waarde al ongeldig) → toch purge', $GLOBALS['cm_test_purges'] === $p + 1 );
+update_option( 'cm_license_data', $active );
+$p = $GLOBALS['cm_test_purges'];
+delete_option( 'cm_license_data' );
+cm_assert( 'licentie lokaal gewist → purge', $GLOBALS['cm_test_purges'] === $p + 1 );
 
 exit( cm_test_summary() );

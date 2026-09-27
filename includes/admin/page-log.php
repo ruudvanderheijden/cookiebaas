@@ -340,7 +340,7 @@ function cm_render_log_bewaren_tools() {
     echo '</div>';
 
     echo '<div class="cm-section"><h2>Log leegmaken</h2>';
-    echo '<p>Verwijdert alle registraties definitief. Exporteer eerst een CSV als u het bewijs wilt bewaren.</p>';
+    echo '<p>Verwijdert alle registraties definitief. Met een licentie kunt u eerst een CSV exporteren om het bewijs te bewaren.</p>';
     echo '<div>' . cm_admin_action_form( 'clear_log', 'Log leegmaken', array(), 'Alle registraties definitief verwijderen? Dit kan niet ongedaan worden gemaakt.', 'button button-link-delete' ) . '</div>';
     echo '</div>';
 }

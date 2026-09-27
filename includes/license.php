@@ -3,7 +3,8 @@
  * Cookiebaas — Licentiebeheer
  *
  * Valideert de licentie bij de licentieserver (cookiebaas.nl).
- * Zonder geldige licentie verschijnt de banner niet.
+ * De banner en de blokkering werken altijd; de licentie ontgrendelt alleen
+ * premiumfuncties in de admin en haalt de vermelding "Cookiebaas" weg.
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -39,8 +40,8 @@ function cm_license_save( $data ) {
  * LET OP: dit stuurt NIET de compliance-kern aan. De cookiebanner, de
  * scriptblokkering en Consent Mode werken ALTIJD, ongeacht licentie — een
  * privacyproduct mag zijn bescherming nooit uitzetten bij een betaalprobleem.
- * De licentie gate uitsluitend premium-extra's; gebruik daarvoor de expliciete
- * cm_scan_requires_license()-achtige helpers, niet deze functie in de frontend.
+ * De licentie gate uitsluitend premium-extra's in de admin (en de vermelding
+ * "Cookiebaas" via cm_credit_link()); nooit de banner of de blokkering.
  */
 function cm_license_is_valid() {
     return cm_license_data_is_valid( cm_license_get() );
@@ -66,19 +67,22 @@ function cm_scan_requires_license() {
 
 /*
  * De vermelding "Cookiebaas" in de banner hangt af van de licentie. Leeg de
- * paginacache alleen als de geldigheid echt verandert (niet bij elke
- * dagelijkse controle, die last_check bijwerkt).
+ * paginacache alleen als de geldigheid echt verandert: vergeleken met de
+ * laatst geziene geldigheid, want een licentie kan op zijn vervaldatum al
+ * ongeldig zijn vóórdat de dagelijkse controle hem als 'expired' opslaat.
  */
-function cm_license_validity_changed( $old, $new ) {
-    return cm_license_data_is_valid( $old ) !== cm_license_data_is_valid( $new );
+function cm_license_sync_validity( $lic ) {
+    $now  = cm_license_data_is_valid( $lic ) ? '1' : '0';
+    $seen = get_option( 'cm_license_valid_seen', '' );
+    if ( $seen === $now ) return;
+    update_option( 'cm_license_valid_seen', $now, false );
+    // Eerste keer (bijv. net geüpdatet): de update-migratie leegt de cache al
+    if ( $seen !== '' && function_exists( 'cm_purge_page_caches' ) ) cm_purge_page_caches();
 }
-function cm_license_purge_if_changed( $old, $new ) {
-    if ( cm_license_validity_changed( $old, $new ) && function_exists( 'cm_purge_page_caches' ) ) cm_purge_page_caches();
-}
-add_action( 'update_option_cm_license_data', 'cm_license_purge_if_changed', 10, 2 );
-add_action( 'add_option_cm_license_data', function ( $name, $value ) { cm_license_purge_if_changed( array(), $value ); }, 10, 2 );
+add_action( 'update_option_cm_license_data', function ( $old, $new ) { cm_license_sync_validity( $new ); }, 10, 2 );
+add_action( 'add_option_cm_license_data', function ( $name, $value ) { cm_license_sync_validity( $value ); }, 10, 2 );
 add_action( 'delete_option', function ( $name ) {
-    if ( $name === 'cm_license_data' ) cm_license_purge_if_changed( get_option( 'cm_license_data', array() ), array() );
+    if ( $name === 'cm_license_data' ) cm_license_sync_validity( array() );
 } );
 
 /* ================================================================

@@ -189,7 +189,7 @@ function cm_admin_render_field_row( array $f, array $values ) {
     echo '<tr' . $show . '><th scope="row">';
     echo $plain
         ? esc_html( $f['label'] ) . $mark
-        : '<label for="' . esc_attr( $id ) . '">' . esc_html( $f['label'] ) . $mark . '</label>';
+        : '<label for="' . esc_attr( $id ) . '">' . ( ! empty( $f['group'] ) ? '<span class="screen-reader-text">' . esc_html( $f['group'] ) . ' — </span>' : '' ) . esc_html( $f['label'] ) . $mark . '</label>';
     echo '</th><td>';
     cm_admin_render_control( $f, $id, $name, $value );
     if ( ! empty( $f['notice'] ) ) {
@@ -279,7 +279,7 @@ function cm_admin_render_control( array $f, $id, $name, $value ) {
             $v     = (string) $value;
             $valid = preg_match( '/^#[0-9a-fA-F]{6}$/', $v ) === 1;
             echo '<span class="cm-color' . ( $valid ? '' : ' cm-color-empty' ) . '">';
-            echo '<input type="color"' . ( $valid ? ' value="' . esc_attr( strtolower( $v ) ) . '"' : '' ) . ' aria-label="' . esc_attr( 'Kleurkiezer: ' . $f['label'] ) . '">';
+            echo '<input type="color"' . ( $valid ? ' value="' . esc_attr( strtolower( $v ) ) . '"' : '' ) . ' aria-label="' . esc_attr( 'Kleurkiezer: ' . ( ! empty( $f['group'] ) ? $f['group'] . ' — ' : '' ) . $f['label'] ) . '">';
             echo '<input type="text"' . $attr . ' class="code cm-hex" value="' . esc_attr( $v ) . '" size="8" spellcheck="false" autocomplete="off"' . $ph . '>';
             if ( $f['type'] === 'color_optional' ) {
                 echo ' <button type="button" class="button-link cm-color-clear"' . ( $v === '' ? ' hidden' : '' ) . '>Wissen</button>';

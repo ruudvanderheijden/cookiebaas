@@ -77,7 +77,7 @@ function cm_render_beheer_licentie() {
         echo '<tr><th scope="row">Laatste controle</th><td>' . esc_html( ! empty( $lic['last_check'] ) ? wp_date( 'j F Y, H:i', $lic['last_check'] ) : 'Nog niet gecontroleerd' ) . '</td></tr>';
         echo '</tbody></table>';
         echo '<div>' . cm_admin_action_form( 'license_check', 'Status controleren' ) . ' '
-           . cm_admin_action_form( 'license_deactivate', 'Deactiveren', array(), 'De licentie op deze website deactiveren? De consent log, de privacyverklaring-generator en de automatische scan pauzeren tot u opnieuw activeert.', 'button button-link-delete' ) . '</div>';
+           . cm_admin_action_form( 'license_deactivate', 'Deactiveren', array(), 'De licentie op deze website deactiveren? ' . ucfirst( cm_premium_features_text() ) . ' pauzeren tot u opnieuw activeert. Het vastleggen van toestemmingen gaat door.', 'button button-link-delete' ) . '</div>';
     }
 
     echo '<h2>' . esc_html( ! empty( $lic['key'] ) ? 'Andere sleutel activeren' : 'Licentie activeren' ) . '</h2>';
@@ -217,7 +217,7 @@ function cm_render_beheer_backup() {
 
     echo '<h2>Backup terugzetten</h2>';
     echo '<p>Zet een eerder gemaakte backup terug. Ongeldige waarden worden de standaardwaarde; een bestand dat geen backup van Cookiebaas is, wijzigt niets.</p>';
-    echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" enctype="multipart/form-data" class="cm-action-form" data-cm-confirm="' . esc_attr( 'De huidige instellingen, cookielijst en privacyverklaring worden overschreven door de backup. Doorgaan?' ) . '">';
+    echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" enctype="multipart/form-data" class="cm-action-form" data-cm-confirm="' . esc_attr( 'De huidige instellingen en cookielijst (en met een licentie ook de privacyverklaring) worden overschreven door de backup. Doorgaan?' ) . '">';
     echo '<input type="hidden" name="action" value="cm_import_backup">';
     wp_nonce_field( 'cm_import_backup' );
     echo '<p><label for="cm-backup-file">Backupbestand (.json)</label><br><input type="file" id="cm-backup-file" name="cm_backup" accept=".json,application/json" required></p>';

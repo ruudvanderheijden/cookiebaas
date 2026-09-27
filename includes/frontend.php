@@ -9,8 +9,8 @@ function cm_output_inline_css() {
     if ( is_admin() ) return;
     // Bewust GEEN licentiecheck: de banner en zijn styling moeten altijd
     // werken, ook bij een verlopen/ontbrekende licentie (compliance mag nooit
-    // van een betaalstatus afhangen). Alleen premium-extra's (cookiescan)
-    // worden afgeknepen. Zie cm_scan_requires_license().
+    // van een betaalstatus afhangen). Alleen admin-extra's zijn premium; de
+    // enige frontend-uitzondering is de kleine vermelding (cm_credit_link).
     $s  = cm_get_settings();
     $op = intval( cm_get('overlay_opacity') ) / 100;
     $rp = intval( cm_get('radius_popup') )   . 'px';
@@ -933,11 +933,6 @@ function cm_is_excluded_page() {
 }
 
 /**
- * Banner, voorkeurenvenster en zweefknop — de zichtbare markup, zonder script.
- * Gedeeld door de frontend en de admin-preview. Geeft de cookies per
- * categorie terug; het frontend-script heeft die nodig (COOKIE_NAMES).
- */
-/**
  * Vermelding "Cookiebaas" in de gratis versie: rechtsonder in banner en
  * voorkeurenvenster, vaste stijl (frontend.css), niet instelbaar. Hangt af van
  * de licentie van de site, niet van de bezoeker, dus cache-veilig.
@@ -947,6 +942,11 @@ function cm_credit_link() {
     return '<a class="cm-credit" href="https://www.cookiebaas.nl" target="_blank" rel="nofollow noopener">Cookiebaas</a>';
 }
 
+/**
+ * Banner, voorkeurenvenster en zweefknop — de zichtbare markup, zonder script.
+ * Gedeeld door de frontend en de admin-preview. Geeft de cookies per
+ * categorie terug; het frontend-script heeft die nodig (COOKIE_NAMES).
+ */
 function cm_banner_markup() {
     $show_float      = cm_get('show_float_btn');
     $float_btn_style = cm_get('float_btn_style'); // 'text' of 'icon'
@@ -1593,7 +1593,7 @@ function cm_render_frontend() {
                 if (!el) return;
                 el.querySelectorAll('a[href]').forEach(function(a) {
                     if (!a.getAttribute('target')) a.setAttribute('target', '_blank');
-                    a.setAttribute('rel', 'noopener noreferrer');
+                    if (!a.getAttribute('rel')) a.setAttribute('rel', 'noopener noreferrer');
                 });
             });
         }

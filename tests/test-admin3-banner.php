@@ -110,4 +110,12 @@ $GLOBALS['cm_test_errors'] = array();
 cm_sanitize_field_value( $idx['banner_width_compact'], 'abc', '420' );
 cm_assert( 'breedte links/rechtsonder: melding bevat de context', strpos( end( $GLOBALS['cm_test_errors'] ), 'Linksonder/rechtsonder' ) !== false );
 
+cm_test_group( 'Knoppen: foutmelding noemt de soort knop' );
+$idx = cm_admin_field_index( 'cm_settings', array( 'cookiebaas-banner' => cm_tabs_banner() ) );
+$GLOBALS['cm_test_errors'] = array();
+cm_sanitize_field_value( $idx['color_reject_bg'], 'rood', '#111111' );
+cm_assert( 'weigerknop herkenbaar in de melding', strpos( end( $GLOBALS['cm_test_errors'] ), 'Weigeren' ) !== false && strpos( end( $GLOBALS['cm_test_errors'] ), 'Licht thema' ) !== false );
+ob_start(); cm_admin_render_field_row( $idx['dm_accept_bg'], array( 'dm_accept_bg' => '#ffffff' ) ); $h = ob_get_clean();
+cm_assert( 'kleurkiezer en label noemen de knop voor schermlezers', strpos( $h, 'Akkoord' ) !== false );
+
 exit( cm_test_summary() );

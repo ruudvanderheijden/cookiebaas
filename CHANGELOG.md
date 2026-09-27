@@ -9,7 +9,7 @@ De admin is opnieuw gebouwd: WordPress-native en per onderwerp ingedeeld. Uw ins
 De cookiemelding is gratis. Zonder licentie werken de banner, het voorkeurenvenster, de script- en embedblokkering, Google Consent Mode, de handmatige cookiescan, de cookiedatabase, de cookielijst en `[cookiebaas_cookies]`. Toestemmingen worden ook zonder licentie vastgelegd en na de bewaartermijn opgeschoond.
 
 Met een licentie komen daarbij:
-- **de consent log inzien:** registraties bekijken, het bewijs per registratie, de CSV-export en de REST API voor consentverificatie;
+- **de consent log inzien:** registraties bekijken en verwijderen, het bewijs per registratie, de CSV-export en de REST API voor consentverificatie;
 - **de privacyverklaring-generator:** de verklaring bewerken, standaardtekst herstellen en het verwerkingsregister exporteren. Een verklaring die al op uw website staat, blijft zichtbaar als de licentie verloopt;
 - **de automatische scan:** nieuw gevonden cookies automatisch toevoegen of een melding per e-mail.
 

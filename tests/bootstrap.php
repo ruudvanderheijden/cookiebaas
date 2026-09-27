@@ -67,12 +67,13 @@ if ( ! function_exists( 'update_option' ) ) {
 if ( ! function_exists( 'add_option' ) ) {
     function add_option( $key, $value = '' ) {
         $GLOBALS['cm_test_options'][ $key ] = $value;
-        do_action( 'add_option_' . $key, $value );
+        do_action( 'add_option_' . $key, $key, $value );
         return true;
     }
 }
 if ( ! function_exists( 'delete_option' ) ) {
     function delete_option( $key ) {
+        do_action( 'delete_option', $key ); // zoals WordPress: vóór het verwijderen
         unset( $GLOBALS['cm_test_options'][ $key ] );
         do_action( 'delete_option_' . $key );
         return true;

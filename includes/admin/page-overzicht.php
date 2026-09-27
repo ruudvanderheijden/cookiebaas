@@ -157,6 +157,16 @@ function cm_admin_render_overzicht() {
     echo '</div>';
 
     $checks = cm_compliance_checks( cm_get_settings(), cm_privacy_values(), cm_get_cookie_list() );
+    // Zonder licentie is de privacyverklaring niet te bewerken: "Oplossen" wijst dan naar de licentie
+    if ( cm_admin_require_license() !== '' ) {
+        foreach ( $checks as &$c ) {
+            if ( $c['group'] === 'Privacyverklaring' ) {
+                $c['url']   = cm_admin_page_url( 'cookiebaas-beheer', 'licentie' );
+                $c['label'] = 'licentie activeren om de verklaring te bewerken';
+            }
+        }
+        unset( $c );
+    }
     $ok     = count( array_filter( $checks, function ( $c ) { return $c['status'] === 'ok'; } ) );
     echo '<h2>Compliance-check</h2>';
     echo '<p>' . esc_html( $ok . ' van de ' . count( $checks ) . ' controles zijn in orde.' ) . ' Deze check is geen juridisch advies; lees de <a href="' . esc_url( cm_admin_page_url( 'cookiebaas-beheer', 'info' ) ) . '">disclaimer</a>.</p>';

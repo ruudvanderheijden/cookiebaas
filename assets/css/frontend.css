@@ -524,6 +524,7 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
 /* In het voorkeurenvenster: in de onderste marge, onder de knoppen */
 #cm-prefs .cm-prefs-box > .cm-credit { flex-shrink: 0 !important; margin: -20px 36px 8px auto !important; }
 @media (max-width: 600px) { #cm-prefs .cm-prefs-box > .cm-credit { margin: -18px 20px 8px auto !important; } }
+#cm-prefs.cm-page-mode .cm-prefs-box > .cm-credit { margin-right: 0 !important; }
 #cm-banner .cm-credit:hover,
 #cm-prefs .cm-credit:hover { color: #646970 !important; text-decoration: underline !important; }
 

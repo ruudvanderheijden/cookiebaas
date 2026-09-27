@@ -37,8 +37,8 @@ function cm_color_sections( $theme ) {
     $c     = function ( $key, $label, array $extra = array() ) use ( $p ) { return cm_field( $p . $key, 'color', $label, $extra ); };
     $o     = function ( $key, $label, $ph, array $extra = array() ) use ( $p ) { return cm_field( $p . $key, 'color_optional', $label, array_merge( array( 'placeholder' => $ph ), $extra ) ); };
     $h     = function ( $label ) { return cm_field( '', 'subheading', $label, array( 'store' => false ) ); };
-    // Knoppen: per soort een tussenkop; de soort staat als context in foutmeldingen
-    $in    = function ( $button ) use ( $theme_label ) { return array( 'context' => $theme_label . ' › ' . $button ); };
+    // Knoppen: per soort een tussenkop; de soort ('group') komt in foutmeldingen en voor schermlezers
+    $in    = function ( $button ) { return array( 'group' => $button ); };
     $sections = array(
         array( 'title' => 'Venster', 'collapsible' => true, 'open' => true, 'attrs' => $pane, 'fields' => array(
             $c( 'popup_bg', 'Achtergrond' ),
@@ -131,7 +131,7 @@ function cm_color_sections( $theme ) {
     // Context erbij zodat de foutmelding onderscheid maakt: licht/donker hebben dezelfde labels.
     foreach ( $sections as &$section ) {
         foreach ( $section['fields'] as &$field ) {
-            $field['context'] = $theme_label . ' › ' . $section['title'];
+            $field['context'] = $theme_label . ' › ' . $section['title'] . ( ! empty( $field['group'] ) ? ' › ' . $field['group'] : '' );
         }
         unset( $field );
     }
