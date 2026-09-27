@@ -9,9 +9,15 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 function cm_tabs_cookies() {
     return array(
-        'lijst'   => array( 'label' => 'Cookielijst', 'render' => 'cm_render_cookie_list_tab' ),
-        'scannen' => cm_tab_cookies_scannen(),
+        'lijst'   => array( 'label' => 'Cookielijst', 'render' => 'cm_render_cookie_list_tab', 'title_actions' => 'cm_cookies_title_actions' ),
+        'scannen' => array_merge( cm_tab_cookies_scannen(), array( 'title_actions' => 'cm_cookies_title_actions' ) ),
     );
+}
+
+/** Knoppen naast de paginatitel: de cookielijst exporteren of leegmaken. */
+function cm_cookies_title_actions() {
+    echo '<a class="page-title-action" href="' . esc_url( cm_admin_action_url( 'export_cookies' ) ) . '">Exporteren als CSV</a> ';
+    echo cm_admin_action_form( 'clear_cookie_list', 'Lijst leegmaken', array(), 'De cookielijst leegmaken? De ingebouwde cookies blijven staan.', 'page-title-action' );
 }
 
 function cm_tab_cookies_scannen() {
@@ -254,9 +260,6 @@ function cm_render_cookie_list_tools() {
     echo '<p><textarea id="cm-f12" name="cm_f12" rows="8" class="large-text code"></textarea></p>';
     echo '<p><button type="submit" class="button">Toevoegen aan de lijst</button></p>';
     echo '</form></div></details>';
-    echo '<div><a class="button" href="' . esc_url( cm_admin_action_url( 'export_cookies' ) ) . '">Exporteren als CSV</a> ';
-    echo cm_admin_action_form( 'clear_cookie_list', 'Lijst leegmaken', array(), 'De cookielijst leegmaken? De ingebouwde cookies blijven staan.', 'button button-link-delete' );
-    echo '</div>';
 }
 
 if ( function_exists( 'cm_admin_register_action' ) ) {

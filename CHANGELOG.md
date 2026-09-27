@@ -33,7 +33,7 @@ Zonder geldige licentie staat rechtsonder in de banner en het voorkeurenvenster 
 | Beheer › Compliance | Overzicht |
 | Beheer › Export / Import: backup | Beheer › Backup |
 | Beheer › Export / Import: verwerkingsregister | Privacyverklaring (knop naast de titel) |
-| Beheer › Export / Import: cookielijst (CSV) | Cookies › Cookielijst |
+| Beheer › Export / Import: cookielijst (CSV) | Cookies (knop naast de titel) |
 | Beheer › Reset: kleuren, cookielijst, privacyverklaring, consent log, consent data | Bij het onderdeel zelf: Banner › Vormgeving, Cookies › Cookielijst, Privacyverklaring, Consent log › Bewaren en opnieuw vragen |
 | Beheer › Reset: alles resetten, licentie | Beheer › Reset |
 | Beheer › Licentie | Beheer › Licentie |

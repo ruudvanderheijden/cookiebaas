@@ -108,8 +108,14 @@ cm_assert( 'rij met leesbare categorie en grondslag', $csv[1] === array( '_ga', 
 cm_test_group( 'Hulpmiddelen onder de cookielijst' );
 ob_start(); cm_render_cookie_list_tools(); $t = ob_get_clean();
 cm_assert( 'F12-formulier post naar admin-post met eigen nonce', strpos( $t, 'name="action" value="cm_import_f12"' ) !== false && strpos( $t, 'nonce-cm_import_f12' ) !== false && strpos( $t, 'name="cm_f12"' ) !== false );
-cm_assert( 'exportlink met eigen nonce', strpos( $t, 'action=cm_export_cookies' ) !== false && strpos( $t, 'nonce-cm_export_cookies' ) !== false );
-cm_assert( 'leegmaken vraagt om bevestiging', strpos( $t, 'value="cm_clear_cookie_list"' ) !== false && strpos( $t, 'data-cm-confirm=' ) !== false );
+cm_assert( 'export en leegmaken staan niet meer onder de lijst', strpos( $t, 'cm_export_cookies' ) === false && strpos( $t, 'cm_clear_cookie_list' ) === false );
+
+cm_test_group( 'Knoppen naast de titel (zoals bij de privacyverklaring)' );
+$tabs = cm_tabs_cookies();
+cm_assert( 'op beide tabs', $tabs['lijst']['title_actions'] === 'cm_cookies_title_actions' && $tabs['scannen']['title_actions'] === 'cm_cookies_title_actions' );
+ob_start(); cm_cookies_title_actions(); $t = ob_get_clean();
+cm_assert( 'exportlink met eigen nonce, als titelknop', strpos( $t, 'class="page-title-action"' ) !== false && strpos( $t, 'action=cm_export_cookies' ) !== false && strpos( $t, 'nonce-cm_export_cookies' ) !== false );
+cm_assert( 'leegmaken als titelknop, met bevestiging', strpos( $t, 'value="cm_clear_cookie_list"' ) !== false && strpos( $t, 'data-cm-confirm=' ) !== false && substr_count( $t, 'page-title-action' ) === 2 );
 cm_assert( 'meldingen bestaan', cm_admin_notice_html( 'f12-imported' ) !== '' && cm_admin_notice_html( 'f12-none' ) !== '' && cm_admin_notice_html( 'cookie-list-cleared' ) !== '' );
 
 cm_test_group( 'AJAX-controle: rechten en nonce per actie' );
