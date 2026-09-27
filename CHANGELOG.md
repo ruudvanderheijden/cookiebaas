@@ -1,6 +1,6 @@
 # Changelog — Cookiebaas
 
-## [3.1.0] - nog niet uitgebracht
+## [3.1.0] - 2026-09-27
 
 ### Nieuw: uitgebreide scan, met controle vóór toestemming
 
