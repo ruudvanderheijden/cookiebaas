@@ -107,7 +107,18 @@
       var tr = body.insertRow();
       var name = el('code', ck.name);
       var td = tr.insertCell(); td.appendChild(name);
-      tr.insertCell().textContent = LABELS[ck.type] || ck.type || '';
+      var known = ck.type === 'functional' || ck.type === 'analytics' || ck.type === 'marketing';
+      var cat = tr.insertCell();
+      if (known) cat.textContent = LABELS[ck.type];
+      else {
+        // Onbekend: zelf kiezen, anders zou hij stil als functioneel (zonder toestemming) in de lijst komen
+        var sel = el('select', null, 'cm-scan-cat');
+        sel.setAttribute('aria-label', 'Categorie voor ' + ck.name);
+        [['', 'Onbekend: kies…'], ['functional', LABELS.functional], ['analytics', LABELS.analytics], ['marketing', LABELS.marketing]].forEach(function (o) {
+          var opt = el('option', o[1]); opt.value = o[0]; sel.appendChild(opt);
+        });
+        cat.appendChild(sel);
+      }
       tr.insertCell().textContent = ck.provider || '';
       tr.insertCell().textContent = ck.description || '—';
       tr.insertCell().textContent = ck.duration || '';
@@ -115,10 +126,24 @@
       var add = el('button', 'Toevoegen', 'button button-small cm-scan-add-one');
       add.type = 'button';
       add.setAttribute('data-i', String(i));
+      if (!known) add.disabled = true; // pas na een categoriekeuze
       tr.insertCell().appendChild(add);
     });
     result.appendChild(table);
-    result.appendChild(el('p', 'HTTP-header: gezet door de server. Script: afgeleid uit trackingscripts (de browser zet de cookie). Embed: gezet door een ingesloten dienst (bijv. een video). Browser: gevonden in uw browser tijdens de browserscan. Opslag: localStorage of sessionStorage. Extern script: afgeleid uit een geladen dienst.', 'description'));
+    result.appendChild(el('p', 'HTTP-header: gezet door de server. Script: afgeleid uit trackingscripts (de browser zet de cookie). Embed: gezet door een ingesloten dienst (bijv. een video). Browser: gevonden in uw browser tijdens de browserscan. Opslag: localStorage of sessionStorage. Extern script: afgeleid uit een geladen dienst. Onbekend: kies eerst een categorie, dan kunt u de cookie toevoegen.', 'description'));
+  }
+
+  result.addEventListener('change', function (e) {
+    var sel = e.target.closest('.cm-scan-cat');
+    if (!sel) return;
+    var btn = sel.closest('tr').querySelector('.cm-scan-add-one');
+    found[+btn.getAttribute('data-i')].type = sel.value || 'unknown';
+    btn.disabled = !sel.value;
+  });
+
+  /** Onbekende cookies waarvoor nog geen categorie is gekozen (en die nog niet zijn toegevoegd). */
+  function unchosenCount() {
+    return Array.prototype.filter.call(result.querySelectorAll('.cm-scan-cat'), function (s) { return !s.disabled && !s.value; }).length;
   }
 
   /* Serialiseer alle cm_scan_add-aanroepen achter elkaar: de server doet
@@ -137,6 +162,8 @@
       buttons.forEach(function (b) {
         var ck = found[+b.getAttribute('data-i')];
         b.textContent = ck && added[ck.name] ? 'Toegevoegd' : 'Staat al in de lijst';
+        var sel = b.closest('tr').querySelector('.cm-scan-cat');
+        if (sel) sel.disabled = true; // categorie ligt nu vast; aanpassen kan in de cookielijst
       });
       return (r.data.added || []).length;
     }).catch(function () {
@@ -153,12 +180,18 @@
     if (one) { addCookies([found[+one.getAttribute('data-i')]], [one]); return; }
     var all = e.target.closest('#cm-scan-add-all');
     if (!all) return;
-    all.disabled = true;
     var buttons = Array.prototype.slice.call(result.querySelectorAll('.cm-scan-add-one:not([disabled])'));
+    var skipped = unchosenCount();
+    var skipMsg = skipped ? ' ' + skipped + ' onbekende cookie' + (skipped === 1 ? '' : 's') + ' overgeslagen: kies eerst een categorie.' : '';
+    if (!buttons.length) { showAddStatus(skipMsg.trim() || 'Alle cookies staan al in de lijst.', 'description'); return; }
+    all.disabled = true;
     addCookies(buttons.map(function (b) { return found[+b.getAttribute('data-i')]; }), buttons).then(function (n) {
       if (n < 0) { all.disabled = false; return; } // addCookies toont de foutmelding al via het statuselement
       var msg = n > 0 ? ' ' + n + ' cookies toegevoegd.' : ' Alle cookies staan al in de lijst.';
-      all.parentNode.appendChild(el('span', msg, 'description'));
+      var prev = all.parentNode.querySelector('span.description');
+      if (prev) prev.remove(); // bij een tweede klik niet stapelen
+      all.parentNode.appendChild(el('span', msg + skipMsg, 'description'));
+      if (skipped) all.disabled = false; // later alsnog de gekozen onbekende cookies in één keer toevoegen
     });
   });
 

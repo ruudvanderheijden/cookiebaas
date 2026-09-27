@@ -16,6 +16,10 @@ Naast de bestaande scan staat onder Cookies › Scannen de knop **Scan in de bro
 - De bezochte pagina's kunnen als bezoek in uw statistieken verschijnen. De scancode staat dan niet in het adres.
 - De scan is gratis.
 
+### Onbekende cookies: eerst een categorie kiezen
+
+Kent Cookiebaas een gevonden cookie niet, dan kiest u in de resultatentabel zelf de categorie voordat u hem toevoegt. Dat geldt voor beide scans. Voorheen kwam zo'n cookie ongemerkt als Functioneel in de lijst, en dat is een categorie die zonder toestemming mag. **Alle gevonden cookies toevoegen** slaat onbekende cookies zonder gekozen categorie over en meldt hoeveel dat er zijn.
+
 ## [3.0.0] - 2026-09-27
 
 De admin is opnieuw gebouwd: WordPress-native en per onderwerp ingedeeld. Uw instellingen, cookielijst, privacyverklaring en consent log blijven precies zoals ze waren; de banner en de blokkering op uw website veranderen niet.

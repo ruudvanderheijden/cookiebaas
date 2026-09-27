@@ -32,6 +32,7 @@ require CM_PLUGIN_ROOT . '/includes/admin/settings.php';
 require CM_PLUGIN_ROOT . '/includes/admin/actions.php';
 require CM_PLUGIN_ROOT . '/includes/admin/scan.php';
 require CM_PLUGIN_ROOT . '/includes/admin/page-cookies.php';
+require CM_PLUGIN_ROOT . '/includes/admin/ajax.php';
 require CM_PLUGIN_ROOT . '/includes/browser-scan.php';
 
 cm_test_group( 'Scanmodus alleen voor de beheerder' );
@@ -102,5 +103,11 @@ cm_assert( 'al aanwezige bekende cookie (_gid) wel', isset( $by['_gid'] ) && $by
 cm_assert( 'Google Fonts: toelichting over IP-adres naar Google', count( $r['notes'] ) === 1 && strpos( $r['notes'][0], 'Google Fonts' ) === 0 );
 $r2 = cm_browser_scan_rows( array(), array(), array( 'https://www.googletagmanager.com/gtm.js' ) );
 cm_assert( 'zonder Google Fonts geen toelichting', $r2['notes'] === array() );
+
+cm_test_group( 'Onbekende cookies: eerst een categorie kiezen' );
+$js = file_get_contents( CM_PLUGIN_ROOT . '/assets/js/admin-cookies.js' );
+cm_assert( 'keuzelijst bij onbekend, Toevoegen pas na keuze', strpos( $js, "el('select', null, 'cm-scan-cat')" ) !== false && strpos( $js, 'if (!known) add.disabled = true' ) !== false && strpos( $js, 'btn.disabled = !sel.value' ) !== false );
+cm_assert( 'alles toevoegen slaat onbekende zonder keuze over en meldt dat', strpos( $js, 'overgeslagen: kies eerst een categorie' ) !== false );
+cm_assert( 'gekozen categorie gaat mee naar de lijst', cm_scan_result_to_row( array( 'name' => 'x_track', 'type' => 'marketing' ) )['category'] === 'marketing' );
 
 exit( cm_test_summary() );
