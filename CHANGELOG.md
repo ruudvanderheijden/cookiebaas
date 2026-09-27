@@ -1,6 +1,6 @@
 # Changelog — Cookiebaas
 
-## [3.0.0] - 2026-09-26
+## [3.0.0] - 2026-09-27
 
 De admin is opnieuw gebouwd: WordPress-native en per onderwerp ingedeeld. Uw instellingen, cookielijst, privacyverklaring en consent log blijven precies zoals ze waren; de banner en de blokkering op uw website veranderen niet.
 
