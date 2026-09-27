@@ -51,7 +51,7 @@ function cm_tab_cookies_scannen() {
 }
 
 function cm_render_manual_scan() {
-    echo '<p><button type="button" class="button button-primary" id="cm-scan-start">Cookies scannen</button> <span class="description">Doorloopt alle gepubliceerde pagina’s en herkent cookies via HTTP-headers en scripts.</span></p>';
+    echo '<p><button type="button" class="button button-primary" id="cm-scan-start">Cookies scannen</button> <span class="description">Doorloopt alle gepubliceerde pagina’s op het domein van deze website en herkent cookies via HTTP-headers en scripts.</span></p>';
     echo '<div id="cm-scan-result" aria-live="polite"></div>';
 }
 

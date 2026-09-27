@@ -178,6 +178,7 @@ function cm_sanitize_settings( array $input, array $existing, $index = null ) {
     if ( function_exists( 'current_user_can' ) && function_exists( 'wp_get_current_user' ) && ! current_user_can( 'unfiltered_html' ) ) {
         foreach ( array( 'ga4_measurement_id', 'gtm_container_id', 'ua_tracking_id' ) as $key ) {
             $keep = array_key_exists( $key, $existing ) ? $existing[ $key ] : $defaults[ $key ];
+            if ( (string) $settings[ $key ] === '' ) continue; // leegmaken laadt niets: dat mag altijd
             if ( (string) $settings[ $key ] !== (string) $keep && function_exists( 'add_settings_error' ) ) {
                 add_settings_error( 'cm_settings', 'cm-no-unfiltered-' . $key, 'Google-ID’s wijzigen vraagt het recht om HTML en scripts te plaatsen (unfiltered_html). De vorige waarde is behouden.' );
             }

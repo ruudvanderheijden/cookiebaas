@@ -104,6 +104,8 @@ function cm_admin_action_url( $action, array $args = array() ) {
  */
 function cm_csv_safe_cell( $v ) {
     $v = is_scalar( $v ) ? (string) $v : '';
+    // Nederlandse Excel splitst een .csv op puntkomma's: ook na een ; kan een formule beginnen
+    $v = preg_replace( '/;(?=[=+\-@\t\r])/', ";'", $v );
     return ( $v !== '' && strpos( "=+-@\t\r", $v[0] ) !== false ) ? "'" . $v : $v;
 }
 

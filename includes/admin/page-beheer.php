@@ -169,7 +169,13 @@ function cm_import_backup( $raw ) {
     $errors = function_exists( 'get_settings_errors' ) ? count( get_settings_errors() ) : 0;
     $done   = array();
     if ( $has_settings ) {
-        $base = array_merge( cm_default_settings(), array( 'api_key' => (string) cm_get( 'api_key' ) ) );
+        // De huidige API-sleutel en Google-ID's als basis: die zitten niet (of niet wijzigbaar) in een backup
+        $base = array_merge( cm_default_settings(), array(
+            'api_key'            => (string) cm_get( 'api_key' ),
+            'ga4_measurement_id' => (string) cm_get( 'ga4_measurement_id' ),
+            'gtm_container_id'   => (string) cm_get( 'gtm_container_id' ),
+            'ua_tracking_id'     => (string) cm_get( 'ua_tracking_id' ),
+        ) );
         update_option( 'cm_settings', cm_sanitize_settings( $data['settings'], $base ) );
         $done[] = 'instellingen';
     }

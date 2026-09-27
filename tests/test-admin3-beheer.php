@@ -164,7 +164,8 @@ cm_assert( 'import slaagt, ook een oude export (cookiemelding)', $r['ok'] === tr
 cm_assert( 'script-tag uit tekstveld verwijderd', $s['txt_banner_title'] === 'alert(1)Hallo' );
 cm_assert( 'HTML-veld houdt link, verliest script', $s['txt_banner_body'] === '<a href="/p">Lees</a>x' );
 cm_assert( 'onbekende sleutel niet opgeslagen', ! array_key_exists( 'onbekende_sleutel', $s ) );
-cm_assert( 'ontbrekende sleutels krijgen de standaard', $s['gtm_container_id'] === '' );
+cm_assert( 'ontbrekende sleutels krijgen de standaard', $s['banner_position'] === cm_default_settings()['banner_position'] );
+cm_assert( 'de huidige Google-ID blijft als de backup er geen heeft', $s['gtm_container_id'] === 'GTM-ABC' );
 cm_assert( 'google_load_default forceert analytics_default', (int) $s['analytics_default'] === 1 );
 cm_assert( 'de huidige API-sleutel blijft staan', $s['api_key'] === str_repeat( 'a', 40 ) );
 $cl = get_option( 'cm_cookie_list' );

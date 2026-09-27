@@ -114,6 +114,7 @@ cm_assert( 'alleen URL’s met de host van de site, zonder dubbelingen', $urls =
 cm_assert( 'de scan gebruikt wp_safe_remote_get (controleert ook doorverwijzingen)', strpos( file_get_contents( CM_PLUGIN_ROOT . '/includes/admin/scan.php' ), ' wp_remote_get( $url' ) === false );
 
 cm_test_group( 'CSV: formules onschadelijk (audit L1)' );
+cm_assert( 'ook na een puntkomma (NL-Excel splitst daarop)', cm_csv_safe_cell( "/blog;=cmd|'/C calc'!A0;" ) === "/blog;'=cmd|'/C calc'!A0;" );
 cm_assert( '= + - @ en tab krijgen een apostrof', cm_csv_safe_cell( '=cmd|x' ) === "'=cmd|x" && cm_csv_safe_cell( '+1' ) === "'+1" && cm_csv_safe_cell( '@SUM(1)' ) === "'@SUM(1)" && cm_csv_safe_cell( "\tx" ) === "'\tx" );
 cm_assert( 'gewone waarden ongewijzigd', cm_csv_safe_cell( 'Geaccepteerd' ) === 'Geaccepteerd' && cm_csv_safe_cell( '' ) === '' && cm_csv_safe_cell( 12 ) === '12' );
 
@@ -174,6 +175,9 @@ cm_assert( 'zonder unfiltered_html: ID blijft, andere velden wel opgeslagen, met
 $GLOBALS['cm_test_can'] = true;
 $s = cm_sanitize_settings( array( 'gtm_container_id' => 'GTM-NIEUW' ), $existing );
 cm_assert( 'met unfiltered_html: ID wijzigt', $s['gtm_container_id'] === 'GTM-NIEUW' );
+$GLOBALS['cm_test_can'] = false;
+cm_assert( 'zonder unfiltered_html mag een ID wel leeggemaakt worden (laadt niets)', cm_sanitize_settings( array( 'gtm_container_id' => '' ), $existing )['gtm_container_id'] === '' );
+$GLOBALS['cm_test_can'] = true;
 
 cm_test_group( 'Opruimen en verpakken' );
 $un = file_get_contents( CM_PLUGIN_ROOT . '/uninstall.php' );

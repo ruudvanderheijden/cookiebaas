@@ -66,9 +66,6 @@ function cm_ajax_import_cookie_db() {
 }
 
 /**
- * Eenvoudige CSV-regelparser die quoted velden met komma's ondersteunt.
- */
-/**
  * CSV van de Open Cookie Database → rijen voor {prefix}cm_cookie_db. De eerste
  * rij moet de verwachte kop zijn (ID, Platform, Category, …); anders geen rijen.
  * @return array( 'rows' => array, 'skipped' => int )
@@ -114,6 +111,9 @@ function cm_cookie_db_parse( $body ) {
     return array( 'rows' => $rows, 'skipped' => $skipped );
 }
 
+/**
+ * Eenvoudige CSV-regelparser die quoted velden met komma's ondersteunt.
+ */
 function cm_parse_csv_line( $line ) {
     $fields = array();
     $i      = 0;
@@ -191,12 +191,13 @@ add_action( 'wp_ajax_cm_scan_batch', 'cm_ajax_scan_batch' );
  * adressen (SSRF).
  */
 function cm_scan_filter_urls( array $urls ) {
-    $home = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
-    $out  = array();
+    // Sites met een domein per taal of domeinmapping kunnen extra hosts toestaan (in code, niet via de admin)
+    $hosts = array_map( 'strtolower', (array) apply_filters( 'cm_scan_allowed_hosts', array( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) ) );
+    $out   = array();
     foreach ( $urls as $u ) {
         if ( ! is_string( $u ) ) continue;
         $u = esc_url_raw( $u, array( 'http', 'https' ) );
-        if ( $u !== '' && strtolower( (string) wp_parse_url( $u, PHP_URL_HOST ) ) === $home ) $out[] = $u;
+        if ( $u !== '' && in_array( strtolower( (string) wp_parse_url( $u, PHP_URL_HOST ) ), $hosts, true ) ) $out[] = $u;
     }
     return array_values( array_unique( $out ) );
 }
