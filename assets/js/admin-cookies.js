@@ -8,7 +8,7 @@
 
   var LABELS = { functional: 'Functioneel', analytics: 'Analytisch', marketing: 'Marketing', unknown: 'Onbekend' };
   var ORDER = { functional: 0, analytics: 1, marketing: 2, unknown: 3 };
-  var HOW_LABELS = { embed: 'Embed', server: 'HTTP-header' };
+  var HOW_LABELS = { embed: 'Embed', server: 'HTTP-header', browser: 'Browser', storage: 'Opslag', host: 'Extern script' };
 
   function post(action, data) {
     var body = new URLSearchParams();
@@ -118,7 +118,7 @@
       tr.insertCell().appendChild(add);
     });
     result.appendChild(table);
-    result.appendChild(el('p', 'HTTP-header: gezet door de server. Script: afgeleid uit trackingscripts (de browser zet de cookie). Embed: gezet door een ingesloten dienst (bijv. een video).', 'description'));
+    result.appendChild(el('p', 'HTTP-header: gezet door de server. Script: afgeleid uit trackingscripts (de browser zet de cookie). Embed: gezet door een ingesloten dienst (bijv. een video). Browser: echt gezet tijdens de browserscan. Opslag: localStorage of sessionStorage. Extern script: afgeleid uit een geladen dienst.', 'description'));
   }
 
   /* Serialiseer alle cm_scan_add-aanroepen achter elkaar: de server doet
@@ -210,5 +210,137 @@
     }).catch(function (err) {
       notice(result, 'error', err && err.cmKnown ? err.message : 'De scan is mislukt.');
     }).then(function () { scanBtn.disabled = false; });
+  });
+
+  /* ---- Browserscan (3.1): pagina's in een verborgen iframe, alsof alles is
+   * geaccepteerd (scanmodus, alleen voor de ingelogde beheerder). Meet wat er
+   * echt gebeurt: nieuwe cookies en opslag, en welke externe adressen laden. */
+  var bscanBtn = document.getElementById('cm-bscan-start');
+
+  function cookieNames() {
+    var out = {};
+    document.cookie.split(';').forEach(function (p) {
+      var n = p.split('=')[0].trim();
+      if (n) out[n] = true;
+    });
+    return out;
+  }
+  function storageKeys(store) {
+    var out = {};
+    try { for (var i = 0; i < store.length; i++) out[store.key(i)] = true; } catch (e) {}
+    return out;
+  }
+  function newKeys(before, after) {
+    return Object.keys(after).filter(function (k) { return !before[k]; });
+  }
+  function scanUrl(url) {
+    return url + (url.indexOf('?') === -1 ? '?' : '&') + 'cm_browser_scan=' + encodeURIComponent(cfg.browserScan);
+  }
+  /** Eén pagina in een verborgen iframe; geeft de geladen adressen terug, of null als het niet lukte. */
+  function loadInFrame(url, holder) {
+    return new Promise(function (resolve) {
+      var frame = document.createElement('iframe');
+      frame.className = 'cm-bscan-frame';
+      frame.setAttribute('aria-hidden', 'true');
+      frame.tabIndex = -1;
+      var done = false;
+      function finish() {
+        if (done) return;
+        done = true;
+        var list = null;
+        try {
+          list = frame.contentWindow.performance.getEntriesByType('resource').map(function (e) {
+            return String(e.name).split(/[?#]/)[0];
+          });
+        } catch (e) { list = null; } // bijv. X-Frame-Options of een doorverwijzing naar een ander domein
+        frame.remove();
+        resolve(list);
+      }
+      frame.addEventListener('load', function () { setTimeout(finish, 4000); }); // tijd voor async tags (GTM)
+      setTimeout(finish, 25000);
+      frame.src = scanUrl(url);
+      holder.appendChild(frame);
+    });
+  }
+  /** Cookie van deze site weer weghalen (alle domeinvarianten); die van derden kan JS niet bereiken. */
+  function clearCookie(name) {
+    var parts = location.hostname.split('.');
+    var past = '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+    document.cookie = name + past;
+    for (var i = 0; i < parts.length - 1; i++) document.cookie = name + past + '; domain=.' + parts.slice(i).join('.');
+  }
+
+  if (bscanBtn) bscanBtn.addEventListener('click', function () {
+    if (!cfg.browserScan) return;
+    bscanBtn.disabled = true;
+    scanBtn.disabled = true;
+    found = [];
+    addStatus = null;
+    result.textContent = '';
+    result.className = '';
+    var label = el('p', 'Pagina’s ophalen…');
+    var progress = el('progress');
+    progress.max = 100;
+    progress.value = 0;
+    result.appendChild(label);
+    result.appendChild(progress);
+    var holder = el('div', null, 'cm-bscan-holder');
+    document.body.appendChild(holder);
+
+    var beforeC = cookieNames();
+    var beforeL = storageKeys(window.localStorage);
+    var beforeS = storageKeys(window.sessionStorage);
+    var resources = {};
+    var failed = 0;
+    var total = 0;
+
+    post('cm_scan_urls', { nonce: cfg.nonces.scan }).then(function (r) {
+      if (!r || !r.success) {
+        var e = new Error((r && r.data && r.data.msg) || 'De pagina’s konden niet worden opgehaald.');
+        e.cmKnown = true;
+        throw e;
+      }
+      var urls = r.data.urls || [];
+      if (!document.getElementById('cm-bscan-all').checked) urls = urls.slice(0, 21); // homepage + 20
+      total = urls.length;
+      var i = 0;
+      function next() {
+        if (i >= urls.length) return Promise.resolve();
+        label.textContent = 'Pagina ' + (i + 1) + ' van ' + urls.length + ' laden in de browser…';
+        return loadInFrame(urls[i], holder).then(function (list) {
+          if (list === null) failed++;
+          else list.forEach(function (u) { resources[u] = true; });
+          i++;
+          progress.value = Math.round(i / urls.length * 100);
+          return next();
+        });
+      }
+      return next();
+    }).then(function () {
+      var after = cookieNames();
+      var local = newKeys(beforeL, storageKeys(window.localStorage));
+      var session = newKeys(beforeS, storageKeys(window.sessionStorage));
+      // Opruimen wat de scan in deze browser achterliet (van deze site); wat er al stond blijft staan
+      newKeys(beforeC, after).forEach(clearCookie);
+      try { local.forEach(function (k) { window.localStorage.removeItem(k); }); } catch (e) {}
+      try { session.forEach(function (k) { window.sessionStorage.removeItem(k); }); } catch (e) {}
+      // Alle zichtbare cookies van deze site melden, ook die er al stonden (bijv. _ga van een eerder bezoek);
+      // inlog- en beheerderscookies filtert de server eruit. Opslag alleen nieuw: de admin zelf gebruikt die ook.
+      var data = { cookies: Object.keys(after), storage: local.concat(session), resources: Object.keys(resources) };
+      return post('cm_browser_scan_lookup', { nonce: cfg.nonces.scan, data: JSON.stringify(data) });
+    }).then(function (r) {
+      if (!r || !r.success) throw new Error('lookup');
+      found = r.data.cookies || [];
+      renderResults(total, failed);
+      if (r.data.hosts && r.data.hosts.length) {
+        result.appendChild(el('p', 'Ook geladen, maar niet in de kennisbank: ' + r.data.hosts.join(', ') + '. Controleer of deze diensten cookies zetten.', 'description'));
+      }
+    }).catch(function (err) {
+      notice(result, 'error', err && err.cmKnown ? err.message : 'De browserscan is mislukt.');
+    }).then(function () {
+      holder.remove();
+      bscanBtn.disabled = false;
+      scanBtn.disabled = false;
+    });
   });
 })();

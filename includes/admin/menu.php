@@ -169,6 +169,7 @@ function cm_admin3_assets( $hook ) {
                 'scanAdd'  => wp_create_nonce( 'cm_scan_add' ),
                 'importDb' => wp_create_nonce( 'cm_import_cookie_db' ),
             ),
+            'browserScan' => function_exists( 'cm_browser_scan_token' ) ? cm_browser_scan_token() : '',
         ) );
     }
 }

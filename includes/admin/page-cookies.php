@@ -58,6 +58,9 @@ function cm_tab_cookies_scannen() {
 
 function cm_render_manual_scan() {
     echo '<p><button type="button" class="button button-primary" id="cm-scan-start">Cookies scannen</button> <span class="description">Doorloopt alle gepubliceerde pagina’s op het domein van deze website zoals een niet-ingelogde bezoeker ze ziet, en herkent cookies via HTTP-headers en scripts.</span></p>';
+    echo '<p><button type="button" class="button" id="cm-bscan-start">Scan in de browser</button> '
+       . '<label><input type="checkbox" id="cm-bscan-all"> alle pagina’s (anders de homepage en 20 andere)</label></p>';
+    echo '<p class="description">Laadt de pagina’s onzichtbaar in uw eigen browser, alsof een bezoeker alles accepteert: scripts, Google Tag Manager en embeds draaien echt. Zo vindt de scan ook cookies die JavaScript zet en diensten die via GTM laden. Cookies van deze website die daarbij in uw browser worden gezet, ruimt de scan achteraf op; cookies van derden (bijv. van Meta) blijven in uw browser staan. Let op: de bezochte pagina’s kunnen als bezoek in uw statistieken verschijnen.</p>';
     echo '<div id="cm-scan-result" aria-live="polite"></div>';
 }
 

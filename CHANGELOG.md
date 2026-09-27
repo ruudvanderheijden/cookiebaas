@@ -1,5 +1,17 @@
 # Changelog — Cookiebaas
 
+## [3.1.0] - nog niet uitgebracht
+
+### Nieuw: scan in de browser
+
+Naast de bestaande scan staat onder Cookies › Scannen de knop **Scan in de browser**. Die laadt de pagina's onzichtbaar in uw eigen browser, alsof een bezoeker alles accepteert. Scripts, Google Tag Manager en embeds draaien daarbij echt. Zo vindt de scan ook cookies die JavaScript zet, gegevens in localStorage en sessionStorage, en diensten die via GTM laden. De resultaten komen in dezelfde tabel met **Toevoegen**. Geladen domeinen die Cookiebaas niet kent, staan eronder, zodat u ze kunt nakijken.
+
+- Standaard scant hij de homepage en 20 andere pagina's; vink **alle pagina's** aan voor een volledige scan.
+- De scanmodus werkt alleen voor een ingelogde beheerder met een geldige, persoonlijke code. Bezoekers kunnen hem niet aanzetten. Pagina's in scanmodus komen nooit in de paginacache, tonen geen banner en leggen niets vast in de consent log.
+- Cookies van uw eigen site die tijdens de scan in uw browser worden gezet, ruimt de scan achteraf op. Cookies van derden blijven in uw browser staan.
+- De bezochte pagina's kunnen als bezoek in uw statistieken verschijnen.
+- De scan is gratis.
+
 ## [3.0.0] - 2026-09-27
 
 De admin is opnieuw gebouwd: WordPress-native en per onderwerp ingedeeld. Uw instellingen, cookielijst, privacyverklaring en consent log blijven precies zoals ze waren; de banner en de blokkering op uw website veranderen niet.

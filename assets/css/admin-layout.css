@@ -66,3 +66,7 @@
 
 /* Premium-melding zonder licentie */
 .cm-premium { margin: 16px 0; }
+
+/* Browserscan: pagina's buiten beeld laden (wel op volle breedte, zodat alles rendert) */
+.cm-bscan-holder { position: absolute; left: -10000px; top: 0; width: 1280px; height: 900px; overflow: hidden; }
+.cm-bscan-frame { width: 1280px; height: 900px; border: 0; }

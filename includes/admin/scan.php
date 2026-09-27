@@ -501,6 +501,7 @@ function cm_is_admin_only_cookie( $name ) {
     $n = strtolower( (string) $name );
     return strpos( $n, 'wp-settings-' ) === 0
         || $n === 'wordpress_test_cookie'
+        || $n === 'wp-saving-post'
         || strpos( $n, 'wordpress_logged_in_' ) === 0
         || strpos( $n, 'wordpress_sec_' ) === 0
         || (bool) preg_match( '/^wordpress_[0-9a-f]{32}$/', $n );
@@ -645,3 +646,92 @@ function cm_secs_to_human( $secs ) {
     return round($secs/(86400*365),1) . ' jaar';
 }
 
+
+/* ================================================================
+   BROWSERSCAN (3.1) — wat de verborgen iframes in de browser vonden
+   (cookienamen, opslag-sleutels, geladen externe adressen) omzetten naar
+   dezelfde resultaatrijen als de serverscan.
+================================================================ */
+
+/** Omschrijving van een cookienaam: eerst de cookiedatabase, dan de ingebouwde kennisbank. */
+function cm_browser_scan_info( $name ) {
+    $row = function_exists( 'cm_lookup_cookie' ) ? cm_lookup_cookie( $name ) : false;
+    if ( $row ) {
+        $e = cm_autoscan_entry( $name, $row );
+        return array( 'type' => $e['category'], 'provider' => $e['provider'], 'duration' => $e['duration'], 'description' => $e['purpose'] );
+    }
+    $fb = function_exists( 'cm_cookie_fallback_info' ) ? cm_cookie_fallback_info( $name ) : null;
+    if ( $fb ) return array( 'type' => $fb[0], 'provider' => $fb[1], 'duration' => $fb[2], 'description' => $fb[3] );
+    return null;
+}
+
+/**
+ * @param string[] $cookies   nieuwe cookienamen (document.cookie)
+ * @param string[] $storage   nieuwe sleutels in localStorage/sessionStorage
+ * @param string[] $resources geladen adressen (zonder querystring)
+ * @return array( 'cookies' => rijen, 'hosts' => onbekende externe domeinen )
+ */
+function cm_browser_scan_rows( array $cookies, array $storage, array $resources ) {
+    $skip = array( 'cm_sid' => true, 'cm_logged' => true, 'cm_revoke' => true ); // eigen opslag van Cookiebaas
+    foreach ( cm_get_cookie_list() as $ck ) { // incl. de ingebouwde cookie
+        if ( isset( $ck['name'] ) ) $skip[ strtolower( (string) $ck['name'] ) ] = true;
+    }
+    $rows = array();
+    $add  = function ( $name, $how, $info = null, array $fallback = array() ) use ( &$rows, &$skip ) {
+        $name = sanitize_text_field( (string) $name );
+        $key  = strtolower( $name );
+        if ( $name === '' || strlen( $name ) > 128 || isset( $skip[ $key ] ) || cm_is_admin_only_cookie( $name ) ) return;
+        $skip[ $key ] = true;
+        $info = $info ? $info : $fallback;
+        $rows[] = array(
+            'name'        => $name,
+            'type'        => isset( $info['type'] ) ? $info['type'] : 'unknown',
+            'provider'    => isset( $info['provider'] ) ? $info['provider'] : '',
+            'duration'    => isset( $info['duration'] ) ? $info['duration'] : '',
+            'description' => isset( $info['description'] ) ? $info['description'] : '',
+            'how'         => $how,
+        );
+    };
+
+    foreach ( $cookies as $name ) $add( $name, 'browser', cm_browser_scan_info( $name ) );
+    foreach ( $storage as $name ) $add( $name, 'storage', cm_browser_scan_info( $name ) );
+
+    // Geladen externe adressen: bekende diensten → hun cookies; de rest als onbekend domein
+    $home    = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+    $unknown = array();
+    foreach ( $resources as $url ) {
+        $url  = strtok( (string) $url, '?#' );
+        $host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+        if ( $host === '' || $host === $home ) continue;
+        $matched = false;
+        foreach ( cm_script_signatures() as $pattern => $sigs ) {
+            if ( stripos( $url, $pattern ) === false ) continue;
+            $matched = true;
+            foreach ( $sigs as $sig ) {
+                if ( substr( $sig[0], -1 ) === '_' && cm_browser_scan_has_prefix( $rows, $sig[0] ) ) continue; // _ga_ als _ga_ABC123 al gevonden is
+                $add( $sig[0], 'host', cm_browser_scan_info( $sig[0] ), array( 'type' => $sig[1], 'provider' => $sig[2], 'duration' => $sig[3], 'description' => 'Gezet door ' . $sig[2] . ' (geladen van ' . $host . ').' ) );
+            }
+        }
+        if ( ! $matched ) $unknown[ $host ] = true;
+    }
+    return array( 'cookies' => $rows, 'hosts' => array_slice( array_keys( $unknown ), 0, 50 ) );
+}
+
+function cm_browser_scan_has_prefix( array $rows, $prefix ) {
+    foreach ( $rows as $r ) {
+        if ( stripos( $r['name'], $prefix ) === 0 ) return true;
+    }
+    return false;
+}
+
+add_action( 'wp_ajax_cm_browser_scan_lookup', 'cm_ajax_browser_scan_lookup' );
+function cm_ajax_browser_scan_lookup() {
+    cm_admin_verify_ajax( 'scan' );
+    $data = isset( $_POST['data'] ) && is_string( $_POST['data'] ) ? json_decode( wp_unslash( $_POST['data'] ), true ) : null;
+    if ( ! is_array( $data ) ) wp_send_json_error( array( 'msg' => 'Ongeldige scangegevens.' ) );
+    $list = function ( $key, $max ) use ( $data ) {
+        $v = isset( $data[ $key ] ) && is_array( $data[ $key ] ) ? $data[ $key ] : array();
+        return array_slice( array_values( array_filter( $v, 'is_string' ) ), 0, $max );
+    };
+    wp_send_json_success( cm_browser_scan_rows( $list( 'cookies', 200 ), $list( 'storage', 200 ), $list( 'resources', 500 ) ) );
+}

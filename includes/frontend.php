@@ -368,16 +368,21 @@ function cm_inject_google_consent_mode() {
 
     // Beide vlaggen zijn instellingen (geen cookies) → cache-veilig.
     $load_google = $cm_advanced || $google_load_default;
+
+    // Browserscan (alleen ingelogde beheerder, nooit gecachet): alles toegestaan,
+    // zodat Google-tags hun cookies echt zetten en de scan ze ziet.
+    $scan = function_exists( 'cm_is_browser_scan' ) && cm_is_browser_scan();
+    if ( $scan ) $load_google = true;
     ?>
 <!-- Cookiebaas Consent Mode v2 -->
 <script data-no-defer="1" nowprocket>
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('consent', 'default', {
-    'analytics_storage':  '<?php echo $google_load_default ? 'granted' : 'denied'; ?>',
-    'ad_storage':         'denied',
-    'ad_user_data':       'denied',
-    'ad_personalization': 'denied',
+    'analytics_storage':  '<?php echo ( $google_load_default || $scan ) ? 'granted' : 'denied'; ?>',
+    'ad_storage':         '<?php echo $scan ? 'granted' : 'denied'; ?>',
+    'ad_user_data':       '<?php echo $scan ? 'granted' : 'denied'; ?>',
+    'ad_personalization': '<?php echo $scan ? 'granted' : 'denied'; ?>',
     'functionality_storage': 'granted',
     'security_storage':      'granted',
     'wait_for_update':    500
@@ -391,6 +396,7 @@ gtag('set', 'url_passthrough', true);
    synchroon direct na de defaults — Google verwerkt de dataLayer-wachtrij pas
    wanneer de tag laadt, dus default en update komen altijd in de juiste
    volgorde aan en er worden nooit cookies met een verkeerde status gezet. */
+<?php if ( ! $scan ) : // browserscan: een eerdere keuze van de beheerder mag "alles toegestaan" niet overschrijven ?>
 (function(){
     var c = null;
     try {
@@ -419,6 +425,7 @@ gtag('set', 'url_passthrough', true);
     window.uetq = window.uetq || [];
     window.uetq.push('consent', 'update', { 'ad_storage': k });
 })();
+<?php endif; ?>
 </script>
 <?php
     // GA4 self-loader — de keuze hangt uitsluitend af van instellingen
@@ -629,6 +636,7 @@ function cm_blocker_match( $src, $text, $config, $allow = array() ) {
 add_action( 'wp', 'cm_init_cookie_blocker' );
 function cm_init_cookie_blocker() {
     if ( is_admin() ) return;
+    if ( function_exists( 'cm_is_browser_scan' ) && cm_is_browser_scan() ) return; // browserscan: alles laden
     if ( defined('DOING_AJAX') && DOING_AJAX ) return;
     if ( defined('REST_REQUEST') && REST_REQUEST ) return;
     // Bewust GEEN licentiecheck: de scriptblokkering is de compliance-kern en
@@ -790,6 +798,7 @@ function cm_build_embed_placeholder( $original_tag, $src, $info ) {
 add_action( 'wp_head', 'cm_output_script_blocker', -999 );
 function cm_output_script_blocker() {
     if ( is_admin() ) return;
+    if ( function_exists( 'cm_is_browser_scan' ) && cm_is_browser_scan() ) return; // browserscan: alles laden
     // Bewust GEEN licentiecheck: de runtime-blocker hoort bij de compliance-kern.
     // Altijd renderen — ook zonder patronen (voor Consent Mode update)
     $config = cm_blocker_config();
@@ -1360,6 +1369,11 @@ function cm_banner_markup() {
 function cm_render_frontend() {
     if ( ! empty( $GLOBALS['cm_rendered'] ) ) return;
     if ( is_admin() ) return;
+    // Browserscan: geen banner en geen consent-script (dus ook niets gelogd)
+    if ( function_exists( 'cm_is_browser_scan' ) && cm_is_browser_scan() ) {
+        $GLOBALS['cm_rendered'] = true;
+        return;
+    }
 
     // Bewust GEEN licentiecheck: de banner is de compliance-kern en wordt
     // altijd getoond, ook bij een verlopen/ontbrekende licentie.
