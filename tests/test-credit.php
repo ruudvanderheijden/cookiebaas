@@ -11,6 +11,8 @@
 define( 'CM_TEST_REAL_LICENSE', true );
 $GLOBALS['cm_test_purges'] = 0;
 function cm_purge_page_caches() { $GLOBALS['cm_test_purges']++; }
+$GLOBALS['cm_test_sched'] = 0;
+function cm_maybe_schedule_auto_scan_cron() { $GLOBALS['cm_test_sched']++; }
 
 require __DIR__ . '/bootstrap.php';
 require CM_PLUGIN_ROOT . '/includes/defaults.php';
@@ -63,5 +65,15 @@ update_option( 'cm_license_data', $active );
 $p = $GLOBALS['cm_test_purges'];
 delete_option( 'cm_license_data' );
 cm_assert( 'licentie lokaal gewist → purge', $GLOBALS['cm_test_purges'] === $p + 1 );
+
+cm_test_group( 'Automatische scan na verlengen' );
+update_option( 'cm_license_data', $expired );
+$n = $GLOBALS['cm_test_sched'];
+update_option( 'cm_license_data', $active );
+cm_assert( 'licentie weer geldig → automatische scan opnieuw ingepland', $GLOBALS['cm_test_sched'] === $n + 1 );
+update_option( 'cm_license_data', array_merge( $active, array( 'last_check' => 5 ) ) );
+cm_assert( 'geen wijziging → niet opnieuw', $GLOBALS['cm_test_sched'] === $n + 1 );
+$main = file_get_contents( CM_PLUGIN_ROOT . '/cookiemelding.php' );
+cm_assert( 'zonder licentie slaat de cron de scan over maar plant zichzelf opnieuw in (keten breekt niet)', (bool) preg_match( '/cm_scan_requires_license\(\) \) \{\s*cm_maybe_schedule_auto_scan_cron\(\);\s*return;/', $main ) );
 
 exit( cm_test_summary() );

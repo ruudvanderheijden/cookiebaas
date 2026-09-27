@@ -10,8 +10,8 @@ De cookiemelding is gratis. Zonder licentie werken de banner, het voorkeurenvens
 
 Met een licentie komen daarbij:
 - **de consent log inzien:** registraties bekijken en verwijderen, het bewijs per registratie, de CSV-export en de REST API voor consentverificatie;
-- **de privacyverklaring-generator:** de verklaring bewerken, standaardtekst herstellen en het verwerkingsregister exporteren. Een verklaring die al op uw website staat, blijft zichtbaar als de licentie verloopt;
-- **de automatische scan:** nieuw gevonden cookies automatisch toevoegen of een melding per e-mail.
+- **de privacyverklaring-generator:** de verklaring bewerken, standaardtekst herstellen en het verwerkingsregister exporteren. Een verklaring die al op uw website staat, blijft zichtbaar als de licentie verloopt. De kleuren van de cookietabellen (tab Weergave) blijven gratis instelbaar;
+- **de automatische scan:** nieuw gevonden cookies automatisch toevoegen of een melding per e-mail. Na het verlengen van een licentie start de automatische scan weer vanzelf.
 
 Zonder geldige licentie staat rechtsonder in de banner en het voorkeurenvenster een kleine vermelding "Cookiebaas" met een link naar cookiebaas.nl.
 

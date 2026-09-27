@@ -81,16 +81,25 @@ function cm_tabs_privacy() {
             'group'         => 'cookiebaas_privacy',
             'values'        => 'cm_privacy_values',
             'title_actions' => 'cm_privacy_title_actions',
-            'premium'       => 'De privacyverklaring bewerken vraagt een licentie. Een verklaring die al op uw website staat, blijft daar gewoon zichtbaar.',
+            // De tabelkleuren gelden ook voor de gratis [cookiebaas_cookies]: die tab is gratis
+            'premium'       => $key === 'weergave' ? '' : 'De privacyverklaring bewerken vraagt een licentie. Een verklaring die al op uw website staat, blijft daar gewoon zichtbaar.',
             'sections'      => array_values( array_filter( $sections, function ( $s ) use ( $key ) { return $s['tab'] === $key; } ) ),
         );
     }
     return $tabs;
 }
 
-/** Opslaan via options.php alleen met licentie (zonder licentie staat het formulier er niet eens). */
+/**
+ * Opslaan via options.php: de teksten alleen met licentie; de tabelkleuren
+ * (tab Weergave, ook voor de gratis [cookiebaas_cookies]) altijd.
+ */
 function cm_privacy_option_capability( $cap ) {
-    return ( function_exists( 'cm_license_is_valid' ) && cm_license_is_valid() ) ? $cap : 'do_not_allow';
+    if ( function_exists( 'cm_license_is_valid' ) && cm_license_is_valid() ) return $cap;
+    $keys = isset( $_POST['cm_privacy'] ) && is_array( $_POST['cm_privacy'] ) ? array_keys( $_POST['cm_privacy'] ) : array();
+    foreach ( $keys as $k ) {
+        if ( strpos( (string) $k, 'pv_table_' ) !== 0 ) return 'do_not_allow';
+    }
+    return $keys ? $cap : 'do_not_allow';
 }
 add_filter( 'option_page_capability_cookiebaas_privacy', 'cm_privacy_option_capability' );
 
@@ -100,6 +109,7 @@ function cm_privacy_values() {
 }
 
 function cm_privacy_title_actions() {
+    if ( cm_admin_require_license() !== '' ) return; // register-export en herstellen zijn premium
     echo '<a class="page-title-action" href="' . esc_url( cm_admin_action_url( 'export_register' ) ) . '">Verwerkingsregister exporteren</a> ';
     echo cm_admin_action_form( 'reset_privacy', 'Standaardtekst herstellen', array(), 'Alle teksten van de privacyverklaring terugzetten naar de standaard?', 'page-title-action' );
 }

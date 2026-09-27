@@ -347,8 +347,12 @@ function cm_run_auto_scan() {
     $mode  = cm_get('auto_scan_mode');
     if ( $mode === 'off' ) return;
     // Premium-feature: zonder geldige licentie draait de automatische scan niet.
-    // (Banner en blokkering blijven werken.)
-    if ( function_exists('cm_scan_requires_license') && cm_scan_requires_license() ) return;
+    // Wel opnieuw inplannen, anders breekt de keten en start de scan na het
+    // verlengen van de licentie niet meer vanzelf.
+    if ( function_exists('cm_scan_requires_license') && cm_scan_requires_license() ) {
+        cm_maybe_schedule_auto_scan_cron();
+        return;
+    }
 
     update_option( 'cm_auto_scan_last', gmdate('Y-m-d H:i:s') );
 

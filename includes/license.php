@@ -78,6 +78,9 @@ function cm_license_sync_validity( $lic ) {
     update_option( 'cm_license_valid_seen', $now, false );
     // Eerste keer (bijv. net geüpdatet): de update-migratie leegt de cache al
     if ( $seen !== '' && function_exists( 'cm_purge_page_caches' ) ) cm_purge_page_caches();
+    // Weer geldig: de automatische scan opnieuw inplannen (als die aan staat en er
+    // geen cron meer loopt, bijv. doordat hij in 2.x zonder licentie stopte)
+    if ( $now === '1' && function_exists( 'cm_maybe_schedule_auto_scan_cron' ) ) cm_maybe_schedule_auto_scan_cron();
 }
 add_action( 'update_option_cm_license_data', function ( $old, $new ) { cm_license_sync_validity( $new ); }, 10, 2 );
 add_action( 'add_option_cm_license_data', function ( $name, $value ) { cm_license_sync_validity( $value ); }, 10, 2 );
