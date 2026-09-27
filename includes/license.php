@@ -43,20 +43,43 @@ function cm_license_save( $data ) {
  * cm_scan_requires_license()-achtige helpers, niet deze functie in de frontend.
  */
 function cm_license_is_valid() {
-    $lic = cm_license_get();
-    if ( empty( $lic['key'] ) || $lic['status'] !== 'active' ) return false;
+    return cm_license_data_is_valid( cm_license_get() );
+}
+
+/** Geldigheid van opgeslagen licentiegegevens (ook voor oude/nieuwe waarde bij een wijziging). */
+function cm_license_data_is_valid( $lic ) {
+    $lic = is_array( $lic ) ? $lic : array();
+    if ( empty( $lic['key'] ) || ! isset( $lic['status'] ) || $lic['status'] !== 'active' ) return false;
     if ( ! empty( $lic['expires_at'] ) && strtotime( $lic['expires_at'] ) < time() ) return false;
     return true;
 }
 
 /**
- * Mag de cookiescan draaien? De scan is een premium-feature; zonder geldige
- * licentie is hij gepauzeerd. (Banner, blokkering, consent-logboek en updates
- * blijven gewoon werken.)
+ * Mag de automatische scan draaien? Automatisch toevoegen en de e-mailmelding
+ * zijn premium; zonder geldige licentie slaat de cron ze over. De handmatige
+ * scan, de banner, de blokkering en het vastleggen van toestemmingen werken
+ * altijd.
  */
 function cm_scan_requires_license() {
     return ! cm_license_is_valid();
 }
+
+/*
+ * De vermelding "Cookiebaas" in de banner hangt af van de licentie. Leeg de
+ * paginacache alleen als de geldigheid echt verandert (niet bij elke
+ * dagelijkse controle, die last_check bijwerkt).
+ */
+function cm_license_validity_changed( $old, $new ) {
+    return cm_license_data_is_valid( $old ) !== cm_license_data_is_valid( $new );
+}
+function cm_license_purge_if_changed( $old, $new ) {
+    if ( cm_license_validity_changed( $old, $new ) && function_exists( 'cm_purge_page_caches' ) ) cm_purge_page_caches();
+}
+add_action( 'update_option_cm_license_data', 'cm_license_purge_if_changed', 10, 2 );
+add_action( 'add_option_cm_license_data', function ( $name, $value ) { cm_license_purge_if_changed( array(), $value ); }, 10, 2 );
+add_action( 'delete_option', function ( $name ) {
+    if ( $name === 'cm_license_data' ) cm_license_purge_if_changed( get_option( 'cm_license_data', array() ), array() );
+} );
 
 /* ================================================================
    API CALLS

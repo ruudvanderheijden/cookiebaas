@@ -506,6 +506,27 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
 /* Prefs footer — keuzes opslaan is ook zwart/blauw via cm-btn-accept */
 .cm-prefs-footer { padding: 20px 36px 28px; border-top: 1px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; flex-shrink: 0; }
 
+/* ---- VERMELDING (gratis versie) — vaste stijl, bewust niet instelbaar ---- */
+#cm-banner .cm-credit,
+#cm-prefs .cm-credit {
+    display: block !important;
+    width: fit-content !important;
+    margin: 10px 0 -14px auto !important;
+    padding: 0 !important;
+    background: none !important;
+    border: 0 !important;
+    font: 400 10px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    letter-spacing: 0 !important;
+    color: #8c8f94 !important;
+    text-decoration: none !important;
+    opacity: 1 !important;
+}
+/* In het voorkeurenvenster: in de onderste marge, onder de knoppen */
+#cm-prefs .cm-prefs-box > .cm-credit { flex-shrink: 0 !important; margin: -20px 36px 8px auto !important; }
+@media (max-width: 600px) { #cm-prefs .cm-prefs-box > .cm-credit { margin: -18px 20px 8px auto !important; } }
+#cm-banner .cm-credit:hover,
+#cm-prefs .cm-credit:hover { color: #646970 !important; text-decoration: underline !important; }
+
 /* ---- FLOAT BUTTON — geen emoji ---- */
 #cm-float { position: fixed !important; bottom: 24px; z-index: 98900; display: none; }
 #cm-float[data-float-pos="left"], #cm-float:not([data-float-pos]) { left: 24px; right: auto; }

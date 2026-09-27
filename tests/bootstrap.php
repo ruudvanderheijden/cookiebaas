@@ -55,9 +55,12 @@ if ( ! function_exists( 'get_option' ) ) {
 }
 if ( ! function_exists( 'update_option' ) ) {
     function update_option( $key, $value ) {
+        // Zelfde argumenten als WordPress: update_option_{naam}( $oud, $nieuw ), add_option_{naam}( $naam, $waarde )
         $existed = array_key_exists( $key, $GLOBALS['cm_test_options'] );
+        $old     = $existed ? $GLOBALS['cm_test_options'][ $key ] : null;
         $GLOBALS['cm_test_options'][ $key ] = $value;
-        do_action( ( $existed ? 'update_option_' : 'add_option_' ) . $key, $value );
+        if ( $existed ) do_action( 'update_option_' . $key, $old, $value, $key );
+        else            do_action( 'add_option_' . $key, $key, $value );
         return true;
     }
 }

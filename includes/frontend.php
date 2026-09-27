@@ -937,6 +937,16 @@ function cm_is_excluded_page() {
  * Gedeeld door de frontend en de admin-preview. Geeft de cookies per
  * categorie terug; het frontend-script heeft die nodig (COOKIE_NAMES).
  */
+/**
+ * Vermelding "Cookiebaas" in de gratis versie: rechtsonder in banner en
+ * voorkeurenvenster, vaste stijl (frontend.css), niet instelbaar. Hangt af van
+ * de licentie van de site, niet van de bezoeker, dus cache-veilig.
+ */
+function cm_credit_link() {
+    if ( ! function_exists( 'cm_license_is_valid' ) || cm_license_is_valid() ) return '';
+    return '<a class="cm-credit" href="https://www.cookiebaas.nl" target="_blank" rel="nofollow noopener">Cookiebaas</a>';
+}
+
 function cm_banner_markup() {
     $show_float      = cm_get('show_float_btn');
     $float_btn_style = cm_get('float_btn_style'); // 'text' of 'icon'
@@ -1076,6 +1086,7 @@ function cm_banner_markup() {
                     <button type="button" class="cm-btn cm-btn-accept" id="cm-btn-accept"><?php echo esc_html( cm_t('txt_btn_accept') ); ?></button>
                 </div>
             </div>
+            <?php echo cm_credit_link(); ?>
         </div>
     </div>
 
@@ -1272,6 +1283,7 @@ function cm_banner_markup() {
                 <button type="button" class="cm-btn cm-btn-accept" id="cm-save-btn"><?php echo esc_html( cm_t('txt_btn_save') ); ?></button>
                 <button type="button" class="cm-btn cm-btn-outline" id="cm-rejectall-btn"><?php echo esc_html( cm_t('txt_btn_rejectall') ); ?></button>
             </div>
+            <?php echo cm_credit_link(); ?>
         </div>
     </div>
 
