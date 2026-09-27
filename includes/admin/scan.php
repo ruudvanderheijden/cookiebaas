@@ -158,9 +158,6 @@ add_action( 'wp_ajax_cm_scan_urls', 'cm_ajax_scan_urls' );
  */
 function cm_ajax_scan_urls() {
     cm_admin_verify_ajax( 'scan' );
-    if ( cm_scan_requires_license() ) {
-        wp_send_json_error( array( 'msg' => 'De cookiescan vereist een actieve licentie. De cookiebanner en -blokkering werken gewoon door.' ) );
-    }
 
     $home = trailingslashit( home_url('/') );
     $urls = array( $home );
@@ -192,9 +189,6 @@ add_action( 'wp_ajax_cm_scan_batch', 'cm_ajax_scan_batch' );
  */
 function cm_ajax_scan_batch() {
     cm_admin_verify_ajax( 'scan' );
-    if ( cm_scan_requires_license() ) {
-        wp_send_json_error( array( 'msg' => 'De cookiescan vereist een actieve licentie.' ) );
-    }
     @set_time_limit( 120 );
 
     $urls = isset($_POST['urls']) ? (array) $_POST['urls'] : array();

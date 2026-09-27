@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 function cm_tabs_log() {
     return array(
-        'registraties' => array( 'label' => 'Registraties', 'render' => 'cm_log_render_registraties' ),
+        'registraties' => array( 'label' => 'Registraties', 'render' => 'cm_log_render_registraties', 'premium' => 'cm_log_premium_text' ),
         'bewaren'      => cm_tab_log_bewaren(),
     );
 }
@@ -38,6 +38,13 @@ function cm_tab_log_bewaren() {
         ),
         'after_form' => 'cm_render_log_bewaren_tools',
     );
+}
+
+/** Melding op Registraties zonder licentie: het vastleggen gaat gewoon door. */
+function cm_log_premium_text() {
+    global $wpdb;
+    $n = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM `' . cm_log_table() . '`' );
+    return 'Cookiebaas legt de toestemmingen van uw bezoekers gewoon vast (nu ' . $n . ' registraties). De registraties bekijken, het bewijs per registratie en de CSV-export vragen een licentie.';
 }
 
 function cm_log_table() {
@@ -150,7 +157,9 @@ function cm_log_handle_bulk() {
     if ( $action !== 'cm_delete' ) return;
     check_admin_referer( 'bulk-consents' );
     if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang.', '', array( 'response' => 403 ) );
-    if ( ! $ids ) {
+    if ( cm_admin_require_license() !== '' ) {
+        $code = 'premium-required';
+    } elseif ( ! $ids ) {
         $code = 'log-none-selected';
     } else {
         $code = cm_log_delete( $ids ) === false ? 'action-failed' : 'log-deleted';
@@ -350,12 +359,14 @@ function cm_log_clear() {
 
 if ( function_exists( 'cm_admin_register_action' ) ) {
     cm_admin_register_action( 'delete_consent', function () {
+        if ( cm_admin_require_license() !== '' ) return 'premium-required';
         $n = cm_log_delete( array( isset( $_GET['consent'] ) ? wp_unslash( $_GET['consent'] ) : '' ) );
         return $n === false ? 'action-failed' : 'log-deleted';
     } );
 
     cm_admin_register_action( 'export_log', function () {
         global $wpdb;
+        if ( cm_admin_require_license() !== '' ) return 'premium-required';
         list( $from, $to ) = cm_log_date_range(
             isset( $_GET['from'] ) ? sanitize_text_field( wp_unslash( $_GET['from'] ) ) : '',
             isset( $_GET['to'] ) ? sanitize_text_field( wp_unslash( $_GET['to'] ) ) : ''

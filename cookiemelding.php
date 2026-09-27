@@ -514,6 +514,11 @@ add_action( 'rest_api_init', function() {
 } );
 
 function cm_rest_check_auth( $request ) {
+    // Consent opvragen leest de consent log: dat is premium (vastleggen blijft gratis)
+    if ( function_exists( 'cm_license_is_valid' ) && ! cm_license_is_valid() ) {
+        return new WP_Error( 'cm_license_required', 'Consent controleren via de REST API vraagt een geldige licentie van Cookiebaas.', array( 'status' => 403 ) );
+    }
+
     // Optie 1: ingelogde gebruiker met manage_options
     if ( current_user_can( 'manage_options' ) ) return true;
 

@@ -60,17 +60,39 @@ function cm_register_csv_rows( array $pv, $retention_months, $date ) {
     return $rows;
 }
 
-function cm_tabs_privacy() {
+/** Tabs van de privacyverklaring, in de volgorde van de uitvoer. */
+function cm_privacy_tab_labels() {
     return array(
-        'verklaring' => array(
-            'label'         => 'Privacyverklaring',
+        'bedrijf'      => 'Bedrijf',
+        'verwerkingen' => 'Verwerkingen',
+        'delen'        => 'Delen en bewaren',
+        'rechten'      => 'Rechten',
+        'weergave'     => 'Weergave',
+    );
+}
+
+/** Eén tab per groep secties; elke tab slaat alleen zijn eigen velden op (de callback voegt samen). */
+function cm_tabs_privacy() {
+    $sections = cm_privacy_sections();
+    $tabs     = array();
+    foreach ( cm_privacy_tab_labels() as $key => $label ) {
+        $tabs[ $key ] = array(
+            'label'         => $label,
             'group'         => 'cookiebaas_privacy',
             'values'        => 'cm_privacy_values',
             'title_actions' => 'cm_privacy_title_actions',
-            'sections'      => cm_privacy_sections(),
-        ),
-    );
+            'premium'       => 'De privacyverklaring bewerken vraagt een licentie. Een verklaring die al op uw website staat, blijft daar gewoon zichtbaar.',
+            'sections'      => array_values( array_filter( $sections, function ( $s ) use ( $key ) { return $s['tab'] === $key; } ) ),
+        );
+    }
+    return $tabs;
 }
+
+/** Opslaan via options.php alleen met licentie (zonder licentie staat het formulier er niet eens). */
+function cm_privacy_option_capability( $cap ) {
+    return ( function_exists( 'cm_license_is_valid' ) && cm_license_is_valid() ) ? $cap : 'do_not_allow';
+}
+add_filter( 'option_page_capability_cookiebaas_privacy', 'cm_privacy_option_capability' );
 
 function cm_privacy_values() {
     $saved = get_option( 'cm_privacy', array() );
@@ -89,13 +111,13 @@ function cm_privacy_sections() {
     };
     $bases = cm_avg_grondslagen();
     return array(
-        array( 'title' => 'Waar verschijnt de verklaring?', 'content' => function () {
+        array( 'tab' => 'bedrijf', 'title' => 'Waar verschijnt de verklaring?', 'content' => function () {
             $url = function_exists( 'get_privacy_policy_url' ) ? get_privacy_policy_url() : '';
             echo '<p>Plaats de shortcode <code>[cookiebaas_privacy]</code> op uw privacypagina. De cookietabel staat ook los beschikbaar als <code>[cookiebaas_cookies]</code>. Lege velden worden niet getoond.';
             if ( $url ) echo ' Uw privacypagina: <a href="' . esc_url( $url ) . '">' . esc_html( $url ) . '</a>.';
             echo ' Alle shortcodes staan onder <a href="' . esc_url( admin_url( 'admin.php?page=cookiebaas-beheer&tab=info' ) ) . '">Beheer › Info</a>.</p>';
         } ),
-        array( 'title' => 'Bedrijfsgegevens', 'fields' => array(
+        array( 'tab' => 'bedrijf', 'title' => 'Bedrijfsgegevens', 'fields' => array(
             $p( 'pv_bedrijfsnaam', 'text', 'Bedrijfsnaam' ),
             $p( 'pv_straat', 'text', 'Straat en huisnummer' ),
             $p( 'pv_postcode_plaats', 'text', 'Postcode en plaats', array( 'placeholder' => '1234 AB Amsterdam' ) ),
@@ -106,7 +128,7 @@ function cm_privacy_sections() {
             $p( 'pv_versie', 'text', 'Versienummer', array( 'class' => 'small-text', 'placeholder' => '1.0' ) ),
             $p( 'pv_datum', 'text', 'Datum bijgewerkt', array( 'placeholder' => '1 januari 2026' ) ),
         ) ),
-        array( 'title' => 'Functionaris Gegevensbescherming (DPO)', 'fields' => array(
+        array( 'tab' => 'bedrijf', 'title' => 'Functionaris Gegevensbescherming (DPO)', 'fields' => array(
             $p( 'pv_dpo_enabled', 'checkbox', 'DPO-sectie', array(
                 'checkbox_label' => 'Wij hebben een Functionaris Gegevensbescherming aangesteld',
                 'description'    => 'Verplicht voor overheidsorganisaties en organisaties die op grote schaal bijzondere persoonsgegevens verwerken (AVG art. 37). Voor de meeste mkb-organisaties optioneel.',
@@ -115,13 +137,13 @@ function cm_privacy_sections() {
             $p( 'pv_dpo_email', 'text', 'E-mailadres', array( 'placeholder' => 'dpo@uwbedrijf.nl', 'show_if' => array( 'pv_dpo_enabled' => '1' ) ) ),
             $p( 'pv_dpo_telefoon', 'text', 'Telefoonnummer', array( 'optional' => true, 'show_if' => array( 'pv_dpo_enabled' => '1' ) ) ),
         ) ),
-        array( 'title' => '1. Inleiding', 'fields' => array(
+        array( 'tab' => 'verwerkingen', 'title' => '1. Inleiding', 'fields' => array(
             $p( 'pv_inleiding_naam', 'text', 'Naam in de inleiding', array(
                 'placeholder' => 'Leeg = de bedrijfsnaam',
                 'description' => 'Verschijnt als: <em>“<strong>[naam]</strong> respecteert uw privacy…”</em>',
             ) ),
         ) ),
-        array( 'title' => '2.1 Contactformulier', 'fields' => array(
+        array( 'tab' => 'verwerkingen', 'title' => '2.1 Contactformulier', 'fields' => array(
             $p( 'pv_cf_fields', 'checkgroup', 'Verzamelde velden', array(
                 'keys'        => array(
                     'pv_cf_voornaam'   => 'Voornaam',
@@ -143,7 +165,7 @@ function cm_privacy_sections() {
             ) ),
             $p( 'pv_cf_grondslag', 'select', 'Rechtsgrondslag', array( 'options' => $bases, 'context' => '2.1 Contactformulier', 'description' => 'Verplicht te vermelden (Art. 13 lid 1c AVG).' ) ),
         ) ),
-        array( 'title' => '2.3 Nieuwsbrief en e-mailmarketing', 'fields' => array(
+        array( 'tab' => 'verwerkingen', 'title' => '2.3 Nieuwsbrief en e-mailmarketing', 'fields' => array(
             $p( 'pv_nieuwsbrief_enabled', 'checkbox', 'Nieuwsbrief', array( 'checkbox_label' => 'Wij versturen een nieuwsbrief of marketing-e-mails' ) ),
             $p( 'pv_nieuwsbrief_grondslag', 'select', 'Rechtsgrondslag', array( 'options' => $bases, 'context' => '2.3 Nieuwsbrief', 'show_if' => array( 'pv_nieuwsbrief_enabled' => '1' ) ) ),
             $p( 'pv_nieuwsbrief_afmelden', 'text', 'Afmeldpagina', array(
@@ -153,7 +175,7 @@ function cm_privacy_sections() {
                 'show_if'     => array( 'pv_nieuwsbrief_enabled' => '1' ),
             ) ),
         ) ),
-        array( 'title' => '3. Doeleinden en grondslagen', 'fields' => array(
+        array( 'tab' => 'verwerkingen', 'title' => '3. Doeleinden en grondslagen', 'fields' => array(
             $p( 'pv_doeleinden', 'rows', 'Doeleinden', array(
                 'columns'   => array(
                     'doel'      => array( 'label' => 'Doel' ),
@@ -164,6 +186,7 @@ function cm_privacy_sections() {
             ) ),
         ) ),
         array(
+            'tab'    => 'verwerkingen',
             'title'  => '4. Cookies',
             'intro'  => 'De cookietabel in de verklaring komt uit <a href="' . esc_url( admin_url( 'admin.php?page=cookiebaas-cookies' ) ) . '">Cookies › Cookielijst</a>.',
             'fields' => array(
@@ -177,7 +200,7 @@ function cm_privacy_sections() {
                 ) ),
             ),
         ),
-        array( 'title' => '5. Ontvangers van persoonsgegevens', 'fields' => array(
+        array( 'tab' => 'delen', 'title' => '5. Ontvangers van persoonsgegevens', 'fields' => array(
             $p( 'pv_ontvangers', 'rows', 'Ontvangers', array(
                 'columns'   => array(
                     'partij'  => array( 'label' => 'Partij' ),
@@ -187,26 +210,26 @@ function cm_privacy_sections() {
                 'add_label' => 'Partij toevoegen',
             ) ),
         ) ),
-        array( 'title' => '6. Internationale doorgifte', 'fields' => array(
+        array( 'tab' => 'delen', 'title' => '6. Internationale doorgifte', 'fields' => array(
             $p( 'pv_doorgifte', 'textarea', 'Eigen tekst', array( 'optional' => true, 'description' => 'Leeg = de standaardtekst.' ) ),
         ) ),
-        array( 'title' => '7. Bewaartermijnen', 'fields' => array(
+        array( 'tab' => 'delen', 'title' => '7. Bewaartermijnen', 'fields' => array(
             $p( 'pv_bewaar_contact', 'text', 'Contactformulier', array( 'placeholder' => '3 jaar na laatste contact' ) ),
             $p( 'pv_bewaar_logs', 'text', 'Serverlogbestanden', array( 'placeholder' => 'maximaal 6 maanden' ) ),
             $p( 'pv_bewaar_analytics', 'text', 'Analytische gegevens', array( 'placeholder' => 'Zie sectie 4 (per cookie)' ) ),
             $p( 'pv_bewaar_nieuwsbrief', 'text', 'Nieuwsbriefabonnement', array( 'optional' => true, 'placeholder' => 'Tot afmelding + 1 jaar' ) ),
         ) ),
-        array( 'title' => '8. Uw rechten', 'fields' => array(
+        array( 'tab' => 'rechten', 'title' => '8. Uw rechten', 'fields' => array(
             $p( 'pv_rechten_email', 'text', 'E-mailadres voor verzoeken', array( 'placeholder' => 'Leeg = het algemene e-mailadres' ) ),
             $p( 'pv_rechten_termijn', 'text', 'Reactietermijn', array( 'placeholder' => 'één maand' ) ),
         ) ),
-        array( 'title' => '10. Klachten', 'fields' => array(
+        array( 'tab' => 'rechten', 'title' => '10. Klachten', 'fields' => array(
             $p( 'pv_ap_tonen', 'checkbox', 'Autoriteit Persoonsgegevens', array( 'checkbox_label' => 'Toon het adres van de Autoriteit Persoonsgegevens' ) ),
         ) ),
-        array( 'title' => '11. Wijzigingen', 'fields' => array(
+        array( 'tab' => 'rechten', 'title' => '11. Wijzigingen', 'fields' => array(
             $p( 'pv_wijzigingen_extra', 'textarea', 'Aanvullende tekst', array( 'optional' => true, 'rows' => 3 ) ),
         ) ),
-        array( 'title' => '12. Geautomatiseerde besluitvorming', 'fields' => array(
+        array( 'tab' => 'rechten', 'title' => '12. Geautomatiseerde besluitvorming', 'fields' => array(
             $p( 'pv_profilering_enabled', 'checkbox', 'Profilering', array(
                 'checkbox_label' => 'Wij gebruiken geautomatiseerde besluitvorming of profilering (Art. 22 AVG)',
                 'description'    => 'Verplicht te vermelden als u profilering of geautomatiseerde besluitvorming toepast, bijvoorbeeld remarketing via Google of Meta.',
@@ -214,6 +237,7 @@ function cm_privacy_sections() {
             $p( 'pv_profilering_tekst', 'textarea', 'Eigen tekst', array( 'optional' => true, 'placeholder' => 'Leeg = de standaardtekst.', 'show_if' => array( 'pv_profilering_enabled' => '1' ) ) ),
         ) ),
         array(
+            'tab'    => 'weergave',
             'title'  => 'Weergave van de cookietabellen',
             'intro'  => 'Kleuren van de tabellen in <code>[cookiebaas_privacy]</code> en <code>[cookiebaas_cookies]</code>, los van uw thema.',
             'fields' => array(
@@ -230,12 +254,14 @@ function cm_privacy_sections() {
 
 if ( function_exists( 'cm_admin_register_action' ) ) {
     cm_admin_register_action( 'export_register', function () {
+        if ( cm_admin_require_license() !== '' ) return 'premium-required';
         cm_admin_send_csv(
             'verwerkingsregister-' . wp_date( 'Y-m-d' ) . '.csv',
             cm_register_csv_rows( (array) get_option( 'cm_privacy', array() ), cm_get( 'log_retention_months' ), wp_date( 'd-m-Y' ) )
         );
     } );
     cm_admin_register_action( 'reset_privacy', function () {
+        if ( cm_admin_require_license() !== '' ) return 'premium-required';
         update_option( 'cm_privacy', cm_default_privacy() );
         return 'privacy-reset';
     } );

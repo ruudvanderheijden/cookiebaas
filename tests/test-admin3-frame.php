@@ -11,11 +11,17 @@ function settings_fields( $group ) { echo '<!--group:' . $group . '-->'; }
 function submit_button( $text = '' ) { echo '<!--submit:' . $text . '-->'; }
 function wp_kses_post( $s ) { return (string) $s; }
 function esc_textarea( $s ) { return htmlspecialchars( (string) $s, ENT_QUOTES ); }
+function add_query_arg( $a, $b = null, $c = null ) {
+    if ( is_array( $a ) ) { $args = $a; $url = $b; } else { $args = array( $a => $b ); $url = $c; }
+    foreach ( $args as $k => $v ) $url .= ( strpos( $url, '?' ) === false ? '?' : '&' ) . rawurlencode( $k ) . '=' . rawurlencode( $v );
+    return $url;
+}
 
 require __DIR__ . '/bootstrap.php';
 require CM_PLUGIN_ROOT . '/includes/defaults.php';
 require CM_PLUGIN_ROOT . '/includes/admin/menu.php';
 require CM_PLUGIN_ROOT . '/includes/admin/fields.php';
+require CM_PLUGIN_ROOT . '/includes/admin/actions.php';
 
 cm_test_group( 'Tab uit de URL' );
 $tabs = array( 'vormgeving' => array( 'label' => 'Vormgeving' ), 'teksten' => array( 'label' => 'Teksten' ) );
@@ -63,5 +69,16 @@ cm_assert( 'admin-cookies.js bestaat', $js !== '' );
 cm_assert( 'geen innerHTML (scandata alleen via textContent)', strpos( $js, 'innerHTML' ) === false );
 cm_assert( 'melding bij deels mislukte scan', strpos( $js, 'konden niet worden gescand' ) !== false );
 cm_assert( 'melding bij volledig mislukte scan', strpos( $js, 'geen enkele pagina kon worden gescand' ) !== false );
+
+cm_test_group( 'Premium-tabs' );
+$GLOBALS['cm_test_license_ok'] = false;
+cm_assert( 'premium-tab zonder licentie → op slot', cm_admin_tab_locked( array( 'premium' => 'x' ) ) === true );
+cm_assert( 'gewone tab nooit op slot', cm_admin_tab_locked( array() ) === false );
+cm_assert( 'actie zonder licentie → melding premium-required', cm_admin_require_license() === 'premium-required' && cm_admin_notice_html( 'premium-required' ) !== '' );
+$GLOBALS['cm_test_license_ok'] = true;
+cm_assert( 'met licentie open', cm_admin_tab_locked( array( 'premium' => 'x' ) ) === false && cm_admin_require_license() === '' );
+$h = cm_admin_premium_notice( 'Tekst <b>x</b>' );
+cm_assert( 'premium-melding met link naar Beheer › Licentie, tekst ge-escaped', strpos( $h, 'page=cookiebaas-beheer&tab=licentie' ) !== false && strpos( $h, '<b>' ) === false );
+cm_assert( 'premiumfuncties bij naam', strpos( cm_premium_features_text(), 'consent log' ) !== false && strpos( cm_premium_features_text(), 'privacyverklaring' ) !== false && strpos( cm_premium_features_text(), 'automatische scan' ) !== false );
 
 exit( cm_test_summary() );

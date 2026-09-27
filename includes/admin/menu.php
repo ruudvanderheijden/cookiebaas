@@ -89,6 +89,11 @@ function cm_admin_page_tabs( $page ) {
     return array( 'overzicht' => cm_tabs_overzicht()['overzicht'] );
 }
 
+/** Premium-tab zonder geldige licentie? ('premium' = tekst of callable voor de melding.) */
+function cm_admin_tab_locked( array $def ) {
+    return ! empty( $def['premium'] ) && ! ( function_exists( 'cm_license_is_valid' ) && cm_license_is_valid() );
+}
+
 /** Rendert elke pagina van de nieuwe admin: wrap, titel, meldingen, tabs, inhoud. */
 function cm_admin_render_page() {
     if ( ! current_user_can( 'manage_options' ) ) return;
@@ -97,10 +102,11 @@ function cm_admin_render_page() {
     $tabs  = cm_admin_page_tabs( $page );
     $tab   = cm_admin_current_tab( $tabs, isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '' );
     $def   = $tabs[ $tab ];
+    $locked = cm_admin_tab_locked( $def );
 
     echo '<div class="wrap cm-admin">';
     echo '<h1 class="wp-heading-inline">' . esc_html( isset( $pages[ $page ] ) ? $pages[ $page ] : 'Cookiebaas' ) . '</h1>';
-    if ( ! empty( $def['title_actions'] ) ) call_user_func( $def['title_actions'] );
+    if ( ! empty( $def['title_actions'] ) && ! $locked ) call_user_func( $def['title_actions'] );
     echo '<hr class="wp-header-end">';
     settings_errors();
     if ( function_exists( 'cm_admin_render_notices' ) ) cm_admin_render_notices();
@@ -115,7 +121,9 @@ function cm_admin_render_page() {
         echo '</nav>';
     }
 
-    if ( ! empty( $def['render'] ) ) {
+    if ( $locked ) {
+        echo cm_admin_premium_notice( is_callable( $def['premium'] ) ? call_user_func( $def['premium'] ) : $def['premium'] );
+    } elseif ( ! empty( $def['render'] ) ) {
         call_user_func( $def['render'] );
     } else {
         cm_admin_render_form_tab( $page, $tab, $def );

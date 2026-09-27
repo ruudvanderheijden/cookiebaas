@@ -44,7 +44,7 @@ function cm_overzicht_cards( array $d ) {
         ? 'Laatste automatische scan: ' . wp_date( 'j F Y', strtotime( $d['last_scan'] . ' UTC' ) ) . '.'
         : 'Nog geen automatische scan.';
     return array(
-        array( 'Licentie', $d['license'], $d['license_ok'] ? 'De cookiescan is beschikbaar.' : 'Banner en blokkering werken; de cookiescan is gepauzeerd.', cm_admin_page_url( 'cookiebaas-beheer', 'licentie' ), 'Licentie beheren' ),
+        array( 'Licentie', $d['license'], $d['license_ok'] ? 'Alle functies zijn beschikbaar.' : 'Banner, blokkering en handmatige scan werken; voor de premiumfuncties is een licentie nodig.', cm_admin_page_url( 'cookiebaas-beheer', 'licentie' ), 'Licentie beheren' ),
         array( 'Cookies', $d['cookies'] === 1 ? '1 cookie' : $d['cookies'] . ' cookies', $scan, cm_admin_page_url( 'cookiebaas-cookies', 'lijst' ), 'Cookielijst bekijken' ),
         array( 'Toestemmingen', (string) ( $d['accept'] + $d['reject'] + $d['custom'] ), 'Laatste 30 dagen: ' . $d['accept'] . ' akkoord, ' . $d['reject'] . ' geweigerd, ' . $d['custom'] . ' aangepast.', cm_admin_page_url( 'cookiebaas-log', 'registraties' ), 'Consent log openen' ),
         array( 'Consent-versie', (string) $d['version'], 'Verhoog de versie om iedereen opnieuw te laten kiezen.', cm_admin_page_url( 'cookiebaas-log', 'bewaren' ), 'Opnieuw laten kiezen' ),

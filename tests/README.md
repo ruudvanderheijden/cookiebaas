@@ -42,6 +42,7 @@ php tests/test-cache-safety.php
 | `test-consent-mode.php` | Consent Mode v2 head-injectie: advanced laadt altijd, client-side cookie-lezer, `url_passthrough` optioneel, JS-delay-bescherming. |
 | `test-cookie-scan.php` | Kennisbank, prefix-matcher (`_` én `-`), Google-cookies op google.com, omgevingsdetectie (login, reacties, wachtwoordposts, WooCommerce, LiteSpeed). |
 | `test-settings-cache.php` | `cm_get()` / `cm_get_flush()` en de automatische flush-hook (v1.8.0). |
+| `test-credit.php` | Gratis versie: vermelding "Cookiebaas" (nofollow, vaste grijze stijl) in banner en voorkeurenvenster zonder geldige licentie, niet met licentie; paginacache alleen geleegd als de geldigheid verandert. |
 
 Nieuwe assertie toevoegen: gebruik `cm_assert( 'omschrijving', $conditie )` binnen
 een `cm_test_group( 'kop' )`. Zie `bootstrap.php` voor beschikbare stubs.

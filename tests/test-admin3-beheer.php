@@ -125,6 +125,7 @@ ob_start(); cm_admin_license_notice(); $h = ob_get_clean();
 cm_assert( 'geldige licentie → geen melding', $h === '' );
 $GLOBALS['cm_test_valid'] = false;
 
+$GLOBALS['cm_test_valid'] = true; // privacy terugzetten vraagt een licentie (zie onderaan)
 cm_test_group( 'Backup maken' );
 update_option( 'cm_settings', array_merge( cm_default_settings(), array( 'api_key' => str_repeat( 'a', 40 ), 'gtm_container_id' => 'GTM-ABC' ) ) );
 $b = cm_backup_payload();
@@ -248,5 +249,24 @@ ob_start(); cm_render_beheer_info(); $h = ob_get_clean();
 cm_assert( 'alle shortcodes', strpos( $h, '[cookiebaas_privacy]' ) !== false && strpos( $h, '[cookiebaas_cookies]' ) !== false && strpos( $h, '[cookiebaas_voorkeuren]' ) !== false );
 cm_assert( 'versie, disclaimer en contact', strpos( $h, CM_VERSION ) !== false && strpos( $h, 'Disclaimer' ) !== false && strpos( $h, 'cookiebaas.nl' ) !== false && strpos( $h, 'AVG-compliant' ) !== false );
 cm_assert( 'snel aan de slag noemt de nieuwe menu’s', strpos( $h, 'Blokkering › Google' ) !== false && strpos( $h, 'Cookies &amp; scan' ) === false && strpos( $h, 'Instellingen' ) === false );
+
+cm_test_group( 'Import zonder licentie slaat de privacyverklaring over' );
+$GLOBALS['cm_test_valid'] = false;
+update_option( 'cm_privacy', array_merge( cm_default_privacy(), array( 'pv_bedrijfsnaam' => 'Oud BV' ) ) );
+$r = cm_import_backup( json_encode( array( '_meta' => array( 'plugin' => 'cookiebaas' ), 'settings' => array( 'gtm_container_id' => 'GTM-Y' ), 'privacy' => array( 'pv_bedrijfsnaam' => 'Nieuw BV' ) ) ) );
+cm_assert( 'instellingen wel, privacy niet, met uitleg', $r['ok'] === true && $r['warning'] === true && get_option( 'cm_settings' )['gtm_container_id'] === 'GTM-Y' && get_option( 'cm_privacy' )['pv_bedrijfsnaam'] === 'Oud BV' && strpos( $r['message'], 'licentie' ) !== false );
+$snap = $GLOBALS['cm_test_options'];
+$r = cm_import_backup( json_encode( array( '_meta' => array( 'plugin' => 'cookiebaas' ), 'privacy' => array( 'pv_bedrijfsnaam' => 'Nieuw BV' ) ) ) );
+cm_assert( 'alleen privacy in de backup → geweigerd, niets gewijzigd', $r['ok'] === false && strpos( $r['message'], 'licentie' ) !== false && $GLOBALS['cm_test_options'] === $snap );
+
+cm_test_group( 'Teksten noemen gratis en premium bij naam' );
+$t = cm_license_summary( array( 'key' => '' ), false )[2];
+cm_assert( 'geen licentie: handmatige scan werkt, consent log vraagt licentie', strpos( $t, 'handmatige scan' ) !== false && strpos( $t, 'consent log' ) !== false );
+cm_assert( 'nergens meer "alleen de cookiescan"', strpos( file_get_contents( CM_PLUGIN_ROOT . '/includes/admin/page-beheer.php' ), 'cookiescan' ) === false );
+ob_start(); cm_render_beheer_geavanceerd(); $h = ob_get_clean();
+cm_assert( 'Geavanceerd: melding dat de REST API een licentie vraagt', strpos( $h, 'cm-premium' ) !== false );
+$GLOBALS['cm_test_valid'] = true;
+ob_start(); cm_render_beheer_geavanceerd(); $h = ob_get_clean();
+cm_assert( 'met licentie geen melding', strpos( $h, 'cm-premium' ) === false );
 
 exit( cm_test_summary() );

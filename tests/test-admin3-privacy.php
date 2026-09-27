@@ -94,13 +94,18 @@ $pv['pv_dpo_enabled'] = '1'; $pv['pv_dpo_naam'] = 'Jan';
 cm_assert( 'wel een DPO-rij als die aan staat', in_array( 'Functionaris Gegevensbescherming (DPO)', array_column( cm_register_csv_rows( $pv, 0, 'x' ), 0 ), true ) );
 cm_assert( 'melding herstellen bestaat', cm_admin_notice_html( 'privacy-reset' ) !== '' );
 
-cm_test_group( 'Pagina Privacyverklaring' );
-$tab = cm_tabs_privacy()['verklaring'];
-cm_assert( 'eigen settings-groep en waarden', $tab['group'] === 'cookiebaas_privacy' && is_callable( $tab['values'] ) && isset( call_user_func( $tab['values'] )['pv_bedrijfsnaam'] ) );
-$titles = array_map( function ( $s ) { return isset( $s['title'] ) ? $s['title'] : ''; }, $tab['sections'] );
-$pos    = function ( $t ) use ( $titles ) { $i = array_search( $t, $titles, true ); return $i === false ? -1 : $i; };
+cm_test_group( 'Pagina Privacyverklaring: tabs in de volgorde van de uitvoer' );
+$tabs = cm_tabs_privacy();
+cm_assert( 'vijf tabs', array_keys( $tabs ) === array( 'bedrijf', 'verwerkingen', 'delen', 'rechten', 'weergave' ) );
+$every = true;
+foreach ( $tabs as $t ) $every = $every && $t['group'] === 'cookiebaas_privacy' && is_callable( $t['values'] ) && $t['title_actions'] === 'cm_privacy_title_actions' && ! empty( $t['premium'] ) && $t['sections'];
+cm_assert( 'elke tab: eigen settings-groep, waarden, knoppen naast de titel, premium en secties', $every && isset( call_user_func( $tabs['bedrijf']['values'] )['pv_bedrijfsnaam'] ) );
+$titles = array();
+foreach ( $tabs as $t ) foreach ( $t['sections'] as $s ) $titles[] = isset( $s['title'] ) ? $s['title'] : '';
+cm_assert( 'samen precies alle secties, in dezelfde volgorde', $titles === array_map( function ( $s ) { return $s['title']; }, cm_privacy_sections() ) );
+$pos = function ( $t ) use ( $titles ) { $i = array_search( $t, $titles, true ); return $i === false ? -1 : $i; };
 cm_assert( 'secties in de volgorde van de uitvoer (11 vóór 12)', $pos( '1. Inleiding' ) < $pos( '2.1 Contactformulier' ) && $pos( '11. Wijzigingen' ) < $pos( '12. Geautomatiseerde besluitvorming' ) && $pos( '11. Wijzigingen' ) > 0 );
-cm_assert( 'tabelkleuren onderaan, niet tussen 4 en 5', end( $titles ) === 'Weergave van de cookietabellen' );
+cm_assert( 'tabelkleuren op de laatste tab', end( $titles ) === 'Weergave van de cookietabellen' && $tabs['weergave']['sections'][0]['title'] === 'Weergave van de cookietabellen' );
 cm_assert( 'land is nu te bewerken', in_array( 'pv_land', array_column( cm_admin_field_list( 'cm_privacy' ), 'key' ), true ) );
 
 cm_test_group( 'Ontbrekend tekstveld houdt zijn waarde (oude admin post niet elk veld)' );
@@ -119,5 +124,12 @@ $once  = cm_privacy_sanitize_callback( cm_default_privacy() );
 update_option( 'cm_privacy', $once );
 $twice = cm_privacy_sanitize_callback( $once );
 cm_assert( 'twee keer opslaan = één keer (spec §5.3)', $once === $twice );
+
+cm_test_group( 'Bewerken is premium, de verklaring op de site blijft' );
+$GLOBALS['cm_test_license_ok'] = false;
+cm_assert( 'opslaan via options.php zonder licentie geweigerd', cm_privacy_option_capability( 'manage_options' ) === 'do_not_allow' );
+cm_assert( 'de shortcode-uitvoer kijkt niet naar de licentie (verklaring blijft online)', strpos( file_get_contents( CM_PLUGIN_ROOT . '/includes/privacy.php' ), 'license' ) === false );
+$GLOBALS['cm_test_license_ok'] = true;
+cm_assert( 'met licentie gewoon manage_options', cm_privacy_option_capability( 'manage_options' ) === 'manage_options' );
 
 exit( cm_test_summary() );

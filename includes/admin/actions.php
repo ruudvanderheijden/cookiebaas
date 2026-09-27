@@ -23,7 +23,8 @@ function cm_admin_notice_messages() {
         'consent-version-bumped' => array( 'success', 'De consent-versie is verhoogd. Elke bezoeker ziet de banner opnieuw.' ),
         'log-cleared'            => array( 'success', 'De consent log is leeggemaakt.' ),
         'reset-all-done'         => array( 'success', 'Alles is teruggezet naar de standaard. Elke bezoeker ziet de banner opnieuw.' ),
-        'license-cleared'        => array( 'success', 'De licentiegegevens zijn van deze website gewist. De cookiescan pauzeert tot u opnieuw een licentie activeert.' ),
+        'license-cleared'        => array( 'success', 'De licentiegegevens zijn van deze website gewist. De cookiebanner en de blokkering werken gewoon door.' ),
+        'premium-required'       => array( 'error',   'Deze functie vraagt een geldige licentie.' ),
         'api-key-created'        => array( 'success', 'Er is een nieuwe API-sleutel gemaakt. Zet hem in uw externe koppelingen.' ),
         'api-key-revoked'        => array( 'success', 'De API-sleutel is ingetrokken.' ),
     );
@@ -33,6 +34,23 @@ function cm_admin_notice_html( $code ) {
     $messages = cm_admin_notice_messages();
     if ( ! isset( $messages[ $code ] ) ) return '';
     return '<div class="notice notice-' . esc_attr( $messages[ $code ][0] ) . ' is-dismissible"><p>' . esc_html( $messages[ $code ][1] ) . '</p></div>';
+}
+
+/* ---- Licentie: wat gratis is en wat een licentie vraagt ---- */
+
+/** De premiumfuncties bij naam, voor meldingen. */
+function cm_premium_features_text() {
+    return 'het inzien van de consent log, de privacyverklaring-generator en de automatische scan';
+}
+
+/** '' als de actie mag, anders de meldingscode 'premium-required' (voor admin-post-acties). */
+function cm_admin_require_license() {
+    return ( function_exists( 'cm_license_is_valid' ) && cm_license_is_valid() ) ? '' : 'premium-required';
+}
+
+/** Melding op een premium-onderdeel zonder licentie, met een link naar Beheer › Licentie. */
+function cm_admin_premium_notice( $text ) {
+    return '<div class="notice notice-info inline cm-premium"><p>' . esc_html( $text ) . ' <a href="' . esc_url( cm_admin_page_url( 'cookiebaas-beheer', 'licentie' ) ) . '">Licentie activeren</a></p></div>';
 }
 
 /** Eenmalige melding met eigen tekst, bijvoorbeeld het antwoord van de licentieserver. */

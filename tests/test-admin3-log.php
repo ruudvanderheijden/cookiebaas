@@ -29,6 +29,8 @@ class CM_Test_Wpdb {
         return $sql;
     }
     public function query( $sql ) { $this->queries[] = $sql; return $this->result; }
+    public $count = 0;
+    public function get_var( $sql ) { $this->queries[] = $sql; return $this->count; }
     public function get_row( $sql, $output = null ) { $this->queries[] = $sql; return null; }
 }
 $GLOBALS['wpdb'] = new CM_Test_Wpdb();
@@ -157,5 +159,11 @@ cm_assert( 'TRUNCATE gelukt (0 rijen telt ook als gelukt)', cm_log_clear() === t
 $wpdb->result = false;
 cm_assert( 'databasefout op TRUNCATE → DELETE-fallback geprobeerd', cm_log_clear() === false && strpos( end( $wpdb->queries ), 'DELETE FROM `wp_cm_consent_log`' ) === 0 );
 $wpdb->result = 2;
+
+cm_test_group( 'Licentie: bekijken is premium, vastleggen niet' );
+cm_assert( 'Registraties is een premium-tab', ! empty( cm_tabs_log()['registraties']['premium'] ) );
+cm_assert( 'Bewaren en opnieuw vragen blijft gratis (AVG-opschoning)', empty( cm_tabs_log()['bewaren']['premium'] ) );
+$wpdb->count = 1234;
+cm_assert( 'melding noemt het aantal vastgelegde registraties', strpos( cm_log_premium_text(), '1234' ) !== false && strpos( cm_log_premium_text(), 'licentie' ) !== false );
 
 exit( cm_test_summary() );

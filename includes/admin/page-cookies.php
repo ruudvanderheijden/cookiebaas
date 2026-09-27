@@ -22,14 +22,17 @@ function cm_tab_cookies_scannen() {
             array( 'title' => 'Cookiedatabase', 'content' => 'cm_render_cookie_db_status' ),
             array(
                 'title'   => 'Automatische scan',
-                'intro'   => 'Bekijkt periodiek de homepage op nieuwe cookies. Vereist een actieve licentie; zonder licentie slaat Cookiebaas de automatische scan over.',
+                'intro'   => 'Bekijkt periodiek de homepage op nieuwe cookies. Automatisch toevoegen en de melding per e-mail vragen een licentie; zonder licentie slaat Cookiebaas de automatische scan over.',
                 'content' => 'cm_render_auto_scan_status',
                 'fields'  => array(
-                    cm_field( 'auto_scan_mode', 'radio', 'Werkwijze', array( 'options' => array(
-                        'off'    => 'Handmatig: alleen scannen via de knop hierboven',
-                        'auto'   => 'Automatisch toevoegen: nieuw gevonden cookies komen direct in de cookielijst',
-                        'notify' => 'Melding per e-mail: een bericht als er nieuwe cookies zijn gevonden',
-                    ) ) ),
+                    cm_field( 'auto_scan_mode', 'radio', 'Werkwijze', array(
+                        'options'  => array(
+                            'off'    => 'Handmatig: alleen scannen via de knop hierboven',
+                            'auto'   => 'Automatisch toevoegen (met licentie): nieuw gevonden cookies komen direct in de cookielijst',
+                            'notify' => 'Melding per e-mail (met licentie): een bericht als er nieuwe cookies zijn gevonden',
+                        ),
+                        'sanitize' => 'cm_sanitize_auto_scan_mode',
+                    ) ),
                     cm_field( 'auto_scan_interval', 'select', 'Frequentie', array(
                         'options' => array( '10' => 'Elke 10 dagen', '30' => 'Elke maand (30 dagen)', '180' => 'Elk half jaar (180 dagen)' ),
                         'show_if' => array( 'auto_scan_mode' => array( 'auto', 'notify' ) ),
@@ -48,10 +51,6 @@ function cm_tab_cookies_scannen() {
 }
 
 function cm_render_manual_scan() {
-    if ( cm_scan_requires_license() ) {
-        echo '<div class="notice notice-warning inline"><p>De cookiescan is een premium-functie en vereist een actieve licentie. De cookiebanner en -blokkering werken gewoon door. <a href="' . esc_url( cm_admin_page_url( 'cookiebaas-beheer', 'licentie' ) ) . '">Licentie beheren</a></p></div>';
-        return;
-    }
     echo '<p><button type="button" class="button button-primary" id="cm-scan-start">Cookies scannen</button> <span class="description">Doorloopt alle gepubliceerde pagina’s en herkent cookies via HTTP-headers en scripts.</span></p>';
     echo '<div id="cm-scan-result" aria-live="polite"></div>';
 }
@@ -70,7 +69,25 @@ function cm_render_cookie_db_status() {
     echo '<p class="description">De <a href="https://github.com/jkwakman/Open-Cookie-Database" target="_blank" rel="noopener">Open Cookie Database</a> (Apache 2.0, ruim 2.200 cookies) helpt de scan om cookies te herkennen en te omschrijven.</p>';
 }
 
+/**
+ * Werkwijze van de automatische scan: 'auto' en 'notify' zijn premium. Een
+ * al opgeslagen waarde blijft staan (idempotent; de cron slaat hem zonder
+ * licentie toch over), terug naar 'off' mag altijd.
+ */
+function cm_sanitize_auto_scan_mode( $raw, $current, $f ) {
+    $raw = is_scalar( $raw ) ? (string) $raw : '';
+    if ( ! array_key_exists( $raw, cm_admin_field_options( $f ) ) ) return cm_sanitize_reject( $f, $current );
+    if ( $raw === 'off' || $raw === (string) $current || cm_admin_require_license() === '' ) return $raw;
+    if ( function_exists( 'add_settings_error' ) ) {
+        add_settings_error( 'cm_settings', 'cm-premium-auto-scan', 'Automatisch toevoegen en de melding per e-mail vragen een licentie. De werkwijze is niet gewijzigd.' );
+    }
+    return (string) $current;
+}
+
 function cm_render_auto_scan_status() {
+    if ( cm_admin_require_license() !== '' ) {
+        echo cm_admin_premium_notice( 'Automatisch toevoegen en de melding per e-mail vragen een licentie. Handmatig scannen kan altijd.' );
+    }
     $fmt  = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
     $last = (string) get_option( 'cm_auto_scan_last', '' );
     $next = (string) get_option( 'cm_auto_scan_next', '' );

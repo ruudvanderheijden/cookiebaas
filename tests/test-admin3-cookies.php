@@ -186,4 +186,20 @@ foreach ( $scan['sections'] as $s ) foreach ( isset( $s['fields'] ) ? $s['fields
 cm_assert( 'tab Scannen bevat de drie scan-instellingen', $keys === array( 'auto_scan_mode', 'auto_scan_interval', 'auto_scan_email' ) );
 cm_assert( 'melding timer resetten bestaat', cm_admin_notice_html( 'scan-timer-reset' ) !== '' );
 
+cm_test_group( 'Licentie: handmatig scannen gratis, automatisch premium' );
+$GLOBALS['cm_test_license_ok'] = false;
+ob_start(); cm_render_manual_scan(); $h = ob_get_clean();
+cm_assert( 'handmatige scan zonder licentie beschikbaar', strpos( $h, 'id="cm-scan-start"' ) !== false );
+cm_assert( 'scan-AJAX vraagt geen licentie meer', strpos( file_get_contents( CM_PLUGIN_ROOT . '/includes/admin/scan.php' ), 'cm_scan_requires_license' ) === false );
+$f = cm_admin_field_index( 'cm_settings' )['auto_scan_mode'];
+$GLOBALS['cm_test_errors'] = array();
+cm_assert( 'zonder licentie: automatisch kiezen wordt geweigerd, met melding', cm_sanitize_field_value( $f, 'auto', 'off' ) === 'off' && count( $GLOBALS['cm_test_errors'] ) === 1 );
+cm_assert( 'zonder licentie: een al opgeslagen modus blijft staan (idempotent)', cm_sanitize_field_value( $f, 'notify', 'notify' ) === 'notify' );
+cm_assert( 'zonder licentie: terug naar handmatig mag', cm_sanitize_field_value( $f, 'off', 'auto' ) === 'off' );
+ob_start(); cm_render_auto_scan_status(); $h = ob_get_clean();
+cm_assert( 'zonder licentie: melding bij de automatische scan', strpos( $h, 'licentie' ) !== false );
+$GLOBALS['cm_test_license_ok'] = true;
+cm_assert( 'met licentie: automatisch kiezen mag', cm_sanitize_field_value( $f, 'auto', 'off' ) === 'auto' );
+cm_assert( 'onbekende waarde blijft geweigerd', cm_sanitize_field_value( $f, 'x', 'off' ) === 'off' );
+
 exit( cm_test_summary() );

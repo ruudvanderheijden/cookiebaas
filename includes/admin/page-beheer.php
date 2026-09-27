@@ -26,10 +26,10 @@ function cm_tabs_beheer() {
 
 /** Licentiestatus: array( notice-type, woord, uitleg ), voor Beheer en Overzicht. */
 function cm_license_summary( array $lic, $valid ) {
-    if ( $valid ) return array( 'success', 'Actief', 'De cookiescan en de automatische scan zijn beschikbaar.' );
-    if ( empty( $lic['key'] ) ) return array( 'warning', 'Geen licentie', 'De cookiebanner en de scriptblokkering werken gewoon; alleen de cookiescan is gepauzeerd.' );
+    if ( $valid ) return array( 'success', 'Actief', 'Alle functies zijn beschikbaar, ook ' . cm_premium_features_text() . '.' );
+    if ( empty( $lic['key'] ) ) return array( 'warning', 'Geen licentie', 'De cookiebanner, de blokkering en de handmatige scan werken gewoon. Voor ' . cm_premium_features_text() . ' is een licentie nodig.' );
     $word = isset( $lic['status'] ) && $lic['status'] === 'expired' ? 'Verlopen' : 'Ongeldig';
-    return array( 'warning', $word, 'De cookiebanner en de scriptblokkering blijven werken; de cookiescan is gepauzeerd tot u de licentie verlengt of een geldige sleutel activeert.' );
+    return array( 'warning', $word, 'De cookiebanner, de blokkering en de handmatige scan blijven werken. Voor ' . cm_premium_features_text() . ' is een geldige licentie nodig: verleng de licentie of activeer een andere sleutel.' );
 }
 
 /** Antwoord van de licentieserver → melding. Nooit "gelukt" zonder success. */
@@ -77,7 +77,7 @@ function cm_render_beheer_licentie() {
         echo '<tr><th scope="row">Laatste controle</th><td>' . esc_html( ! empty( $lic['last_check'] ) ? wp_date( 'j F Y, H:i', $lic['last_check'] ) : 'Nog niet gecontroleerd' ) . '</td></tr>';
         echo '</tbody></table>';
         echo '<div>' . cm_admin_action_form( 'license_check', 'Status controleren' ) . ' '
-           . cm_admin_action_form( 'license_deactivate', 'Deactiveren', array(), 'De licentie op deze website deactiveren? De cookiescan pauzeert tot u opnieuw activeert.', 'button button-link-delete' ) . '</div>';
+           . cm_admin_action_form( 'license_deactivate', 'Deactiveren', array(), 'De licentie op deze website deactiveren? De consent log, de privacyverklaring-generator en de automatische scan pauzeren tot u opnieuw activeert.', 'button button-link-delete' ) . '</div>';
     }
 
     echo '<h2>' . esc_html( ! empty( $lic['key'] ) ? 'Andere sleutel activeren' : 'Licentie activeren' ) . '</h2>';
@@ -97,10 +97,10 @@ function cm_admin_license_notice() {
     if ( $page === 'cookiebaas-beheer' && in_array( $tab, array( '', 'licentie' ), true ) ) return;
     $lic  = cm_license_get();
     if ( empty( $lic['key'] ) ) {
-        $text = 'Geen licentie geactiveerd. De cookiebanner en de scriptblokkering werken gewoon door; alleen de cookiescan is gepauzeerd.';
+        $text = 'Geen licentie geactiveerd. De cookiebanner, de blokkering en de handmatige scan werken gewoon; voor ' . cm_premium_features_text() . ' is een licentie nodig.';
         $link = 'Licentie activeren';
     } else {
-        $text = 'Uw licentie is ' . ( isset( $lic['status'] ) && $lic['status'] === 'expired' ? 'verlopen' : 'ongeldig' ) . '. De cookiebanner en de scriptblokkering blijven werken; alleen de cookiescan is gepauzeerd tot u de licentie verlengt.';
+        $text = 'Uw licentie is ' . ( isset( $lic['status'] ) && $lic['status'] === 'expired' ? 'verlopen' : 'ongeldig' ) . '. De cookiebanner, de blokkering en de handmatige scan blijven werken; ' . cm_premium_features_text() . ' zijn gepauzeerd tot u de licentie verlengt.';
         $link = 'Licentie beheren';
     }
     echo '<div class="notice notice-warning"><p><strong>Cookiebaas:</strong> ' . esc_html( $text ) . ' <a href="' . esc_url( cm_admin_page_url( 'cookiebaas-beheer', 'licentie' ) ) . '">' . esc_html( $link ) . '</a></p></div>';
@@ -144,6 +144,14 @@ function cm_import_backup( $raw ) {
     $has_settings = $has( 'settings' ) && $data['settings'];
     $has_cookies  = $has( 'cookie_list' ); // een lege lijst is een geldige backup
     $has_privacy  = $has( 'privacy' ) && $data['privacy'];
+    // De privacyverklaring bewerken is premium, ook via een backup
+    $privacy_skipped = $has_privacy && cm_admin_require_license() !== '';
+    if ( $privacy_skipped ) {
+        $has_privacy = false;
+        if ( ! $has_settings && ! $has_cookies ) {
+            return array( 'ok' => false, 'warning' => false, 'message' => 'De privacyverklaring terugzetten vraagt een licentie. Er is niets gewijzigd.' );
+        }
+    }
     if ( ! $has_settings && ! $has_cookies && ! $has_privacy ) {
         return array( 'ok' => false, 'warning' => false, 'message' => 'De backup bevat geen instellingen, cookielijst of privacyverklaring. Er is niets gewijzigd.' );
     }
@@ -177,6 +185,10 @@ function cm_import_backup( $raw ) {
     $warning = function_exists( 'get_settings_errors' ) && count( get_settings_errors() ) > $errors;
     if ( $warning ) {
         $message .= ' Sommige waarden in de backup waren ongeldig; daar staat nu de standaardwaarde.';
+    }
+    if ( $privacy_skipped ) {
+        $warning  = true;
+        $message .= ' De privacyverklaring is overgeslagen: die terugzetten vraagt een licentie.';
     }
     return array( 'ok' => true, 'warning' => $warning, 'message' => $message );
 }
@@ -217,7 +229,7 @@ function cm_render_beheer_reset() {
     echo '<p>Losse onderdelen zet u op hun eigen plek terug: de kleuren onder Banner › Vormgeving, de cookielijst onder Cookies, de privacyverklaring op de pagina Privacyverklaring, en de consent log onder Consent log › Bewaren en opnieuw vragen.</p>';
 
     echo '<h2>Licentie lokaal wissen</h2>';
-    echo '<p>Wist de licentiegegevens op deze website, zonder de licentieserver te benaderen. Gebruik dit als deactiveren niet lukt. De cookiebanner en de scriptblokkering blijven werken; de cookiescan pauzeert.</p>';
+    echo '<p>Wist de licentiegegevens op deze website, zonder de licentieserver te benaderen. Gebruik dit als deactiveren niet lukt. De cookiebanner, de blokkering en de handmatige scan blijven werken; ' . esc_html( cm_premium_features_text() ) . ' pauzeren.</p>';
     echo '<div>' . cm_admin_action_form( 'license_reset', 'Licentie lokaal wissen', array(), 'De licentiegegevens op deze website wissen?' ) . '</div>';
 
     echo '<h2>Alles resetten</h2>';
@@ -244,6 +256,9 @@ function cm_set_api_key( $key ) {
 }
 
 function cm_render_beheer_geavanceerd() {
+    if ( cm_admin_require_license() !== '' ) {
+        echo cm_admin_premium_notice( 'Consent controleren via de REST API vraagt een licentie; zonder licentie geeft het endpoint een foutmelding.' );
+    }
     $key      = (string) cm_get( 'api_key' );
     $endpoint = rest_url( 'cookiebaas/v1/consent/' );
     echo '<h2>REST API</h2>';
