@@ -3,8 +3,9 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 /* ================================================================
    FRONTEND-AJAX — consent loggen en de geo-check. Via admin-ajax, dus
-   nooit in de paginacache. In 3.0 ongewijzigd verhuisd uit de oude
-   includes/admin.php.
+   nooit in de paginacache. In 3.0 verhuisd uit de oude includes/admin.php
+   en beveiligd: echt IP, herkomstcontrole, ingekorte IP-hash, alleen het
+   pad van de pagina.
 ================================================================ */
 /* ================================================================
    AJAX — GEO-CHECK
@@ -23,15 +24,85 @@ function cm_ajax_geo_check() {
    AJAX — CONSENT LOGGING
 ================================================================ */
 
+/** Automatische keuzes krijgen een eigen methode, zodat het bewijs niet "zelf gekozen" suggereert. */
+function cm_log_methods() {
+    return array( 'accept-all', 'reject-all', 'custom', 'pageload', 'embed-accept', 'geo-auto', 'dnt', 'gpc' );
+}
+
+/**
+ * Het IP-adres van de bezoeker: REMOTE_ADDR, nooit een door de client
+ * meegestuurde header (X-Forwarded-For is te vervalsen en omzeilde de
+ * rate-limit). Achter een betrouwbare proxy (bijv. Cloudflare) kan een site
+ * het echte adres via de filter cm_client_ip doorgeven.
+ */
+function cm_client_ip() {
+    $ip = isset( $_SERVER['REMOTE_ADDR'] ) && is_string( $_SERVER['REMOTE_ADDR'] ) ? trim( $_SERVER['REMOTE_ADDR'] ) : '';
+    return (string) apply_filters( 'cm_client_ip', $ip );
+}
+
+/** IP inkorten vóór het hashen (AVG): IPv4 tot /24, IPv6 tot /48. Ongeldig → ''. */
+function cm_ip_truncate( $ip ) {
+    if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) return preg_replace( '/\.\d+$/', '.0', $ip );
+    if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
+        return inet_ntop( substr( inet_pton( $ip ), 0, 6 ) . str_repeat( "\0", 10 ) );
+    }
+    return '';
+}
+
+/** Eigen sleutel voor de log-hashes (niet de auth-salt van WordPress hergebruiken). */
+function cm_log_hash_key() {
+    $key = get_option( 'cm_log_hash_key' );
+    if ( ! is_string( $key ) || strlen( $key ) < 32 ) {
+        $key = bin2hex( random_bytes( 32 ) );
+        update_option( 'cm_log_hash_key', $key, false );
+    }
+    return $key;
+}
+
+/** Gepseudonimiseerd IP voor de log: ingekort en gehasht met de eigen sleutel. */
+function cm_ip_hash( $ip ) {
+    $short = cm_ip_truncate( $ip );
+    return $short === '' ? '' : hash_hmac( 'sha256', $short, cm_log_hash_key() );
+}
+
+/** Alleen het pad van de pagina bewaren: een querystring kan e-mailadressen of tokens bevatten. */
+function cm_log_clean_url( $raw ) {
+    $raw  = is_string( $raw ) ? $raw : '';
+    $path = strtok( $raw, '?#' );
+    return substr( esc_url_raw( $path === false ? '' : $path ), 0, 500 );
+}
+
+/**
+ * Komt het verzoek van deze website? Browsers sturen bij een POST de Origin
+ * mee; een andere site kan zo geen registraties uit naam van bezoekers
+ * insturen. Zonder Origin (oude browsers, scripts) valt het terug op de
+ * rate-limit per IP.
+ */
+function cm_log_origin_allowed() {
+    $origin = isset( $_SERVER['HTTP_ORIGIN'] ) && is_string( $_SERVER['HTTP_ORIGIN'] ) ? trim( $_SERVER['HTTP_ORIGIN'] ) : '';
+    if ( $origin === '' ) return true;
+    $norm = function ( $url ) { return preg_replace( '/^www\./', '', strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) ) ); };
+    $host = $norm( $origin );
+    return $host !== '' && $host === $norm( home_url() );
+}
+
 add_action( 'wp_ajax_nopriv_cm_log_consent', 'cm_ajax_log_consent' );
 add_action( 'wp_ajax_cm_log_consent',        'cm_ajax_log_consent' );
 function cm_ajax_log_consent() {
     global $wpdb;
     $table = $wpdb->prefix . 'cm_consent_log';
 
+    // Alleen tekstvelden; een array (url[]=x) liet dit endpoint crashen
+    $post = function ( $key ) { return isset( $_POST[ $key ] ) && is_string( $_POST[ $key ] ) ? wp_unslash( $_POST[ $key ] ) : ''; };
+
+    if ( ! cm_log_origin_allowed() ) {
+        wp_send_json_success( array( 'skipped' => 'origin' ) );
+        return;
+    }
+
     // Anti-spam: alleen loggen als het verzoek van een echte bezoeker komt
     // die de banner heeft gezien (pageload-methode mag altijd)
-    $method_raw = isset($_POST['method']) ? sanitize_text_field($_POST['method']) : '';
+    $method_raw = sanitize_text_field( $post( 'method' ) );
     if ( $method_raw !== 'pageload' && empty( $_COOKIE['cc_cm_consent'] ) ) {
         wp_send_json_success( array( 'skipped' => 'no_cookie' ) );
         return;
@@ -48,13 +119,13 @@ function cm_ajax_log_consent() {
         }
     }
 
-    $raw_a      = isset($_POST['analytics'])  ? strval($_POST['analytics'])  : '0';
-    $raw_m      = isset($_POST['marketing'])  ? strval($_POST['marketing'])  : '0';
+    $raw_a      = $post( 'analytics' );
+    $raw_m      = $post( 'marketing' );
     $analytics  = ( $raw_a === '1' || $raw_a === 'true' ) ? 1 : 0;
     $marketing  = ( $raw_m === '1' || $raw_m === 'true' ) ? 1 : 0;
-    $method     = sanitize_text_field( isset($_POST['method'])     ? $_POST['method']     : '' );
-    $session_id = sanitize_text_field( isset($_POST['session_id']) ? $_POST['session_id'] : '' );
-    $url        = esc_url_raw( isset($_POST['url'])                ? $_POST['url']        : '' );
+    $method     = $method_raw;
+    $session_id = substr( sanitize_text_field( $post( 'session_id' ) ), 0, 64 );
+    $url        = cm_log_clean_url( $post( 'url' ) );
     // User agent anonimiseren (AVG) — alleen browser-familie bewaren, geen versienummers of OS
     $ua_raw    = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
     $ua_family = 'Overig';
@@ -69,16 +140,16 @@ function cm_ajax_log_consent() {
     elseif ( stripos($ua_raw, 'Mobile') !== false || stripos($ua_raw, 'Android') !== false && stripos($ua_raw, 'Mobile') !== false ) $ua_family .= ' (Mobiel)';
     else $ua_family .= ' (Desktop)';
 
-    // IP anonimiseren (AVG)
-    $ip_raw  = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : ( isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '' );
-    $ip_raw  = trim(explode(',', $ip_raw)[0]);
-    $ip_hash = hash('sha256', $ip_raw . wp_salt('auth'));
+    // IP pseudonimiseren (AVG): ingekort en gehasht met een eigen sleutel
+    $ip_raw  = cm_client_ip();
+    $ip_hash = cm_ip_hash( $ip_raw );
 
-    // Rate limit per IP-hash: max 20 logs per 10 min. De sessie-limiet hieronder
-    // is te omzeilen (session_id komt uit de request body); deze limiet niet.
+    // Rate limit per volledig IP (alleen als kortlevende transient-sleutel, niet
+    // bewaard): max 20 logs per 10 min. De sessie-limiet hieronder is te omzeilen
+    // (session_id komt uit de request body); deze limiet niet.
     // Geen nonce-check: page caching serveert verouderde nonces waardoor
     // legitieme consents niet meer gelogd zouden worden.
-    $rl_key   = 'cm_rl_' . substr( $ip_hash, 0, 32 );
+    $rl_key   = 'cm_rl_' . substr( hash_hmac( 'sha256', $ip_raw, cm_log_hash_key() ), 0, 32 );
     $rl_count = (int) get_transient( $rl_key );
     if ( $rl_count >= 20 ) {
         wp_send_json_success( array( 'skipped' => 'ip_rate_limit' ) );
@@ -98,7 +169,12 @@ function cm_ajax_log_consent() {
         }
     }
 
-    $method_clean = in_array( $method, array('accept-all','reject-all','custom','pageload','embed-accept'), true ) ? $method : 'custom';
+    $method_clean = in_array( $method, cm_log_methods(), true ) ? $method : 'custom';
+    // Terugkerend bezoek: alleen dat het gebeurde, zonder pagina of IP (dataminimalisatie)
+    if ( $method_clean === 'pageload' ) {
+        $url     = '';
+        $ip_hash = '';
+    }
 
     // Genereer uniek Consent ID (UUID v4 formaat)
     $consent_id = sprintf( '%08x-%04x-4%03x-%04x-%012x',
@@ -127,7 +203,7 @@ function cm_ajax_log_consent() {
         'method'         => $method_clean,
         'ip_hash'        => $ip_hash,
         'user_agent'     => $ua_family,
-        'url'            => substr( $url, 0, 500 ),
+        'url'            => $url,
         'config_hash'    => $config_hash,
         'plugin_version' => CM_VERSION,
         'created_at'     => current_time( 'mysql', false ),
@@ -142,7 +218,6 @@ function cm_ajax_log_consent() {
     }
 
     wp_send_json_success( array(
-        'id'         => $wpdb->insert_id,
         'consent_id' => $consent_id,
         'analytics'  => $analytics,
         'marketing'  => $marketing,

@@ -43,6 +43,7 @@ php tests/test-cache-safety.php
 | `test-cookie-scan.php` | Kennisbank, prefix-matcher (`_` én `-`), Google-cookies op google.com, omgevingsdetectie (login, reacties, wachtwoordposts, WooCommerce, LiteSpeed). |
 | `test-settings-cache.php` | `cm_get()` / `cm_get_flush()` en de automatische flush-hook (v1.8.0). |
 | `test-credit.php` | Gratis versie: vermelding "Cookiebaas" (nofollow, vaste grijze stijl) in banner en voorkeurenvenster zonder geldige licentie, niet met licentie; paginacache alleen geleegd als de geldigheid verandert (ook op de vervaldatum); nofollow blijft in de browser; automatische scan hervat na verlengen. |
+| `test-security.php` | Beveiligingsaudit 3.0: consent log niet te vervalsen (echt IP, herkomstcontrole), alleen pad en ingekorte IP-hash, geen crash op arrays, automatische keuzes als eigen methode; scan alleen eigen site; CSV-formules onschadelijk; licentieantwoord zonder fatal; cookiedatabase pas na geldige download vervangen; uitzonderingen op het pad; geo bij onbekend/Tor → banner; embeds alleen https van bekende diensten; grote pagina niet leeg; Google-ID's vragen unfiltered_html; uninstall en verpakking. |
 
 Nieuwe assertie toevoegen: gebruik `cm_assert( 'omschrijving', $conditie )` binnen
 een `cm_test_group( 'kop' )`. Zie `bootstrap.php` voor beschikbare stubs.

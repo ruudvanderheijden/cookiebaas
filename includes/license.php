@@ -12,9 +12,19 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 /* ================================================================
    CONSTANTEN & OPTIES
    ================================================================ */
+/**
+ * Vast adres van de licentieserver (altijd https). Een oude optie uit 2.x die
+ * elke beheerder kon zetten, wordt niet meer gebruikt; voor een eigen
+ * testserver kan CM_LICENSE_API_URL in wp-config.php gezet worden.
+ */
 function cm_license_api_url() {
-    $url = get_option( 'cm_license_api_url', 'https://cookiebaas.nl' );
+    $url = defined( 'CM_LICENSE_API_URL' ) ? (string) CM_LICENSE_API_URL : 'https://cookiebaas.nl';
     return rtrim( $url, '/' );
+}
+
+/** Tekst uit een antwoord van de licentieserver, of de terugvaltekst (een array of object mag nooit doorlopen). */
+function cm_license_str( $v, $fallback = '' ) {
+    return is_scalar( $v ) && (string) $v !== '' ? (string) $v : (string) $fallback;
 }
 
 function cm_license_get() {
@@ -51,7 +61,7 @@ function cm_license_is_valid() {
 function cm_license_data_is_valid( $lic ) {
     $lic = is_array( $lic ) ? $lic : array();
     if ( empty( $lic['key'] ) || ! isset( $lic['status'] ) || $lic['status'] !== 'active' ) return false;
-    if ( ! empty( $lic['expires_at'] ) && strtotime( $lic['expires_at'] ) < time() ) return false;
+    if ( ! empty( $lic['expires_at'] ) && ( ! is_string( $lic['expires_at'] ) || strtotime( $lic['expires_at'] ) < time() ) ) return false;
     return true;
 }
 
@@ -150,18 +160,18 @@ function cm_license_activate( $key ) {
 
     if ( ! empty( $result['success'] ) ) {
         $lic['status']       = 'active';
-        $lic['expires_at']   = $result['expires_at'] ?? '';
-        $lic['max_sites']    = $result['max_sites'] ?? 1;
+        $lic['expires_at']   = cm_license_str( $result['expires_at'] ?? '' );
+        $lic['max_sites']    = (int) ( is_scalar( $result['max_sites'] ?? null ) ? $result['max_sites'] : 1 );
         $lic['last_check']   = time();
         $lic['last_success'] = time();
         cm_license_save( $lic );
-        return array( 'success' => true, 'message' => $result['message'] ?? 'Licentie geactiveerd.' );
+        return array( 'success' => true, 'message' => cm_license_str( $result['message'] ?? '', 'Licentie geactiveerd.' ) );
     }
 
     $lic['status'] = 'invalid';
     $lic['last_check'] = time();
     cm_license_save( $lic );
-    return array( 'success' => false, 'error' => $result['error'] ?? 'Activatie mislukt.' );
+    return array( 'success' => false, 'error' => cm_license_str( $result['error'] ?? '', 'Activatie mislukt.' ) );
 }
 
 /* ================================================================
@@ -186,7 +196,7 @@ function cm_license_deactivate() {
     cm_license_save( $lic );
 
     if ( ! empty( $result['success'] ) ) {
-        return array( 'success' => true, 'message' => $result['message'] ?? 'Licentie gedeactiveerd.' );
+        return array( 'success' => true, 'message' => cm_license_str( $result['message'] ?? '', 'Licentie gedeactiveerd.' ) );
     }
 
     return array( 'success' => true, 'remote' => false, 'message' => 'De licentie is op deze website gedeactiveerd, maar de licentieserver was niet bereikbaar. Deactiveer de website eventueel ook in uw account op cookiebaas.nl.' );
@@ -209,12 +219,13 @@ function cm_license_check_status() {
     if ( isset( $result['valid'] ) ) {
         if ( $result['valid'] ) {
             $lic['status']       = 'active';
-            $lic['expires_at']   = $result['expires_at'] ?? $lic['expires_at'];
-            $lic['max_sites']    = $result['max_sites'] ?? $lic['max_sites'];
+            $lic['expires_at']   = cm_license_str( $result['expires_at'] ?? '', $lic['expires_at'] );
+            $lic['max_sites']    = (int) ( is_scalar( $result['max_sites'] ?? null ) ? $result['max_sites'] : $lic['max_sites'] );
             $lic['last_success'] = time();
         } else {
             // Licentie niet meer geldig: verlopen, ingetrokken, of domein ontkoppeld
-            $lic['status'] = $result['status'] ?? 'invalid';
+            $status        = sanitize_key( cm_license_str( $result['status'] ?? '', 'invalid' ) );
+            $lic['status'] = $status === 'active' || $status === '' ? 'invalid' : $status;
         }
     }
     // Bij netwerkfouten: behoud huidige status (niet direct blokkeren)

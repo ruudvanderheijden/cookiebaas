@@ -65,6 +65,9 @@ function cm_log_method_label( $method ) {
         'custom'       => 'Aangepast',
         'embed-accept' => 'Geaccepteerd via embed',
         'pageload'     => 'Terugkerend bezoek',
+        'geo-auto'     => 'Automatisch geaccepteerd (buiten de EU)',
+        'dnt'          => 'Automatisch geweigerd (Do Not Track)',
+        'gpc'          => 'Automatisch geweigerd (Global Privacy Control)',
     );
     return isset( $labels[ $method ] ) ? $labels[ $method ] : (string) $method;
 }
@@ -84,8 +87,8 @@ function cm_log_categories_text( array $item ) {
  */
 function cm_log_where( $like, $filter ) {
     $methods = array(
-        'accept-all' => array( 'accept-all', 'embed-accept' ),
-        'reject-all' => array( 'reject-all' ),
+        'accept-all' => array( 'accept-all', 'embed-accept', 'geo-auto' ),
+        'reject-all' => array( 'reject-all', 'dnt', 'gpc' ),
         'custom'     => array( 'custom' ),
     );
     $where = array();
@@ -171,7 +174,8 @@ function cm_log_handle_bulk() {
 /** Rij-acties: Bewijs | Verwijderen. */
 function cm_log_row_actions( $consent_id ) {
     $proof  = cm_admin_page_url( 'cookiebaas-log', 'registraties', array( 'consent' => $consent_id ) );
-    $delete = cm_admin_action_url( 'delete_consent', array( 'consent' => $consent_id ) );
+    // Nonce gebonden aan deze registratie: een uitgelekte link verwijdert geen andere
+    $delete = wp_nonce_url( add_query_arg( array( 'action' => 'cm_delete_consent', 'consent' => $consent_id ), admin_url( 'admin-post.php' ) ), 'cm_delete_consent_' . $consent_id );
     return array(
         'proof'  => '<a href="' . esc_url( $proof ) . '">Bewijs</a>',
         'delete' => '<a href="' . esc_url( $delete ) . '" class="submitdelete" data-cm-confirm="' . esc_attr( 'Deze registratie definitief verwijderen?' ) . '">Verwijderen</a>',
@@ -200,7 +204,7 @@ function cm_log_proof_rows( array $row ) {
         array( 'Marketingcookies', $yes( 'marketing' ) ),
         array( 'Pagina', $get( 'url' ) ),
         array( 'Browser en apparaat', $get( 'user_agent' ) ),
-        array( 'IP-adres (gehasht)', $get( 'ip_hash' ) ),
+        array( 'IP-adres (ingekort en gehasht)', $get( 'ip_hash' ) ),
         array( 'Sessie', $get( 'session_id' ) ),
         array( 'Configuratie-hash', $get( 'config_hash' ) ),
         array( 'Pluginversie', $get( 'plugin_version' ) ),
@@ -215,7 +219,7 @@ function cm_log_render_proof( $consent_id ) {
         return;
     }
     echo '<h2>Bewijs van toestemming</h2>';
-    echo '<p>Dit is alles wat Cookiebaas over deze keuze heeft opgeslagen. Het IP-adres is alleen gehasht bewaard en niet terug te rekenen.</p>';
+    echo '<p>Dit is alles wat Cookiebaas over deze keuze heeft opgeslagen. Het IP-adres is ingekort en gehasht bewaard, en is niet te herleiden tot één adres.</p>';
     echo '<table class="form-table" role="presentation"><tbody>';
     foreach ( cm_log_proof_rows( $row ) as $r ) {
         echo '<tr><th scope="row">' . esc_html( $r[0] ) . '</th><td>' . ( $r[1] !== '' ? esc_html( $r[1] ) : '—' ) . '</td></tr>';
@@ -357,12 +361,22 @@ function cm_log_clear() {
     return $wpdb->query( 'DELETE FROM `' . cm_log_table() . '`' ) !== false;
 }
 
+/** Eén registratie verwijderen (rij-actie). Eigen handler: de nonce hoort bij deze registratie. */
+add_action( 'admin_post_cm_delete_consent', 'cm_log_handle_delete_one' );
+function cm_log_handle_delete_one() {
+    if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Geen toegang.', '', array( 'response' => 403 ) );
+    $id = isset( $_GET['consent'] ) && is_string( $_GET['consent'] ) ? wp_unslash( $_GET['consent'] ) : '';
+    check_admin_referer( 'cm_delete_consent_' . $id );
+    if ( cm_admin_require_license() !== '' ) {
+        $code = 'premium-required';
+    } else {
+        $code = cm_log_delete( array( $id ) ) === false ? 'action-failed' : 'log-deleted';
+    }
+    wp_safe_redirect( cm_admin_redirect_url( wp_get_referer(), $code ) );
+    exit;
+}
+
 if ( function_exists( 'cm_admin_register_action' ) ) {
-    cm_admin_register_action( 'delete_consent', function () {
-        if ( cm_admin_require_license() !== '' ) return 'premium-required';
-        $n = cm_log_delete( array( isset( $_GET['consent'] ) ? wp_unslash( $_GET['consent'] ) : '' ) );
-        return $n === false ? 'action-failed' : 'log-deleted';
-    } );
 
     cm_admin_register_action( 'export_log', function () {
         global $wpdb;

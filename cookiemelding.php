@@ -131,6 +131,8 @@ add_action( 'plugins_loaded', function() {
     if ( version_compare( $stored_version, CM_VERSION, '<' ) ) {
         // 3.0: eenmalig laten zien dat de admin een nieuwe indeling heeft
         if ( function_exists( 'cm_flag_admin3_notice' ) ) cm_flag_admin3_notice( $stored_version );
+        // 3.0: het adres van de licentieserver staat vast; de oude optie uit 2.x opruimen
+        if ( version_compare( $stored_version, '3.0.0', '<' ) ) delete_option( 'cm_license_api_url' );
 
         // Tabellen aanmaken/upgraden — alleen bij versie-wissel, niet op elke
         // pageload (dbDelta + INFORMATION_SCHEMA query zijn relatief duur)
@@ -568,6 +570,9 @@ function cm_rest_get_consent( $request ) {
         'custom'       => 'Aangepast',
         'pageload'     => 'Terugkerend bezoek',
         'embed-accept' => 'Geaccepteerd via embed',
+        'geo-auto'     => 'Automatisch geaccepteerd (buiten de EU)',
+        'dnt'          => 'Automatisch geweigerd (Do Not Track)',
+        'gpc'          => 'Automatisch geweigerd (Global Privacy Control)',
     );
 
     return rest_ensure_response( array(
@@ -605,12 +610,12 @@ function cm_privacy_exporter( $email_address, $page = 1 ) {
     $export_items[] = array(
         'group_id'          => 'cookiebaas_consent',
         'group_label'       => 'Cookiebaas — Toestemmingsregistratie',
-        'group_description' => 'Geanonimiseerde registraties van cookietoestemming. IP-adressen worden als SHA-256 hash opgeslagen en zijn niet herleidbaar naar een persoon.',
+        'group_description' => 'Gepseudonimiseerde registraties van cookietoestemming. IP-adressen worden ingekort en daarna gehasht opgeslagen; ze zijn niet te herleiden tot één adres of persoon.',
         'item_id'           => 'cookiebaas_policy',
         'data'              => array(
             array(
                 'name'  => 'Opgeslagen gegevens',
-                'value' => 'Consent ID, geanonimiseerde browser-familie, gehashed IP-adres, toestemmingskeuze, tijdstip, pagina-URL.',
+                'value' => 'Consent ID, browser-familie en apparaattype, ingekort en gehasht IP-adres, toestemmingskeuze, tijdstip en het pad van de pagina (zonder querystring). Bij een terugkerend bezoek alleen de keuze en het tijdstip.',
             ),
             array(
                 'name'  => 'Bewaartermijn',
@@ -620,7 +625,7 @@ function cm_privacy_exporter( $email_address, $page = 1 ) {
             ),
             array(
                 'name'  => 'Herleidbaarheid',
-                'value' => 'IP-adressen zijn gehashed met een unieke site-sleutel en kunnen niet worden teruggeleid naar een persoon of e-mailadres.',
+                'value' => 'IP-adressen worden eerst ingekort (IPv4 tot /24, IPv6 tot /48) en dan gehasht met een eigen sleutel van deze website. Ze zijn niet te herleiden tot één adres, persoon of e-mailadres.',
             ),
         ),
     );
@@ -647,8 +652,8 @@ function cm_privacy_eraser( $email_address, $page = 1 ) {
         'items_retained' => true,
         'messages'       => array(
             'Cookiebaas slaat geen e-mailadressen op in de consent log. '
-            . 'Logs worden opgeslagen met een geanonimiseerd IP-hash en zijn niet koppelbaar aan een e-mailadres. '
-            . 'Wilt u alle logs verwijderen? Ga naar Cookiebaas → Reset → Log leegmaken.',
+            . 'Logs worden opgeslagen met een ingekort en gehasht IP-adres en zijn niet koppelbaar aan een e-mailadres. '
+            . 'Wilt u alle logs verwijderen? Ga naar Cookiebaas › Consent log › Bewaren en opnieuw vragen › Log leegmaken.',
         ),
         'done'           => true,
     );

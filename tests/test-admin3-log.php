@@ -45,9 +45,9 @@ $good = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d';
 
 cm_test_group( 'Filter en zoeken (serverside)' );
 list( $sql, $args ) = cm_log_where( '', 'accept-all' );
-cm_assert( 'akkoord telt embed-accept mee (zoals de statistiek)', $sql === 'WHERE method IN (%s,%s)' && $args === array( 'accept-all', 'embed-accept' ) );
+cm_assert( 'akkoord telt embed-accept en automatisch akkoord (geo) mee, zoals de statistiek', $sql === 'WHERE method IN (%s,%s,%s)' && $args === array( 'accept-all', 'embed-accept', 'geo-auto' ) );
 list( $sql, $args ) = cm_log_where( '%abc%', 'reject-all' );
-cm_assert( 'zoeken + filter combineren', $sql === 'WHERE consent_id LIKE %s AND method IN (%s)' && $args === array( '%abc%', 'reject-all' ) );
+cm_assert( 'zoeken + filter combineren; geweigerd telt DNT en GPC mee', $sql === 'WHERE consent_id LIKE %s AND method IN (%s,%s,%s)' && $args === array( '%abc%', 'reject-all', 'dnt', 'gpc' ) );
 list( $sql, $args ) = cm_log_where( '', 'all' );
 cm_assert( 'alles = geen WHERE', $sql === '' && $args === array() );
 list( $sql, $args ) = cm_log_where( '', "x' OR 1=1" );
@@ -86,7 +86,7 @@ $wpdb->result = 2;
 cm_test_group( 'Rij-acties' );
 $ra = cm_log_row_actions( $good );
 cm_assert( 'Bewijs opent het detailscherm', strpos( $ra['proof'], 'page=cookiebaas-log' ) !== false && strpos( $ra['proof'], 'consent=' . $good ) !== false );
-cm_assert( 'Verwijderen via admin-post, met eigen nonce en bevestiging', strpos( $ra['delete'], 'action=cm_delete_consent' ) !== false && strpos( $ra['delete'], 'nonce-cm_delete_consent' ) !== false && strpos( $ra['delete'], 'data-cm-confirm=' ) !== false );
+cm_assert( 'Verwijderen via admin-post, nonce gebonden aan deze registratie, met bevestiging', strpos( $ra['delete'], 'action=cm_delete_consent' ) !== false && strpos( $ra['delete'], 'nonce-cm_delete_consent_' . $good ) !== false && strpos( $ra['delete'], 'data-cm-confirm=' ) !== false );
 
 cm_test_group( 'Labels' );
 cm_assert( 'bekende methodes', cm_log_method_label( 'embed-accept' ) === 'Geaccepteerd via embed' && cm_log_method_label( 'pageload' ) === 'Terugkerend bezoek' );
@@ -120,7 +120,7 @@ cm_assert( 'rij met label, Ja/Nee en een streepje voor een lege ID', $rows[1] ==
 cm_test_group( 'Bewijs' );
 $proof = cm_log_proof_rows( array( 'consent_id' => $good, 'method' => 'custom', 'analytics' => '0', 'marketing' => '1', 'url' => 'https://x.test/p', 'user_agent' => 'Firefox (Desktop)', 'ip_hash' => 'abc', 'session_id' => 's1', 'config_hash' => 'h1', 'plugin_version' => '2.4.6', 'created_at' => '2026-01-02 10:00:00' ) );
 $labels = array_map( function ( $r ) { return $r[0]; }, $proof );
-cm_assert( 'alle opgeslagen velden staan erin', $labels === array( 'Consent-ID', 'Datum en tijd', 'Keuze', 'Analytische cookies', 'Marketingcookies', 'Pagina', 'Browser en apparaat', 'IP-adres (gehasht)', 'Sessie', 'Configuratie-hash', 'Pluginversie' ) );
+cm_assert( 'alle opgeslagen velden staan erin', $labels === array( 'Consent-ID', 'Datum en tijd', 'Keuze', 'Analytische cookies', 'Marketingcookies', 'Pagina', 'Browser en apparaat', 'IP-adres (ingekort en gehasht)', 'Sessie', 'Configuratie-hash', 'Pluginversie' ) );
 cm_assert( 'keuze als label, categorieën als Ja/Nee', $proof[2][1] === 'Aangepast' && $proof[3][1] === 'Nee' && $proof[4][1] === 'Ja' );
 cm_assert( 'datum via mysql2date', $proof[1][1] === 'fmt:2026-01-02 10:00:00' );
 cm_assert( 'ontbrekend veld → leeg, geen notice', cm_log_proof_rows( array() )[5][1] === '' );

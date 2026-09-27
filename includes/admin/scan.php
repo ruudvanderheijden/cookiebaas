@@ -27,10 +27,16 @@ function cm_ajax_import_cookie_db() {
         wp_send_json_error( array( 'msg' => 'Download mislukt: ' . $response->get_error_message() ) );
         return;
     }
+    if ( (int) wp_remote_retrieve_response_code( $response ) !== 200 ) {
+        wp_send_json_error( array( 'msg' => 'Download mislukt (HTTP ' . (int) wp_remote_retrieve_response_code( $response ) . '). De bestaande database is niet gewijzigd.' ) );
+        return;
+    }
 
-    $body = wp_remote_retrieve_body( $response );
-    if ( empty( $body ) ) {
-        wp_send_json_error( array( 'msg' => 'Lege response ontvangen.' ) );
+    // Eerst alles controleren en inlezen; pas bij een geldig bestand de tabel vervangen
+    // (een foutpagina of half bestand zou de database anders leegmaken)
+    $parsed = cm_cookie_db_parse( wp_remote_retrieve_body( $response ) );
+    if ( count( $parsed['rows'] ) < 500 ) {
+        wp_send_json_error( array( 'msg' => 'Het gedownloade bestand lijkt niet op de Open Cookie Database. De bestaande database is niet gewijzigd.' ) );
         return;
     }
 
@@ -40,64 +46,10 @@ function cm_ajax_import_cookie_db() {
     // Leeg de tabel en herlaad
     $wpdb->query( "TRUNCATE TABLE {$table}" );
 
-    // CSV parsen
-    $lines   = explode( "\n", str_replace( "\r\n", "\n", $body ) );
-    $header  = null;
     $imported = 0;
-    $skipped  = 0;
-
-    // Categorie mapping
-    $cat_map = array(
-        'Functional'      => 'functional',
-        'Analytics'       => 'analytics',
-        'Marketing'       => 'marketing',
-        'Personalization' => 'functional',
-        'Security'        => 'functional',
-    );
-
-    foreach ( $lines as $line ) {
-        $line = trim( $line );
-        if ( empty( $line ) ) continue;
-
-        // Eenvoudige CSV-parser die quoted velden ondersteunt
-        $fields = cm_parse_csv_line( $line );
-        if ( ! $fields || count( $fields ) < 9 ) { $skipped++; continue; }
-
-        // Eerste rij = header
-        if ( $header === null ) {
-            $header = $fields;
-            continue;
-        }
-
-        // Kolommen: ID,Platform,Category,Cookie/Data Key name,Domain,Description,Retention period,Data Controller,User Privacy & GDPR Rights Portals,Wildcard match
-        $cookie_id   = sanitize_text_field( $fields[0] );
-        $platform    = sanitize_text_field( $fields[1] );
-        $category_raw= sanitize_text_field( $fields[2] );
-        $cookie_name = sanitize_text_field( $fields[3] );
-        $domain      = sanitize_text_field( $fields[4] );
-        $description = sanitize_textarea_field( $fields[5] );
-        $retention   = cm_translate_retention( sanitize_text_field( $fields[6] ) );
-        $controller  = sanitize_text_field( $fields[7] );
-        $privacy_url = esc_url_raw( $fields[8] );
-        $wildcard    = isset( $fields[9] ) ? intval( $fields[9] ) : 0;
-
-        if ( empty( $cookie_name ) ) { $skipped++; continue; }
-
-        $category = isset( $cat_map[ $category_raw ] ) ? $cat_map[ $category_raw ] : 'functional';
-
-        $wpdb->insert( $table, array(
-            'cookie_id'   => $cookie_id,
-            'platform'    => $platform,
-            'category'    => $category,
-            'cookie_name' => $cookie_name,
-            'domain'      => $domain,
-            'description' => $description,
-            'retention'   => $retention,
-            'controller'  => $controller,
-            'privacy_url' => $privacy_url,
-            'wildcard'    => $wildcard,
-        ), array('%s','%s','%s','%s','%s','%s','%s','%s','%s','%d') );
-
+    $skipped  = $parsed['skipped'];
+    foreach ( $parsed['rows'] as $row ) {
+        $wpdb->insert( $table, $row, array('%s','%s','%s','%s','%s','%s','%s','%s','%s','%d') );
         if ( $wpdb->insert_id ) $imported++;
         else $skipped++;
     }
@@ -116,6 +68,52 @@ function cm_ajax_import_cookie_db() {
 /**
  * Eenvoudige CSV-regelparser die quoted velden met komma's ondersteunt.
  */
+/**
+ * CSV van de Open Cookie Database → rijen voor {prefix}cm_cookie_db. De eerste
+ * rij moet de verwachte kop zijn (ID, Platform, Category, …); anders geen rijen.
+ * @return array( 'rows' => array, 'skipped' => int )
+ */
+function cm_cookie_db_parse( $body ) {
+    $rows    = array();
+    $skipped = 0;
+    $header  = null;
+    $cat_map = array(
+        'Functional'      => 'functional',
+        'Analytics'       => 'analytics',
+        'Marketing'       => 'marketing',
+        'Personalization' => 'functional',
+        'Security'        => 'functional',
+    );
+    foreach ( explode( "\n", str_replace( "\r\n", "\n", (string) $body ) ) as $line ) {
+        $line = trim( $line );
+        if ( $line === '' ) continue;
+        $fields = cm_parse_csv_line( $line );
+        if ( ! $fields || count( $fields ) < 9 ) { $skipped++; continue; }
+        if ( $header === null ) {
+            $header = $fields;
+            if ( strcasecmp( trim( $header[0] ), 'ID' ) !== 0 || stripos( $header[3], 'name' ) === false ) return array( 'rows' => array(), 'skipped' => $skipped );
+            continue;
+        }
+        // Kolommen: ID,Platform,Category,Cookie/Data Key name,Domain,Description,Retention period,Data Controller,User Privacy & GDPR Rights Portals,Wildcard match
+        $cookie_name = sanitize_text_field( $fields[3] );
+        if ( $cookie_name === '' ) { $skipped++; continue; }
+        $category_raw = sanitize_text_field( $fields[2] );
+        $rows[] = array(
+            'cookie_id'   => sanitize_text_field( $fields[0] ),
+            'platform'    => sanitize_text_field( $fields[1] ),
+            'category'    => isset( $cat_map[ $category_raw ] ) ? $cat_map[ $category_raw ] : 'functional',
+            'cookie_name' => $cookie_name,
+            'domain'      => sanitize_text_field( $fields[4] ),
+            'description' => sanitize_textarea_field( $fields[5] ),
+            'retention'   => cm_translate_retention( sanitize_text_field( $fields[6] ) ),
+            'controller'  => sanitize_text_field( $fields[7] ),
+            'privacy_url' => esc_url_raw( $fields[8] ),
+            'wildcard'    => isset( $fields[9] ) ? intval( $fields[9] ) : 0,
+        );
+    }
+    return array( 'rows' => $rows, 'skipped' => $skipped );
+}
+
 function cm_parse_csv_line( $line ) {
     $fields = array();
     $i      = 0;
@@ -187,15 +185,28 @@ add_action( 'wp_ajax_cm_scan_batch', 'cm_ajax_scan_batch' );
 /**
  * Stap 2: Scant een batch van URLs en geeft gevonden cookies terug.
  */
+/**
+ * Alleen http(s)-adressen van deze website (zelfde host als home_url). Zonder
+ * deze controle liet de scan de server elke opgegeven URL ophalen, ook interne
+ * adressen (SSRF).
+ */
+function cm_scan_filter_urls( array $urls ) {
+    $home = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+    $out  = array();
+    foreach ( $urls as $u ) {
+        if ( ! is_string( $u ) ) continue;
+        $u = esc_url_raw( $u, array( 'http', 'https' ) );
+        if ( $u !== '' && strtolower( (string) wp_parse_url( $u, PHP_URL_HOST ) ) === $home ) $out[] = $u;
+    }
+    return array_values( array_unique( $out ) );
+}
+
 function cm_ajax_scan_batch() {
     cm_admin_verify_ajax( 'scan' );
     @set_time_limit( 120 );
 
-    $urls = isset($_POST['urls']) ? (array) $_POST['urls'] : array();
+    $urls = cm_scan_filter_urls( isset( $_POST['urls'] ) ? (array) wp_unslash( $_POST['urls'] ) : array() );
     if ( empty($urls) ) wp_send_json_success( array( 'cookies' => array(), 'scanned' => 0 ) );
-
-    // Sanitize URLs
-    $urls = array_map( 'esc_url_raw', $urls );
 
     // Hergebruik de kennisbank en lookup-logica uit de hoofdscanner
     $db_count = (int) get_option('cm_cookie_db_count', 0);
@@ -245,14 +256,16 @@ function cm_ajax_scan_batch() {
     $litespeed_seen = false;
 
     foreach ( $urls as $url ) {
-        $response = wp_remote_get( $url, array(
+        // wp_safe_remote_get controleert ook elke doorverwijzing (geen interne adressen)
+        $response = wp_safe_remote_get( $url, array(
             'timeout'    => 12,
             'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (compatible; CookieScan/2.0)',
             'sslverify'  => true,
             'redirection'=> 5,
         ));
         if ( is_wp_error( $response ) && strpos( $response->get_error_message(), 'cURL error 60' ) !== false ) {
-            $response = wp_remote_get( $url, array(
+            // Eigen site met een zelfondertekend certificaat (bijv. lokaal): alleen de eigen host, zie cm_scan_filter_urls
+            $response = wp_safe_remote_get( $url, array(
                 'timeout' => 12, 'user-agent' => 'CookieScan/2.0', 'sslverify' => false, 'redirection' => 5,
             ));
         }

@@ -17,8 +17,8 @@ function cm_overzicht_data() {
     global $wpdb;
     $table = cm_log_table();
     $stats = $wpdb->get_row(
-        "SELECT SUM(CASE WHEN method IN ('accept-all','embed-accept') THEN 1 ELSE 0 END) AS accept,
-                SUM(CASE WHEN method = 'reject-all' THEN 1 ELSE 0 END) AS reject,
+        "SELECT SUM(CASE WHEN method IN ('accept-all','embed-accept','geo-auto') THEN 1 ELSE 0 END) AS accept,
+                SUM(CASE WHEN method IN ('reject-all','dnt','gpc') THEN 1 ELSE 0 END) AS reject,
                 SUM(CASE WHEN method = 'custom' THEN 1 ELSE 0 END) AS custom
          FROM `{$table}` WHERE created_at >= NOW() - INTERVAL 30 DAY AND method != 'pageload'",
         ARRAY_A

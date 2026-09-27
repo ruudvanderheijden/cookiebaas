@@ -288,8 +288,12 @@ function cm_requires_consent_banner() {
         // EU-27
         'AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','GR','HR','HU',
         'IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK',
+        // EU-gebieden met een eigen landcode (ultraperifere gebieden, Åland)
+        'RE','GP','MQ','GF','YT','MF','AX',
         // EEA
         'IS','LI','NO',
+        // Kroongebieden met vergelijkbare wetgeving
+        'JE','GG','IM',
         // Vergelijkbare wetgeving
         'GB', // UK GDPR
         'CH', // nDSG (Zwitserland)
@@ -325,6 +329,8 @@ function cm_requires_consent_banner() {
 
     // Geen land-header gevonden: veiligheidshalve banner tonen
     if ( ! $country ) return true;
+    // Onbekend, Tor, anonieme proxy e.d. (XX, T1, A1, …): ook veiligheidshalve banner
+    if ( ! preg_match( '/^[A-Z]{2}$/', $country ) || in_array( $country, array( 'XX', 'T1', 'A1', 'A2', 'O1', 'EU', 'AP' ), true ) ) return true;
 
     return in_array( $country, $consent_countries, true );
 }
@@ -651,8 +657,14 @@ function cm_filter_buffer( $html ) {
     // browser een geldige toestemming in de cookie vindt.
     $config = cm_blocker_config();
 
+    // Grote pagina's (bijv. ~1 MB inline JSON) mogen PCRE niet laten vastlopen:
+    // preg_replace_callback geeft dan null en de hele pagina zou leeg worden.
+    if ( (int) ini_get( 'pcre.backtrack_limit' ) < strlen( $html ) * 2 ) {
+        @ini_set( 'pcre.backtrack_limit', (string) ( strlen( $html ) * 2 ) );
+    }
+
     // Blokkeer externe scripts (match op src)
-    $html = preg_replace_callback(
+    $next = preg_replace_callback(
         '/<script(\s[^>]*)?>/i',
         function( $matches ) use ( $config ) {
             $tag = $matches[0];
@@ -666,9 +678,10 @@ function cm_filter_buffer( $html ) {
         },
         $html
     );
+    if ( is_string( $next ) ) $html = $next; // bij een PCRE-fout de pagina ongewijzigd laten
 
     // Blokkeer inline scripts (match op de scripttekst)
-    $html = preg_replace_callback(
+    $next = preg_replace_callback(
         '/<script(?:\s[^>]*)?>[\s\S]*?<\/script>/i',
         function( $matches ) use ( $config ) {
             $b = $matches[0];
@@ -681,10 +694,11 @@ function cm_filter_buffer( $html ) {
         },
         $html
     );
+    if ( is_string( $next ) ) $html = $next; // bij een PCRE-fout de pagina ongewijzigd laten
 
     // Blokkeer iframes van bekende embed-domeinen (YouTube, Vimeo, etc.)
     if ( cm_get('embed_blocker_enabled') ) {
-        $html = preg_replace_callback(
+        $next = preg_replace_callback(
             '/<iframe\s[^>]*(?:\/>|>[\s\S]*?<\/iframe>)/i',
             function( $matches ) {
                 $tag = $matches[0];
@@ -702,6 +716,7 @@ function cm_filter_buffer( $html ) {
             },
             $html
         );
+        if ( is_string( $next ) ) $html = $next; // bij een PCRE-fout de pagina ongewijzigd laten
     }
 
     return $html;
@@ -894,12 +909,22 @@ function cm_output_script_blocker() {
 /* ================================================================
    PAGINA-UITZONDERINGEN
 ================================================================ */
+/**
+ * Alleen het pad van het verzoek, zonder querystring of fragment. Uitzonderingen
+ * mogen niet via de querystring te triggeren zijn: ?utm_source=wp-login.php zou
+ * de banner anders uitzetten, en caches die utm-parameters negeren, bewaren
+ * die pagina dan voor iedereen zonder banner.
+ */
+function cm_request_path() {
+    $uri = isset( $_SERVER['REQUEST_URI'] ) && is_string( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+    return (string) wp_parse_url( $uri, PHP_URL_PATH );
+}
+
 function cm_is_excluded_page() {
     // 1. WordPress login/registratie pagina
     if ( cm_get('exclude_login_page') ) {
-        $uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-        if ( strpos( $uri, 'wp-login.php' ) !== false ) return true;
-        if ( strpos( $uri, 'wp-register.php' ) !== false ) return true;
+        $path = cm_request_path();
+        if ( substr( $path, -12 ) === 'wp-login.php' || substr( $path, -15 ) === 'wp-register.php' ) return true;
     }
 
     // 2. WooCommerce checkout, betaling, bestellingsbevestiging
@@ -922,10 +947,10 @@ function cm_is_excluded_page() {
     // 4. URL-patronen
     $patterns_raw = cm_get('exclude_url_patterns');
     if ( $patterns_raw ) {
-        $uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+        $path = cm_request_path();
         $patterns = array_filter( array_map( 'trim', explode( ',', $patterns_raw ) ) );
         foreach ( $patterns as $pattern ) {
-            if ( $pattern && strpos( $uri, $pattern ) !== false ) return true;
+            if ( $pattern && strpos( $path, $pattern ) !== false ) return true;
         }
     }
 
@@ -1367,6 +1392,8 @@ function cm_render_frontend() {
         var SHOW_FLOAT        = <?php echo cm_get('show_float_btn') ? 'true' : 'false'; ?>;
         var RELOAD_ON_ACCEPT  = <?php echo cm_get('reload_after_consent') ? 'true' : 'false'; ?>;
         var AJAX_URL          = '<?php echo esc_js( site_url("/wp-admin/admin-ajax.php") ); ?>';
+        // Bekende embed-diensten: alleen daarvan wordt een iframe teruggezet (zie releaseEmbeds)
+        var EMBED_HOSTS       = <?php echo wp_json_encode( array_keys( cm_get_embed_domains() ) ); ?>;
         var ANALYTICS_DEFAULT = <?php echo cm_get('analytics_default') ? 'true' : 'false'; ?>;
         var RESPECT_DNT       = <?php echo cm_get('respect_dnt') ? 'true' : 'false'; ?>;
         var RESPECT_GPC       = <?php echo cm_get('respect_gpc') ? 'true' : 'false'; ?>;
@@ -1492,6 +1519,37 @@ function cm_render_frontend() {
             iframe.removeAttribute('height');
         }
 
+        /* Een placeholder kan ook door een auteur zelf in een bericht zijn gezet.
+         * Zet daarom nooit ruwe HTML terug, maar alleen een nieuw iframe met een
+         * https-adres van een bekende embed-dienst (anders: XSS). */
+        function safeEmbedUrl(src) {
+            try {
+                var u = new URL(src, location.href);
+                if (u.protocol !== 'https:') return '';
+                var h = u.hostname.toLowerCase();
+                for (var i = 0; i < EMBED_HOSTS.length; i++) {
+                    var parts = EMBED_HOSTS[i].split('/');
+                    var d = parts[0], path = parts.length > 1 ? '/' + parts.slice(1).join('/') : '';
+                    var hostOk = h === d || h.slice(-(d.length + 1)) === '.' + d;
+                    if (hostOk && (!path || u.pathname.indexOf(path) === 0)) return u.href;
+                }
+            } catch (e) {}
+            return '';
+        }
+        var EMBED_ATTRS = ['width', 'height', 'title', 'name', 'allow', 'allowfullscreen', 'frameborder', 'loading', 'referrerpolicy', 'sandbox', 'class', 'style'];
+        function buildEmbed(encodedTag) {
+            var t = document.createElement('template');
+            t.innerHTML = atob(encodedTag);   // inert: in een template draait niets
+            var orig = t.content.firstElementChild;
+            if (!orig || orig.tagName !== 'IFRAME') return null;
+            var url = safeEmbedUrl(orig.getAttribute('src') || orig.getAttribute('data-src') || '');
+            if (!url) return null;
+            var f = document.createElement('iframe');
+            EMBED_ATTRS.forEach(function (a) { if (orig.hasAttribute(a)) f.setAttribute(a, orig.getAttribute(a)); });
+            f.src = url;
+            return f;
+        }
+
         function releaseEmbeds(type) {
             // 1. Placeholders (gemaakt door PHP output buffer)
             document.querySelectorAll('.cm-embed-placeholder[data-cm-embed-cat="' + type + '"]').forEach(function(ph) {
@@ -1499,21 +1557,19 @@ function cm_render_frontend() {
                 var restored = false;
                 if (encodedTag) {
                     try {
-                        var originalHtml = atob(encodedTag);
-                        // insertAdjacentHTML plaatst het iframe direct in het live
-                        // document — een iframe verplaatsen vanuit een detached node
-                        // laadt in sommige browsers niet.
-                        ph.insertAdjacentHTML('afterend', originalHtml);
-                        var iframe = ph.nextElementSibling;
-                        if (iframe && iframe.tagName === 'IFRAME') {
+                        // Nieuw element in het live document (een iframe uit een
+                        // detached node laadt in sommige browsers niet)
+                        var iframe = buildEmbed(encodedTag);
+                        if (iframe) {
+                            ph.parentNode.insertBefore(iframe, ph.nextSibling);
                             makeResponsive(iframe);
                             restored = true;
                         }
                     } catch(e) {}
                 }
                 if (!restored) {
-                    // Fallback: maak nieuw iframe van data-cm-embed-src
-                    var src = ph.getAttribute('data-cm-embed-src');
+                    // Fallback: maak nieuw iframe van data-cm-embed-src (zelfde controle)
+                    var src = safeEmbedUrl(ph.getAttribute('data-cm-embed-src') || '');
                     if (src) {
                         var nf = document.createElement('iframe');
                         nf.src = src;
@@ -1529,7 +1585,7 @@ function cm_render_frontend() {
             });
             // 2. Dynamisch geblokkeerde iframes (via JS MutationObserver)
             document.querySelectorAll('iframe[data-cm-embed-cat="' + type + '"]').forEach(function(iframe) {
-                var src = iframe.getAttribute('data-cm-embed-src');
+                var src = safeEmbedUrl(iframe.getAttribute('data-cm-embed-src') || '');
                 if (src) {
                     iframe.src = src;
                     iframe.removeAttribute('data-cm-embed-src');
@@ -2072,7 +2128,7 @@ function cm_render_frontend() {
                     + '&marketing='  + encodeURIComponent(marketing)
                     + '&method='     + encodeURIComponent(method)
                     + '&session_id=' + encodeURIComponent(getSessionId())
-                    + '&url='        + encodeURIComponent(window.location.href);
+                    + '&url='        + encodeURIComponent(location.origin + location.pathname); // zonder querystring (kan persoonsgegevens bevatten)
 
                 // sendBeacon overleeft de herlaad na een consentkeuze; XHR kan
                 // door de navigatie afgebroken worden.

@@ -1,4 +1,6 @@
 <?php
+if ( PHP_SAPI !== 'cli' ) exit; // alleen vanaf de commandline
+
 /**
  * Testrunner voor Cookiebaas — geen externe afhankelijkheden.
  *

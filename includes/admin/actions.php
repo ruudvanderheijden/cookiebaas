@@ -97,6 +97,16 @@ function cm_admin_action_url( $action, array $args = array() ) {
     return wp_nonce_url( $url, 'cm_' . $action );
 }
 
+/**
+ * Cel onschadelijk maken voor spreadsheets: een waarde die met = + - @ of een
+ * tab/regeleinde begint, zou Excel als formule uitvoeren (CSV-injectie; de
+ * pagina-URL in de consent log komt van bezoekers).
+ */
+function cm_csv_safe_cell( $v ) {
+    $v = is_scalar( $v ) ? (string) $v : '';
+    return ( $v !== '' && strpos( "=+-@\t\r", $v[0] ) !== false ) ? "'" . $v : $v;
+}
+
 /** Stuur rijen als CSV-download (met BOM, zodat Excel UTF-8 herkent) en stop. */
 function cm_admin_send_csv( $filename, array $rows ) {
     nocache_headers();
@@ -104,7 +114,7 @@ function cm_admin_send_csv( $filename, array $rows ) {
     header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $filename ) . '"' );
     $out = fopen( 'php://output', 'w' );
     fputs( $out, "\xEF\xBB\xBF" );
-    foreach ( $rows as $row ) fputcsv( $out, $row );
+    foreach ( $rows as $row ) fputcsv( $out, array_map( 'cm_csv_safe_cell', $row ) );
     fclose( $out );
     exit;
 }

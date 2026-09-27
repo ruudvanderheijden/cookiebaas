@@ -172,6 +172,19 @@ function cm_sanitize_settings( array $input, array $existing, $index = null ) {
         if ( $type !== 'image' )  $settings['float_icon_image_url']  = '';
     }
 
+    // Een GA4/GTM/UA-ID laadt externe code (een GTM-container kan elk script
+    // bevatten). Alleen gebruikers die ook zelf HTML/script mogen plaatsen
+    // (unfiltered_html) mogen ze wijzigen; anders blijft de huidige waarde.
+    if ( function_exists( 'current_user_can' ) && function_exists( 'wp_get_current_user' ) && ! current_user_can( 'unfiltered_html' ) ) {
+        foreach ( array( 'ga4_measurement_id', 'gtm_container_id', 'ua_tracking_id' ) as $key ) {
+            $keep = array_key_exists( $key, $existing ) ? $existing[ $key ] : $defaults[ $key ];
+            if ( (string) $settings[ $key ] !== (string) $keep && function_exists( 'add_settings_error' ) ) {
+                add_settings_error( 'cm_settings', 'cm-no-unfiltered-' . $key, 'Google-ID’s wijzigen vraagt het recht om HTML en scripts te plaatsen (unfiltered_html). De vorige waarde is behouden.' );
+            }
+            $settings[ $key ] = $keep;
+        }
+    }
+
     // Als google_load_default aanstaat, moet analytics_default ook aanstaan
     // (als string, zoals alle gesanitizede waarden — anders is de sanitizer niet idempotent)
     if ( ! empty( $settings['google_load_default'] ) ) {

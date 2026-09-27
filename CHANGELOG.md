@@ -41,6 +41,18 @@ Zonder geldige licentie staat rechtsonder in de banner en het voorkeurenvenster 
 
 Oude links en bladwijzers (`?page=cookiemelding…`) verwijzen automatisch door.
 
+### Beveiliging en privacy
+Na een beveiligingsaudit:
+- **De consent log is niet meer te vervalsen of te overspoelen.** De rate-limit gebruikt het echte IP-adres in plaats van de te vervalsen header `X-Forwarded-For` (achter een proxy zoals Cloudflare kan dat via de filter `cm_client_ip`), en registraties vanaf een andere website worden geweigerd.
+- **Geen XSS meer via geblokkeerde video's.** Na toestemming zet Cookiebaas alleen nog een `https`-iframe van een bekende dienst terug, nooit ruwe HTML uit de pagina.
+- **Minder persoonsgegevens in de consent log.** Alleen het pad van de pagina (geen querystring met bijvoorbeeld e-mailadressen), en het IP-adres wordt eerst ingekort (/24, IPv6 /48) en dan gehasht met een eigen sleutel. Een terugkerend bezoek wordt zonder pagina en IP vastgelegd. Automatische keuzes (buiten de EU, Do Not Track, Global Privacy Control) worden als zodanig gelogd in plaats van als "Aangepast".
+- **Een zeer grote pagina wordt niet meer leeg** door de scriptblokkering.
+- **Een link met `wp-login.php` in de querystring zet de banner niet meer uit**; uitzonderingen kijken alleen naar het pad.
+- **De scan haalt alleen pagina's van de eigen website op** (geen interne adressen).
+- **Google-ID's (GA4, GTM, UA)** kunnen alleen gewijzigd worden door gebruikers die ook zelf scripts mogen plaatsen (`unfiltered_html`), belangrijk op multisite.
+- Een afwijkend antwoord van de licentieserver kan de site niet meer laten crashen; het adres van de licentieserver staat vast op `https://cookiebaas.nl`.
+- CSV-exports zijn beschermd tegen formule-injectie; de cookiedatabase wordt pas vervangen na een geldige download; bij onbekende landcodes (bijv. Tor) verschijnt de banner; verwijderen ruimt op multisite elke site op.
+
 ### Nieuw
 - **Overzicht** met de status van licentie, cookies, toestemmingen en consent-versie, en de compliance-check met een directe link naar de plek waar u iets oplost.
 - **Consent log** als WordPress-lijst: filters met aantallen, zoeken, bulk verwijderen, een bewijs per registratie (af te drukken of op te slaan als pdf) en een CSV-export met datumbereik.

@@ -1,4 +1,7 @@
 <?php
+// Alleen vanaf de commandline (nooit via de webserver uitvoeren)
+if ( PHP_SAPI !== 'cli' ) exit;
+
 /**
  * Gedeelde testbootstrap voor Cookiebaas.
  *
@@ -127,6 +130,7 @@ if ( ! function_exists( 'trailingslashit' ) ){ function trailingslashit( $s ) { 
 if ( ! function_exists( 'get_transient' ) )  { function get_transient( $k ) { return false; } }
 if ( ! function_exists( 'set_transient' ) )  { function set_transient( $k, $v, $e = 0 ) { return true; } }
 if ( ! function_exists( 'delete_transient' ) ){ function delete_transient( $k ) { return true; } }
+if ( ! function_exists( 'wp_parse_url' ) )   { function wp_parse_url( $u, $c = -1 ) { return parse_url( $u, $c ); } }
 if ( ! function_exists( 'is_ssl' ) )         { function is_ssl() { return true; } }
 if ( ! function_exists( 'get_current_user_id' ) ) { function get_current_user_id() { return 1; } }
 // Licentie-stub. Een test die de échte includes/license.php wil laden (om de
