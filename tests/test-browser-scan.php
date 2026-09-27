@@ -63,6 +63,8 @@ cm_test_group( 'Scan als niet-ingelogde bezoeker' );
 cm_browser_scan_prepare();
 cm_assert( 'na het voorbereiden is de beheerder afgemeld voor dit verzoek', ! is_user_logged_in() );
 cm_assert( 'de scanmodus blijft gelden (vastgelegd vóór het afmelden)', cm_is_browser_scan() );
+cm_assert( 'LiteSpeed wist het vary-cookie van de beheerder niet', strpos( file_get_contents( CM_PLUGIN_ROOT . '/includes/browser-scan.php' ), "add_filter( 'litespeed_can_change_vary', '__return_false' )" ) !== false );
+cm_assert( 'als nieuwe bezoeker altijd de banner, ook buiten de EU (geo)', strpos( file_get_contents( CM_PLUGIN_ROOT . '/includes/frontend.php' ), 'if (requiresConsent || window.cmScanFresh) { showBanner(); return; }' ) !== false );
 unset( $GLOBALS['cm_browser_scan_mode'] );
 $GLOBALS['cm_test_logged_in'] = true;
 
@@ -97,10 +99,10 @@ cm_assert( 'scanmodus nooit in de paginacache', strpos( $bs, 'DONOTCACHEPAGE' ) 
 cm_test_group( 'Na toestemming: filteren, herkennen, looptijd' );
 $r = cm_browser_scan_rows( array(
     'cookies'   => array( '_ga', '_ga_ABC123', 'cc_cm_consent', 'cm_sid', 'wp-settings-1', 'wp-saving-post', 'wordpress_test_cookie', '_ga', 'raar_ding' ),
-    'existing'  => array( 'redux_current_tab', 'redux_current_tab_get', '_gid' ), // stonden al in de browser (Brinckers: Redux uit het Salient-optiescherm)
+    'existing'  => array( 'redux_current_tab', 'redux_current_tab_get', '_gid', 'raar_oud' ), // stonden al in de browser (Brinckers: Redux uit het Salient-optiescherm)
     'local'     => array( 'lenis-state' ),
     'session'   => array( 'tab-state' ),
-    'durations' => array( '_ga' => 400 * 86400, 'raar_ding' => 0 ),
+    'durations' => array( '_ga' => 400 * 86400, 'raar_ding' => 0, '_gid' => 3600 ),
     'resources' => array(
         'https://www.googletagmanager.com/gtm.js',
         'https://example.test/wp-content/themes/x.js',
@@ -113,8 +115,8 @@ $r = cm_browser_scan_rows( array(
 $names = array_column( $r['cookies'], 'name' );
 $by    = array_column( $r['cookies'], null, 'name' );
 cm_assert( '_ga gevonden, één keer', count( array_keys( $names, '_ga', true ) ) === 1 );
-cm_assert( '_ga uit de browser, als analytics, met gemeten looptijd', $by['_ga']['how'] === 'browser' && $by['_ga']['type'] === 'analytics' && $by['_ga']['duration'] === '1.1 jaar' );
-cm_assert( 'onbekende sessiecookie: gemeten "Sessie"', $by['raar_ding']['duration'] === 'Sessie' && $by['raar_ding']['type'] === 'unknown' );
+cm_assert( '_ga uit de browser, als analytics; ingestelde looptijd uit de kennisbank gaat voor de meting (browsers kappen af)', $by['_ga']['how'] === 'browser' && $by['_ga']['type'] === 'analytics' && $by['_ga']['duration'] !== '1.1 jaar' && $by['_ga']['duration'] !== '' );
+cm_assert( 'onbekende cookie: gemeten looptijd ("Sessie")', $by['raar_ding']['duration'] === 'Sessie' && $by['raar_ding']['type'] === 'unknown' );
 cm_assert( 'ingebouwde cookie niet opnieuw', ! in_array( 'cc_cm_consent', $names, true ) );
 cm_assert( 'eigen opslag (cm_sid) niet', ! in_array( 'cm_sid', $names, true ) );
 cm_assert( 'beheerderscookies niet', ! array_intersect( array( 'wp-settings-1', 'wp-saving-post', 'wordpress_test_cookie' ), $names ) );
@@ -125,7 +127,7 @@ cm_assert( '_ga_ niet naast _ga_ABC123', ! in_array( '_ga_', $names, true ) );
 cm_assert( 'onbekend domein gemeld; eigen, herkende en cookieloze hosts niet', $r['hosts'] === array( 'cdn.onbekend.example' ) );
 cm_assert( 'ontvangers zonder cookies (IP-adres) apart, niet verborgen', $r['external'] === array( 'fonts.googleapis.com', 'cdn.jsdelivr.net' ) );
 cm_assert( 'al aanwezige onbekende cookies (redux_*) niet gemeld', ! in_array( 'redux_current_tab', $names, true ) && ! in_array( 'redux_current_tab_get', $names, true ) );
-cm_assert( 'al aanwezige bekende cookie (_gid) wel', isset( $by['_gid'] ) && $by['_gid']['how'] === 'browser' );
+cm_assert( 'al aanwezige bekende cookie (_gid) wel, zonder de resterende tijd als looptijd', isset( $by['_gid'] ) && $by['_gid']['how'] === 'browser' && $by['_gid']['duration'] !== '1 uur' );
 
 cm_test_group( 'Vóór toestemming' );
 update_option( 'cm_cookie_list', array( array( 'name' => 'eigen_marketing', 'category' => 'marketing' ), array( 'name' => 'eigen_functioneel', 'category' => 'functional' ) ) );
@@ -148,8 +150,12 @@ cm_assert( 'functioneel (PHPSESSID), eigen opslag en beheerderscookies: geen bev
 cm_assert( 'onbekende cookie → controleren', $it['raar_ding']['level'] === 'warn' );
 cm_assert( 'Meta laadt vóór toestemming → fout, met blokkeerknop marketing', $it['connect.facebook.net']['level'] === 'error' && $it['connect.facebook.net']['block'] === 'marketing' );
 cm_assert( 'Google-tag in Consent Mode advanced → alleen info', $it['www.googletagmanager.com']['level'] === 'info' && $it['www.googletagmanager.com']['block'] === '' );
+$pa = cm_browser_scan_preconsent( array( 'resources' => array( 'https://region1.google-analytics.com/g/collect', 'https://googleads.g.doubleclick.net/pagead/viewthroughconversion/1' ) ) );
+cm_assert( 'andere Google-diensten in advanced mode (collect, doubleclick) → ook info', $pa['errors'] === 0 && $pa['warnings'] === 0 && count( $pa['items'] ) === 2 );
 cm_assert( 'lettertypen van Google → info (IP-adres), geen blokkeerknop', $it['fonts.gstatic.com']['level'] === 'info' && $it['fonts.gstatic.com']['block'] === '' );
-cm_assert( 'onbekende dienst → controleren, blokkeerbaar', $it['cdn.onbekend.example']['level'] === 'warn' && $it['cdn.onbekend.example']['block'] === 'marketing' );
+cm_assert( 'onbekende dienst → controleren, zonder blokkeerknop (kan reCAPTCHA of betalingen zijn)', $it['cdn.onbekend.example']['level'] === 'warn' && $it['cdn.onbekend.example']['block'] === '' );
+cm_assert( 'volgorde: eerst fouten, dan controleren, dan info', array_column( $p['items'], 'level' ) === array_merge( array_fill( 0, 3, 'error' ), array_fill( 0, 3, 'warn' ), array_fill( 0, 2, 'info' ) ) );
+cm_assert( 'analytisch: nuance voor privacyvriendelijke statistieken', strpos( $it['_ga_ABC123']['text'], 'privacyvriendelijk' ) !== false );
 cm_assert( 'eigen site geen bevinding', ! isset( $it['example.test'] ) );
 cm_assert( 'onbekende opslag in de browser (zonder cookiedatabase) → controleren', $it['_hjSessionUser_1']['level'] === 'warn' && $it['_hjSessionUser_1']['kind'] === 'storage' );
 cm_assert( 'tellingen', $p['errors'] === 3 && $p['warnings'] === 3 );
@@ -163,6 +169,7 @@ update_option( 'cm_settings', array_merge( cm_default_settings(), array( 'block_
 cm_assert( 'host toegevoegd aan de marketingpatronen', cm_block_host( 'cdn.onbekend.example', 'marketing' ) && cm_get_settings()['block_marketing_patterns'] === 'bestaand.nl, cdn.onbekend.example' );
 cm_assert( 'geen dubbele', cm_block_host( 'cdn.onbekend.example', 'marketing' ) && cm_get_settings()['block_marketing_patterns'] === 'bestaand.nl, cdn.onbekend.example' );
 cm_assert( 'geen rommel of andere categorie', ! cm_block_host( 'evil.com,<script>', 'marketing' ) && ! cm_block_host( 'x.nl', 'functional' ) );
+cm_assert( 'nooit het eigen domein, een subdomein of een hoger domein', ! cm_block_host( 'example.test', 'marketing' ) && ! cm_block_host( 'cdn.example.test', 'marketing' ) && ! cm_block_host( 'test', 'marketing' ) );
 
 cm_test_group( 'Overzicht: meting gaat voor instellingen' );
 list( $st ) = cm_preconsent_status( array(), true );

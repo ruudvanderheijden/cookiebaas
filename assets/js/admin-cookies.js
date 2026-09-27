@@ -345,13 +345,15 @@
     var box = el('div');
     var items = pre.items || [];
     var count = function (n, one, more) { return n + ' ' + (n === 1 ? one : more); };
-    if (pre.errors) notice(box, 'error', 'Vóór toestemming gebeurt er ' + count(pre.errors, 'ding', 'dingen') + ' waarvoor toestemming nodig is. Dat mag niet.');
+    if (pre.errors) notice(box, 'error', 'Vóór toestemming gebeurt er ' + count(pre.errors, 'ding', 'dingen') + ' waarvoor toestemming nodig is.');
     else if (pre.warnings) notice(box, 'warning', 'Vóór toestemming laadt of plaatst de site ' + count(pre.warnings, 'onbekende cookie of dienst', 'onbekende cookies of diensten') + '. Controleer of dat strikt noodzakelijk is.');
     else notice(box, 'success', 'Vóór toestemming plaatst of laadt de site niets waarvoor toestemming nodig is.');
     if (items.length) {
       var ul = el('ul', null, 'cm-preconsent');
+      var LEVEL = { error: 'Toestemming nodig', warn: 'Controleren', info: 'Ter info' };
       items.forEach(function (it) {
         var li = el('li', null, 'cm-preconsent-' + it.level);
+        li.appendChild(el('strong', (LEVEL[it.level] || '') + ': '));
         li.appendChild(el('code', it.name));
         li.appendChild(document.createTextNode(' ' + it.text));
         if (it.block) {
@@ -367,7 +369,7 @@
       box.appendChild(ul);
     }
     if (pre.errors || pre.warnings) {
-      box.appendChild(el('p', 'Blokkeren zet de host bij Blokkering › Patronen: scripts van die host laden dan pas na toestemming. Komt het via Google Tag Manager? Laat de tag dan vuren op het event cm_consent_update (zie Blokkering › Google). Een cookie zonder host komt van een script op uw eigen site: zet dat script bij de patronen. Draai de scan daarna opnieuw.'));
+      box.appendChild(el('p', 'Blokkeren zet de host bij Blokkering › Patronen: scripts van die host laden dan pas na toestemming. Komt het via Google Tag Manager? Laat de tag dan vuren op het event cm_consent_update (zie Blokkering › Google). Een cookie zonder host komt van een script op uw eigen site: zet een stukje van dat script bij de patronen. Draai de scan daarna opnieuw.'));
     }
     wrap.appendChild(box);
     wrap.appendChild(el('h3', 'Na toestemming'));
@@ -379,7 +381,10 @@
     if (!b) return;
     b.disabled = true;
     post('cm_block_host', { nonce: cfg.nonces.scan, host: b.getAttribute('data-host'), category: b.getAttribute('data-cat') }).then(function (r) {
-      b.textContent = r && r.success ? 'Geblokkeerd' : 'Mislukt';
+      if (!r || !r.success) { b.textContent = 'Mislukt'; return; }
+      b.textContent = 'Geblokkeerd';
+      // Werd hij al geblokkeerd, dan komt hij langs een andere weg binnen
+      if (r.data && r.data.already) b.parentNode.appendChild(el('span', ' Deze host stond al in de blokkering: hij laadt waarschijnlijk via Google Tag Manager of een iframe.', 'description'));
     }).catch(function () { b.textContent = 'Mislukt'; });
   });
 
@@ -471,7 +476,7 @@
       renderResults(urls.length, failed);
       if (r.data.preconsent) result.insertBefore(renderPreconsent(r.data.preconsent), result.firstChild);
       if (r.data.external && r.data.external.length) {
-        result.appendChild(el('p', 'Geen cookies, wel het IP-adres van de bezoeker: ' + r.data.external.join(', ') + '. Vermeld deze ontvangers in de privacyverklaring, of host de bestanden (zoals lettertypen) op uw eigen website.', 'description'));
+        result.appendChild(el('p', 'Geen cookies, wel het IP-adres van de bezoeker: ' + r.data.external.join(', ') + '. Host deze bestanden (zoals lettertypen) bij voorkeur op uw eigen website; anders horen deze ontvangers in de privacyverklaring.', 'description'));
       }
       if (r.data.hosts && r.data.hosts.length) {
         result.appendChild(el('p', 'Ook geladen, maar niet in de kennisbank: ' + r.data.hosts.join(', ') + '. Controleer of deze diensten cookies zetten.', 'description'));

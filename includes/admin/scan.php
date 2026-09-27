@@ -169,8 +169,8 @@ function cm_ajax_scan_urls() {
     wp_send_json_success( array( 'urls' => $urls, 'total' => count($urls) ) );
 }
 
-/** Homepage plus alle gepubliceerde pagina's en berichten (zonder dubbelen). */
-function cm_scan_collect_urls() {
+/** Homepage plus gepubliceerde pagina's en berichten, nieuwste eerst (zonder dubbelen); $limit 0 = alle. */
+function cm_scan_collect_urls( $limit = 0 ) {
     $home = trailingslashit( home_url('/') );
     $urls = array( $home );
     $visited = array( $home => true );
@@ -181,7 +181,9 @@ function cm_scan_collect_urls() {
     $all_content = get_posts( array(
         'post_type'      => array_values( $all_pts ),
         'post_status'    => 'publish',
-        'posts_per_page' => -1,
+        'posts_per_page' => $limit > 0 ? $limit : -1,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
         'fields'         => 'ids',
     ));
     foreach ( $all_content as $id ) {
@@ -750,8 +752,9 @@ function cm_browser_scan_rows( array $d ) {
             'name'        => $name,
             'type'        => isset( $info['type'] ) ? $info['type'] : 'unknown',
             'provider'    => isset( $info['provider'] ) ? $info['provider'] : '',
-            // Gemeten looptijd gaat voor; geen meting en onbekend → leeg (zelf aanvullen), niet "Sessie"
-            'duration'    => $duration !== '' ? $duration : ( isset( $info['duration'] ) ? $info['duration'] : '' ),
+            // Bekende (ingestelde) looptijd gaat voor: de browser kapt af (Safari 7 dagen, Chrome 400 dagen).
+            // Anders de meting; geen van beide → leeg (zelf aanvullen), niet "Sessie"
+            'duration'    => isset( $info['duration'] ) && $info['duration'] !== '' ? $info['duration'] : $duration,
             'description' => isset( $info['description'] ) ? $info['description'] : '',
             'how'         => $how,
         );
@@ -760,11 +763,16 @@ function cm_browser_scan_rows( array $d ) {
     foreach ( $get( 'cookies' ) as $name ) $add( $name, 'browser', cm_scan_cookie_info( $name ), array(), cm_scan_measured_duration( $durations, $name ) );
     foreach ( $get( 'existing' ) as $name ) {
         $info = cm_scan_cookie_info( $name );
-        if ( $info ) $add( $name, 'browser', $info, array(), cm_scan_measured_duration( $durations, $name ) );
+        if ( $info ) $add( $name, 'browser', $info ); // stond er al: de meting is de resterende tijd, niet de looptijd
     }
     // localStorage blijft staan tot het gewist wordt; sessionStorage verdwijnt met het tabblad
-    foreach ( $get( 'local' ) as $name ) $add( $name, 'storage', cm_scan_cookie_info( $name ), array( 'description' => 'Opslag in de browser (localStorage).' ), 'Blijvend (tot verwijderd)' );
-    foreach ( $get( 'session' ) as $name ) $add( $name, 'storage', cm_scan_cookie_info( $name ), array( 'description' => 'Opslag in de browser (sessionStorage).' ), 'Sessie' );
+    $storage = function ( $name, $what, $duration ) use ( $add ) {
+        $info = cm_scan_cookie_info( $name );
+        if ( $info ) $info['duration'] = $duration; // het soort opslag bepaalt de looptijd
+        $add( $name, 'storage', $info, array( 'description' => 'Opslag in de browser (' . $what . ').', 'duration' => $duration ) );
+    };
+    foreach ( $get( 'local' ) as $name ) $storage( $name, 'localStorage', 'Blijvend (tot verwijderd)' );
+    foreach ( $get( 'session' ) as $name ) $storage( $name, 'sessionStorage', 'Sessie' );
 
     // Geladen externe adressen: bekende diensten → hun cookies; zonder cookies → ontvanger; de rest onbekend
     $unknown  = array();
@@ -824,37 +832,49 @@ function cm_browser_scan_preconsent( array $pre ) {
         if ( $cat === 'functional' ) return; // strikt noodzakelijk: mag zonder toestemming
         $what = $kind === 'cookie' ? 'Cookie' : 'Opslag in de browser';
         $known = isset( $label[ $cat ] );
+        $text  = $known
+            ? $what . ' (' . $label[ $cat ] . ') wordt vóór toestemming geplaatst.'
+            : $what . ' die Cookiebaas niet kent, wordt vóór toestemming geplaatst. Controleer of die strikt noodzakelijk is.';
+        // Tw art. 11.7a lid 3 sub b: privacyvriendelijke statistieken mogen zonder toestemming
+        if ( $cat === 'analytics' ) $text .= ' Dat mag alleen als de statistieken privacyvriendelijk zijn ingesteld (zie de handleiding van de AP).';
         $items[] = array(
             'kind'     => $kind,
             'name'     => $name,
             'provider' => $info ? (string) $info['provider'] : '',
             'level'    => $known ? 'error' : 'warn',
-            'text'     => $known
-                ? $what . ' (' . $label[ $cat ] . ') wordt vóór toestemming geplaatst.'
-                : $what . ' die Cookiebaas niet kent, wordt vóór toestemming geplaatst. Controleer of die strikt noodzakelijk is.',
+            'text'     => $text,
             'block'    => '',
         );
     };
     foreach ( $get( 'cookies' ) as $n ) $store( $n, 'cookie' );
     foreach ( array_merge( $get( 'local' ), $get( 'session' ) ) as $n ) $store( $n, 'storage' );
 
+    // Consent Mode advanced: Google-diensten laden bewust vóór toestemming, zonder cookies (de blokkering stelt ze ook vrij)
     $advanced = (bool) cm_get( 'google_consent_mode_advanced' ) && ! cm_get( 'google_load_default' );
+    $google   = function_exists( 'cm_google_consent_domains' ) ? cm_google_consent_domains() : array();
     $hosts    = array();
     foreach ( $get( 'resources' ) as $url ) {
         list( $host, $kind, $provider, $cat ) = cm_scan_resource( $url );
         if ( $kind === 'own' || isset( $hosts[ $host ] ) ) continue;
         if ( $kind === 'known' && $cat === 'functional' ) continue;
+        $is_google = false;
+        foreach ( $google as $d ) {
+            if ( stripos( (string) $url, $d ) !== false ) { $is_google = true; break; }
+        }
         $hosts[ $host ] = true;
-        if ( $kind === 'cookieless' ) {
-            $items[] = array( 'kind' => 'host', 'name' => $host, 'provider' => '', 'level' => 'info', 'text' => 'Geen cookies, maar ontvangt vóór toestemming wel het IP-adres van de bezoeker. Vermeld dit in de privacyverklaring of host het bestand op uw eigen website.', 'block' => '' );
-        } elseif ( $kind === 'known' && $advanced && preg_match( '/(^|\.)(googletagmanager|google-analytics)\.com$/', $host ) ) {
-            $items[] = array( 'kind' => 'host', 'name' => $host, 'provider' => $provider, 'level' => 'info', 'text' => 'De Google-tag laadt vóór toestemming zonder cookies: zo werkt Consent Mode advanced, die u heeft aangezet.', 'block' => '' );
+        if ( $advanced && $is_google ) {
+            $items[] = array( 'kind' => 'host', 'name' => $host, 'provider' => $provider, 'level' => 'info', 'text' => 'Google-dienst die vóór toestemming laadt zonder cookies: zo werkt Consent Mode advanced, die u heeft aangezet.', 'block' => '' );
+        } elseif ( $kind === 'cookieless' ) {
+            $items[] = array( 'kind' => 'host', 'name' => $host, 'provider' => '', 'level' => 'info', 'text' => 'Geen cookies, maar ontvangt vóór toestemming wel het IP-adres van de bezoeker. Host het bestand bij voorkeur op uw eigen website; anders hoort deze ontvanger in de privacyverklaring.', 'block' => '' );
         } elseif ( $kind === 'known' ) {
             $items[] = array( 'kind' => 'host', 'name' => $host, 'provider' => $provider, 'level' => 'error', 'text' => $provider . ' (' . $label[ $cat ] . ') laadt vóór toestemming.', 'block' => $cat );
         } else {
-            $items[] = array( 'kind' => 'host', 'name' => $host, 'provider' => '', 'level' => 'warn', 'text' => 'Laadt vóór toestemming. Cookiebaas kent deze dienst niet: controleer of hij cookies zet of gegevens verzamelt.', 'block' => 'marketing' );
+            // Geen blokkeerknop: een onbekende host kan ook reCAPTCHA, betalingen of een eigen CDN zijn
+            $items[] = array( 'kind' => 'host', 'name' => $host, 'provider' => '', 'level' => 'warn', 'text' => 'Laadt vóór toestemming. Cookiebaas kent deze dienst niet: controleer of hij cookies zet of gegevens verzamelt. Zo ja, zet hem bij Blokkering › Patronen.', 'block' => '' );
         }
     }
+    $order = array( 'error' => 0, 'warn' => 1, 'info' => 2 );
+    usort( $items, function ( $a, $b ) use ( $order ) { return $order[ $a['level'] ] - $order[ $b['level'] ]; } );
     $count = function ( $level ) use ( $items ) {
         return count( array_filter( $items, function ( $i ) use ( $level ) { return $i['level'] === $level; } ) );
     };
@@ -908,6 +928,9 @@ function cm_ajax_browser_scan_lookup() {
 function cm_block_host( $host, $cat ) {
     $host = strtolower( trim( (string) $host ) );
     if ( ! preg_match( '/^[a-z0-9-]+(\.[a-z0-9-]+)+$/', $host ) || ! in_array( $cat, array( 'analytics', 'marketing' ), true ) ) return false;
+    // Nooit het eigen domein (of een subdomein of hoger domein ervan): dat zou eigen scripts blokkeren
+    $base = preg_replace( '/^www\./', '', strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) );
+    if ( $base !== '' && ( $host === $base || substr( $host, -strlen( '.' . $base ) ) === '.' . $base || substr( $base, -strlen( '.' . $host ) ) === '.' . $host ) ) return false;
     $settings = cm_get_settings();
     $key      = 'block_' . $cat . '_patterns';
     $current  = array_filter( array_map( 'trim', explode( ',', isset( $settings[ $key ] ) ? (string) $settings[ $key ] : '' ) ) );
@@ -923,8 +946,11 @@ function cm_ajax_block_host() {
     cm_admin_verify_ajax( 'scan' );
     $host = isset( $_POST['host'] ) && is_string( $_POST['host'] ) ? wp_unslash( $_POST['host'] ) : '';
     $cat  = isset( $_POST['category'] ) && is_string( $_POST['category'] ) ? wp_unslash( $_POST['category'] ) : '';
+    // Blokkeert de blokkering hem al, dan komt hij langs een andere weg (bijv. een tag in GTM of een iframe)
+    $already = function_exists( 'cm_blocker_match' ) && function_exists( 'cm_blocker_config' )
+        && cm_blocker_match( 'https://' . strtolower( trim( (string) $host ) ) . '/x.js', '', cm_blocker_config() ) !== false;
     if ( ! cm_block_host( $host, $cat ) ) wp_send_json_error( array( 'msg' => 'Deze host kan niet worden geblokkeerd.' ) );
-    wp_send_json_success();
+    wp_send_json_success( array( 'already' => $already ) );
 }
 
 /* ---- Automatische scan: onbekende cookies wachten op een keuze (Overzicht) ---- */

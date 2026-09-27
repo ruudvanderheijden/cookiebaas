@@ -54,6 +54,8 @@ function cm_browser_scan_prepare() {
         header( 'X-Robots-Tag: noindex, nofollow' );
         header( 'Referrer-Policy: strict-origin-when-cross-origin' ); // scancode niet in de referrer naar derden
     }
+    // LiteSpeed zou anders zijn vary-cookie in de browser van de beheerder wissen (die krijgt dan gastpagina's)
+    add_filter( 'litespeed_can_change_vary', '__return_false' );
     wp_set_current_user( 0 );
 }
 

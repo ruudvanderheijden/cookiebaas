@@ -349,7 +349,14 @@ function cm_force_reset_auto_scan_cron() {
     update_option( 'cm_auto_scan_next', gmdate( 'Y-m-d H:i:s', time() + ( $interval * DAY_IN_SECONDS ) ) );
 }
 
-add_action( 'cm_cookie_db_refresh', 'cm_cookie_db_import' );
+add_action( 'cm_cookie_db_refresh', 'cm_cookie_db_refresh_run' );
+function cm_cookie_db_refresh_run() {
+    $r = cm_cookie_db_import();
+    $tries = (int) get_option( 'cm_cookie_db_refresh_tries', 0 ) + 1;
+    if ( $r['ok'] || $tries >= 3 ) { delete_option( 'cm_cookie_db_refresh_tries' ); return; }
+    update_option( 'cm_cookie_db_refresh_tries', $tries, false );
+    wp_schedule_single_event( time() + DAY_IN_SECONDS, 'cm_cookie_db_refresh' );
+}
 add_action( 'cm_auto_scan_cron', 'cm_run_auto_scan' );
 function cm_run_auto_scan() {
     $mode  = cm_get('auto_scan_mode');
@@ -367,7 +374,10 @@ function cm_run_auto_scan() {
     // Voer de scan uit via de bestaande scan-functie
     // We simuleren een AJAX-achtige call door de scan-code direct aan te roepen
     $scan_result = cm_perform_background_scan();
-    if ( ! $scan_result ) return;
+    if ( ! $scan_result ) {
+        cm_maybe_schedule_auto_scan_cron(); // mislukt (bijv. site even onbereikbaar): volgende keer opnieuw
+        return;
+    }
 
     $new_cookies     = $scan_result['new_cookies'];     // bekende cookies die nog niet in de lijst staan
     $unknown         = $scan_result['unknown'];         // cookies die Cookiebaas niet kent: categorie kiest de beheerder
@@ -435,8 +445,8 @@ function cm_run_auto_scan() {
  * zetten vindt alleen de browserscan (het Overzicht herinnert daaraan).
  */
 function cm_perform_background_scan() {
-    @set_time_limit( 180 );
-    $urls = cm_scan_filter_urls( array_slice( cm_scan_collect_urls(), 0, 11 ) );
+    @set_time_limit( 300 );
+    $urls = cm_scan_filter_urls( cm_scan_collect_urls( 10 ) );
     if ( ! $urls ) return false;
     $scan = cm_scan_pages( $urls );
     if ( empty( $scan['scanned'] ) ) return false;

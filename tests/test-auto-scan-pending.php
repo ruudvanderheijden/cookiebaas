@@ -67,7 +67,8 @@ list( $k3, $u3 ) = cm_auto_scan_classify( array(
 cm_assert( 'scanrij met categorie → bekend, gegevens uit de scan', count( $k3 ) === 1 && $k3[0]['category'] === 'marketing' && $k3[0]['provider'] === 'Meta' && $k3[0]['duration'] === '3 maanden' );
 cm_assert( 'scanrij onbekend → wachtlijst, gemeten looptijd bewaard', count( $u3 ) === 1 && $u3[0]['name'] === 'srv_x' && $u3[0]['duration'] === '1 jaar' );
 $main = file_get_contents( CM_PLUGIN_ROOT . '/cookiemelding.php' );
-cm_assert( 'achtergrondscan: homepage + tien nieuwste pagina’s via cm_scan_pages (scripts, embeds, headers)', strpos( $main, 'array_slice( cm_scan_collect_urls(), 0, 11 )' ) !== false && strpos( $main, 'cm_scan_pages( $urls )' ) !== false );
+cm_assert( 'achtergrondscan: homepage + tien nieuwste pagina’s via cm_scan_pages (scripts, embeds, headers)', strpos( $main, 'cm_scan_collect_urls( 10 )' ) !== false && strpos( $main, 'cm_scan_pages( $urls )' ) !== false );
+cm_assert( 'een mislukte achtergrondscan plant zichzelf opnieuw in', (bool) preg_match( '/if \( ! \$scan_result \) \{\s*cm_maybe_schedule_auto_scan_cron\(\);/', $main ) );
 
 cm_test_group( 'Indeling: personalisatie niet vanzelf functioneel (3.1)' );
 $csv = "ID,Platform,Category,Cookie / Data Key name,Domain,Description,Retention period,Data Controller,User Privacy & GDPR Rights Portals,Wildcard match\n"
@@ -76,7 +77,7 @@ $csv = "ID,Platform,Category,Cookie / Data Key name,Domain,Description,Retention
 $parsed = cm_cookie_db_parse( $csv );
 cm_assert( 'Personalization → onbekend (beheerder kiest), Security blijft functioneel', $parsed['rows'][0]['category'] === 'unknown' && $parsed['rows'][1]['category'] === 'functional' );
 cm_assert( 'onbekende DB-categorie wordt niet stil functioneel', cm_autoscan_entry( 'pers_x', array( 'platform' => 'X', 'controller' => 'X', 'category' => 'unknown', 'description' => '', 'retention' => '' ) )['category'] === 'unknown' );
-cm_assert( 'bij de update naar 3.1 de database opnieuw ophalen (cron)', strpos( $main, "version_compare( \$stored_version, '3.1.0', '<' )" ) !== false && strpos( $main, "add_action( 'cm_cookie_db_refresh', 'cm_cookie_db_import' )" ) !== false );
+cm_assert( 'bij de update naar 3.1 de database opnieuw ophalen (cron)', strpos( $main, "version_compare( \$stored_version, '3.1.0', '<' )" ) !== false && strpos( $main, "add_action( 'cm_cookie_db_refresh', 'cm_cookie_db_refresh_run' )" ) !== false );
 
 cm_test_group( 'Opslag opruimen bij weigeren (3.1)' );
 $fe = file_get_contents( CM_PLUGIN_ROOT . '/includes/frontend.php' );

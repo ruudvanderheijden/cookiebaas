@@ -2388,7 +2388,7 @@ function cm_render_frontend() {
             var done = false;
             function finish(requiresConsent) {
                 if (done) return; done = true;
-                if (requiresConsent) { showBanner(); return; }
+                if (requiresConsent || window.cmScanFresh) { showBanner(); return; } // browserscan: meten als bezoeker uit de EU
                 // Bezoeker buiten de gereguleerde landen:
                 if (GEO_OUTSIDE === 'accept') {
                     applyConsent(true, true, 'geo-auto');   // auto-akkoord (met logging)

@@ -73,3 +73,4 @@
 /* Browserscan: controle vóór toestemming */
 .cm-preconsent { list-style: disc; margin: 0 0 8px 20px; }
 .cm-preconsent li { margin: 4px 0; }
+.cm-preconsent-error strong { color: var(--cm-bad); }
