@@ -90,6 +90,8 @@ function cm_render_gtm_guide() {
     echo '</tbody></table>';
     echo '<h3>Stap 3: koppel de trigger aan uw tag</h3>';
     echo '<p>Geef uw Meta Pixel-, TikTok- of LinkedIn-tag als trigger <code>CM - Marketing toegestaan</code>. De tag vuurt dan alleen na toestemming voor marketingcookies.</p>';
+    echo '<p><strong>Let op:</strong> verwijder de trigger <code>All Pages</code> (of een andere paginaweergave-trigger) van die tag. Staat die er nog naast, dan vuurt de tag alsnog vóór toestemming.</p>';
+    echo '<p><strong>Alternatief in GTM zelf:</strong> open bij de tag <em>Geavanceerde instellingen › Toestemmingsinstellingen</em>, kies <em>Aanvullende toestemming vereisen</em> en voeg <code>ad_storage</code> (marketing) of <code>analytics_storage</code> (analytisch) toe. GTM wacht dan tot Cookiebaas die toestemming op <code>granted</code> zet. Zet daarvoor in de containerinstellingen het toestemmingsoverzicht aan.</p>';
     echo '<p>Voorbeeld van de dataLayer-push door de plugin:</p>';
     echo '<pre class="code">{ event: "cm_consent_update", cm_analytics: true, cm_marketing: false, cm_method: "custom",
   analytics_storage: "granted", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" }</pre>';
