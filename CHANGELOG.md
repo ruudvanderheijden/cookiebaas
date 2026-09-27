@@ -2,7 +2,18 @@
 
 ## [3.0.0] - 2026-09-26
 
-De admin is opnieuw gebouwd: WordPress-native, zonder eigen kleuren of zelfgebouwde onderdelen, en per onderwerp ingedeeld. Uw instellingen, cookielijst, privacyverklaring en consent log blijven precies zoals ze waren; de banner en de blokkering op uw website veranderen niet.
+De admin is opnieuw gebouwd: WordPress-native en per onderwerp ingedeeld. Uw instellingen, cookielijst, privacyverklaring en consent log blijven precies zoals ze waren; de banner en de blokkering op uw website veranderen niet.
+
+### Gratis en met licentie
+
+De cookiemelding is gratis. Zonder licentie werken de banner, het voorkeurenvenster, de script- en embedblokkering, Google Consent Mode, de handmatige cookiescan, de cookiedatabase, de cookielijst en `[cookiebaas_cookies]`. Toestemmingen worden ook zonder licentie vastgelegd en na de bewaartermijn opgeschoond.
+
+Met een licentie komen daarbij:
+- **de consent log inzien:** registraties bekijken, het bewijs per registratie, de CSV-export en de REST API voor consentverificatie;
+- **de privacyverklaring-generator:** de verklaring bewerken, standaardtekst herstellen en het verwerkingsregister exporteren. Een verklaring die al op uw website staat, blijft zichtbaar als de licentie verloopt;
+- **de automatische scan:** nieuw gevonden cookies automatisch toevoegen of een melding per e-mail.
+
+Zonder geldige licentie staat rechtsonder in de banner en het voorkeurenvenster een kleine vermelding "Cookiebaas" met een link naar cookiebaas.nl.
 
 ### Waar staat wat?
 
@@ -17,7 +28,7 @@ De admin is opnieuw gebouwd: WordPress-native, zonder eigen kleuren of zelfgebou
 | Instellingen › Google (ook de blokkeerpatronen) | Blokkering › Google en Blokkering › Scripts |
 | Instellingen › Embeds | Blokkering › Embeds |
 | Cookies & scan | Cookies › Cookielijst en Cookies › Scannen |
-| Privacyverklaring | Privacyverklaring |
+| Privacyverklaring | Privacyverklaring, in tabs: Bedrijf, Verwerkingen, Delen en bewaren, Rechten, Weergave |
 | Consent log | Consent log › Registraties |
 | Beheer › Compliance | Overzicht |
 | Beheer › Export / Import: backup | Beheer › Backup |
@@ -35,7 +46,7 @@ Oude links en bladwijzers (`?page=cookiemelding…`) verwijzen automatisch door.
 - **Consent log** als WordPress-lijst: filters met aantallen, zoeken, bulk verwijderen, een bewijs per registratie (af te drukken of op te slaan als pdf) en een CSV-export met datumbereik.
 - **De versiegeschiedenis** van "iedereen opnieuw laten kiezen" is zichtbaar, met de reden.
 - **Engelse teksten** voor de placeholder van geblokkeerde video's zijn in te vullen.
-- **Kleuren** kiest u met het kleurvlak of plakt u als hexcode; beide blijven zichtbaar.
+- **Kleuren** kiest u met het kleurvlak of plakt u als hexcode; beide blijven zichtbaar. De kleuren van de knoppen staan per soort knop gegroepeerd.
 
 ### Veranderd
 - **Opslaan** gaat via de standaardformulieren van WordPress; acties (exports, resets, licentie, API-sleutel) via gewone knoppen met een duidelijke melding. Een ongeldige waarde houdt de oude waarde en geeft een melding per veld.

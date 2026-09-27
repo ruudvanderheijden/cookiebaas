@@ -377,3 +377,13 @@ Handmatig test Ruud zelf op de lokale Brinckers-site (WordPress 7.1, TranslatePr
 | Optionele kleuren | "(optioneel)" in het label, leeg = geen, "Wissen" alleen als er een waarde is |
 | Universal Analytics | Blijft voorlopig staan |
 | Opslaan | Settings API per tab; `admin-post` voor acties; AJAX alleen voor lange of live acties |
+
+## 11. Aanvulling 27 september 2026 (vóór release 3.0.0)
+
+Op verzoek van Ruud, na plan 3:
+- **Licentiemodel.** De cookiemelding is gratis. Met licentie: de consent log inzien (lijst, bewijs, CSV, REST-verificatie), de privacyverklaring bewerken (herstellen, register-export, terugzetten via backup) en de automatische scan-modi. Vastleggen van toestemmingen, de bewaartermijn, opschonen, de handmatige scan en de shortcode-uitvoer blijven altijd werken.
+- **Vermelding in de gratis versie.** Zonder geldige licentie een kleine, grijze link "Cookiebaas" naar cookiebaas.nl (nofollow) rechtsonder in banner en voorkeurenvenster; vaste stijl, niet instelbaar. Dit is de enige functionele frontendwijziging (§2).
+- **Privacyverklaring in tabs** (Bedrijf, Verwerkingen, Delen en bewaren, Rechten, Weergave) in plaats van één lang formulier (§3.1).
+- **Statuskleuren (§4).** Overzicht gebruikt de statuskleuren van WordPress core (groen, oranje, rood) als tokens op één plek in `admin-layout.css`; verder blijft de regel "geen eigen kleuren" gelden.
+- **Knoppen** onder Vormgeving staan per soort knop gegroepeerd met tussenkoppen.
+
