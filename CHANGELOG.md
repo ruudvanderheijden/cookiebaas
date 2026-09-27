@@ -9,7 +9,11 @@ Naast de bestaande scan staat onder Cookies › Scannen de knop **Scan in de bro
 - Standaard scant hij de homepage en 20 andere pagina's; vink **alle pagina's** aan voor een volledige scan.
 - De scanmodus werkt alleen voor een ingelogde beheerder met een geldige, persoonlijke code. Bezoekers kunnen hem niet aanzetten. Pagina's in scanmodus komen nooit in de paginacache, tonen geen banner en leggen niets vast in de consent log.
 - Cookies van uw eigen site die tijdens de scan in uw browser worden gezet, ruimt de scan achteraf op. Cookies van derden blijven in uw browser staan.
-- De bezochte pagina's kunnen als bezoek in uw statistieken verschijnen.
+- Tags die in Google Tag Manager op het Cookiebaas-event vuren (zoals Meta), vuren tijdens de scan ook.
+- Lazy-loaded embeds laden mee: de scan scrollt door elke pagina.
+- Google Fonts meldt de scan apart. Het zet geen cookies, maar stuurt wel het IP-adres van de bezoeker naar Google.
+- Cookies die al in uw browser stonden, meldt de scan alleen als Cookiebaas ze kent. Onbekende cookies komen vaak van plugins in de admin.
+- De bezochte pagina's kunnen als bezoek in uw statistieken verschijnen. De scancode staat dan niet in het adres.
 - De scan is gratis.
 
 ## [3.0.0] - 2026-09-27

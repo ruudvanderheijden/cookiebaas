@@ -669,9 +669,11 @@ function cm_browser_scan_info( $name ) {
  * @param string[] $cookies   nieuwe cookienamen (document.cookie)
  * @param string[] $storage   nieuwe sleutels in localStorage/sessionStorage
  * @param string[] $resources geladen adressen (zonder querystring)
+ * @param string[] $existing  cookies die al vóór de scan in de browser stonden: alleen gemeld als ze bekend
+ *                            zijn (bijv. _ga van een eerder bezoek); onbekende zijn vaak van plugins in de admin
  * @return array( 'cookies' => rijen, 'hosts' => onbekende externe domeinen )
  */
-function cm_browser_scan_rows( array $cookies, array $storage, array $resources ) {
+function cm_browser_scan_rows( array $cookies, array $storage, array $resources, array $existing = array() ) {
     $skip = array( 'cm_sid' => true, 'cm_logged' => true, 'cm_revoke' => true ); // eigen opslag van Cookiebaas
     foreach ( cm_get_cookie_list() as $ck ) { // incl. de ingebouwde cookie
         if ( isset( $ck['name'] ) ) $skip[ strtolower( (string) $ck['name'] ) ] = true;
@@ -694,32 +696,54 @@ function cm_browser_scan_rows( array $cookies, array $storage, array $resources 
     };
 
     foreach ( $cookies as $name ) $add( $name, 'browser', cm_browser_scan_info( $name ) );
+    foreach ( $existing as $name ) {
+        $info = cm_browser_scan_info( $name );
+        if ( $info ) $add( $name, 'browser', $info );
+    }
     foreach ( $storage as $name ) $add( $name, 'storage', cm_browser_scan_info( $name ) );
 
     // Geladen externe adressen: bekende diensten → hun cookies; de rest als onbekend domein
     $home    = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
     $unknown = array();
+    $known   = array();
+    $fonts   = false;
+    // Zetten zelf geen cookies (CDN's voor lettertypen en bibliotheken)
+    $cookieless = array( 'fonts.googleapis.com', 'fonts.gstatic.com', 'ajax.googleapis.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'unpkg.com', 's.w.org', 'use.typekit.net', 'p.typekit.net' );
     foreach ( $resources as $url ) {
         $url  = strtok( (string) $url, '?#' );
         $host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
         if ( $host === '' || $host === $home ) continue;
+        if ( in_array( $host, $cookieless, true ) ) {
+            if ( strpos( $host, 'fonts.g' ) === 0 ) $fonts = true;
+            continue;
+        }
         $matched = false;
         foreach ( cm_script_signatures() as $pattern => $sigs ) {
             if ( stripos( $url, $pattern ) === false ) continue;
             $matched = true;
             foreach ( $sigs as $sig ) {
-                if ( substr( $sig[0], -1 ) === '_' && cm_browser_scan_has_prefix( $rows, $sig[0] ) ) continue; // _ga_ als _ga_ABC123 al gevonden is
+                if ( substr( $sig[0], -1 ) === '_' && cm_browser_scan_has_prefix( $rows, $skip, $sig[0] ) ) continue; // _ga_ als _ga_ABC123 al gevonden of in de lijst is
                 $add( $sig[0], 'host', cm_browser_scan_info( $sig[0] ), array( 'type' => $sig[1], 'provider' => $sig[2], 'duration' => $sig[3], 'description' => 'Gezet door ' . $sig[2] . ' (geladen van ' . $host . ').' ) );
             }
         }
-        if ( ! $matched ) $unknown[ $host ] = true;
+        if ( $matched ) $known[ $host ] = true;
+        else $unknown[ $host ] = true;
     }
-    return array( 'cookies' => $rows, 'hosts' => array_slice( array_keys( $unknown ), 0, 50 ) );
+    $notes = array();
+    if ( $fonts ) $notes[] = 'Google Fonts wordt van de servers van Google geladen. Dat zet geen cookies, maar stuurt wel het IP-adres van de bezoeker naar Google. Host de lettertypen bij voorkeur op uw eigen website.';
+    return array(
+        'cookies' => $rows,
+        'hosts'   => array_slice( array_keys( array_diff_key( $unknown, $known ) ), 0, 50 ),
+        'notes'   => $notes,
+    );
 }
 
-function cm_browser_scan_has_prefix( array $rows, $prefix ) {
+function cm_browser_scan_has_prefix( array $rows, array $skip, $prefix ) {
     foreach ( $rows as $r ) {
         if ( stripos( $r['name'], $prefix ) === 0 ) return true;
+    }
+    foreach ( array_keys( $skip ) as $name ) {
+        if ( $name !== strtolower( $prefix ) && stripos( (string) $name, $prefix ) === 0 ) return true;
     }
     return false;
 }
@@ -733,5 +757,5 @@ function cm_ajax_browser_scan_lookup() {
         $v = isset( $data[ $key ] ) && is_array( $data[ $key ] ) ? $data[ $key ] : array();
         return array_slice( array_values( array_filter( $v, 'is_string' ) ), 0, $max );
     };
-    wp_send_json_success( cm_browser_scan_rows( $list( 'cookies', 200 ), $list( 'storage', 200 ), $list( 'resources', 500 ) ) );
+    wp_send_json_success( cm_browser_scan_rows( $list( 'cookies', 200 ), $list( 'storage', 200 ), $list( 'resources', 500 ), $list( 'existing', 200 ) ) );
 }

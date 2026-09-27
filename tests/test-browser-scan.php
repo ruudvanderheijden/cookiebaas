@@ -59,9 +59,14 @@ function consent_markup() { ob_start(); cm_inject_google_consent_mode(); return 
 $on = consent_markup();
 cm_assert( 'scanmodus: alle consent-defaults granted', strpos( $on, "'ad_storage':         'granted'" ) !== false && strpos( $on, "'denied'" ) === false );
 cm_assert( 'scanmodus: eerdere keuze uit de cookie overschrijft niets', strpos( $on, 'cc_cm_consent' ) === false );
+cm_assert( 'scanmodus: GTM-event cm_consent_update met alles granted', strpos( $on, "'event': 'cm_consent_update', 'cm_analytics': true, 'cm_marketing': true, 'cm_method': 'scan'" ) !== false );
+ob_start(); cm_browser_scan_head(); $head = ob_get_clean();
+cm_assert( 'scanmodus: scancode uit de adresbalk (statistieken) en grotere meetbuffer', strpos( $head, "searchParams.delete('cm_browser_scan')" ) !== false && strpos( $head, 'setResourceTimingBufferSize' ) !== false );
 $_GET = array();
 $off = consent_markup();
 cm_assert( 'bezoeker: advertentie-consent denied', substr_count( $off, "'denied'" ) >= 3 );
+cm_assert( 'bezoeker: geen scan-event', strpos( $off, "'cm_method': 'scan'" ) === false );
+ob_start(); cm_browser_scan_head(); cm_assert( 'bezoeker: geen scan-headscript', ob_get_clean() === '' );
 $_GET['cm_browser_scan'] = 'goed';
 $bs = file_get_contents( CM_PLUGIN_ROOT . '/includes/browser-scan.php' );
 cm_assert( 'scanmodus nooit in de paginacache', strpos( $bs, 'DONOTCACHEPAGE' ) !== false && strpos( $bs, 'nocache_headers()' ) !== false );
@@ -73,8 +78,12 @@ $r = cm_browser_scan_rows(
     array(
         'https://www.googletagmanager.com/gtm.js',
         'https://example.test/wp-content/themes/x.js',
+        'https://www.googletagmanager.com/ns.html',
+        'https://fonts.googleapis.com/css2',
+        'https://fonts.gstatic.com/s/x.woff2',
         'https://cdn.onbekend.example/lib.js',
-    )
+    ),
+    array( 'redux_current_tab', 'redux_current_tab_get', '_gid' ) // stonden al in de browser (Brinckers: Redux uit het Salient-optiescherm)
 );
 $names = array_column( $r['cookies'], 'name' );
 $by    = array_column( $r['cookies'], null, 'name' );
@@ -87,6 +96,11 @@ cm_assert( 'opslag gemeld als opslag', isset( $by['lenis-state'] ) && $by['lenis
 cm_assert( 'GTM geladen → _gcl_au afgeleid', isset( $by['_gcl_au'] ) && $by['_gcl_au']['how'] === 'host' );
 cm_assert( '_ga_ niet naast _ga_ABC123', ! in_array( '_ga_', $names, true ) );
 cm_assert( 'eigen domein niet als onbekend', ! in_array( 'example.test', $r['hosts'], true ) );
-cm_assert( 'onbekend domein gemeld', $r['hosts'] === array( 'cdn.onbekend.example' ) );
+cm_assert( 'onbekend domein gemeld; herkende host (GTM) en Google Fonts niet', $r['hosts'] === array( 'cdn.onbekend.example' ) );
+cm_assert( 'al aanwezige onbekende cookies (redux_*) niet gemeld', ! in_array( 'redux_current_tab', $names, true ) && ! in_array( 'redux_current_tab_get', $names, true ) );
+cm_assert( 'al aanwezige bekende cookie (_gid) wel', isset( $by['_gid'] ) && $by['_gid']['how'] === 'browser' );
+cm_assert( 'Google Fonts: toelichting over IP-adres naar Google', count( $r['notes'] ) === 1 && strpos( $r['notes'][0], 'Google Fonts' ) === 0 );
+$r2 = cm_browser_scan_rows( array(), array(), array( 'https://www.googletagmanager.com/gtm.js' ) );
+cm_assert( 'zonder Google Fonts geen toelichting', $r2['notes'] === array() );
 
 exit( cm_test_summary() );

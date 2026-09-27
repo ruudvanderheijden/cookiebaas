@@ -425,6 +425,10 @@ gtag('set', 'url_passthrough', true);
     window.uetq = window.uetq || [];
     window.uetq.push('consent', 'update', { 'ad_storage': k });
 })();
+<?php else : // browserscan: ook tags die op het Cookiebaas-event vuren (zie de GTM-handleiding) laten vuren ?>
+window.dataLayer.push({ 'event': 'cm_consent_update', 'cm_analytics': true, 'cm_marketing': true, 'cm_method': 'scan', 'analytics_storage': 'granted', 'ad_storage': 'granted', 'ad_user_data': 'granted', 'ad_personalization': 'granted' });
+window.uetq = window.uetq || [];
+window.uetq.push('consent', 'update', { 'ad_storage': 'granted' });
 <?php endif; ?>
 </script>
 <?php

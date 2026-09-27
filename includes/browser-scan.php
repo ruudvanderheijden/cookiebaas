@@ -24,14 +24,25 @@ function cm_is_browser_scan() {
     return (bool) wp_verify_nonce( $token, 'cm_browser_scan' );
 }
 
-/** Scanmodus: nooit cachen, niet indexeren, geen adminbalk in de iframe. */
-add_action( 'template_redirect', 'cm_browser_scan_prepare', 0 );
+/** Scanmodus: nooit cachen, niet indexeren, geen adminbalk in de iframe. Op 'wp': vóór WordPress de adminbalk start. */
+add_action( 'wp', 'cm_browser_scan_prepare', 0 );
 function cm_browser_scan_prepare() {
     if ( ! cm_is_browser_scan() ) return;
     if ( ! defined( 'DONOTCACHEPAGE' ) ) define( 'DONOTCACHEPAGE', true );
     do_action( 'litespeed_control_set_nocache', 'Cookiebaas browserscan' );
     nocache_headers();
     header( 'X-Robots-Tag: noindex, nofollow' );
-    header( 'Referrer-Policy: strict-origin-when-cross-origin' ); // scancode nooit in de referrer naar derden
+    header( 'Referrer-Policy: strict-origin-when-cross-origin' ); // scancode niet in de referrer naar derden
     show_admin_bar( false );
+}
+
+/**
+ * Als eerste in de head: de scancode uit de adresbalk van de iframe halen, zodat
+ * statistieken (GA4, Meta) het gewone paginadres zien, en meer geladen adressen
+ * bewaren (standaard 250) zodat laat geladen tags niet uit de meting vallen.
+ */
+add_action( 'wp_head', 'cm_browser_scan_head', -1000 );
+function cm_browser_scan_head() {
+    if ( ! cm_is_browser_scan() ) return;
+    echo "<script data-no-defer=\"1\">try{performance.setResourceTimingBufferSize(3000);var u=new URL(location.href);u.searchParams.delete('cm_browser_scan');history.replaceState(history.state,'',u.toString());}catch(e){}</script>\n";
 }
