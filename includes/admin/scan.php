@@ -729,8 +729,7 @@ function cm_scan_measured_duration( array $durations, $name ) {
 
 /**
  * Resultaten van de ronde met alles geaccepteerd.
- * $d: cookies (nieuw), existing (stonden er al: alleen gemeld als ze bekend zijn;
- * onbekende komen vaak van plugins in de admin), local, session (nieuwe sleutels),
+ * $d: cookies (nieuw of tijdens de scan door de site bijgewerkt), local, session (nieuwe sleutels),
  * durations (naam => seconden, uit de browser), resources (geladen externe adressen).
  * @return array( 'cookies' => rijen, 'hosts' => onbekende domeinen, 'external' => ontvangers zonder cookies )
  */
@@ -761,10 +760,6 @@ function cm_browser_scan_rows( array $d ) {
     };
 
     foreach ( $get( 'cookies' ) as $name ) $add( $name, 'browser', cm_scan_cookie_info( $name ), array(), cm_scan_measured_duration( $durations, $name ) );
-    foreach ( $get( 'existing' ) as $name ) {
-        $info = cm_scan_cookie_info( $name );
-        if ( $info ) $add( $name, 'browser', $info ); // stond er al: de meting is de resterende tijd, niet de looptijd
-    }
     // localStorage blijft staan tot het gewist wordt; sessionStorage verdwijnt met het tabblad
     $storage = function ( $name, $what, $duration ) use ( $add ) {
         $info = cm_scan_cookie_info( $name );
@@ -898,7 +893,6 @@ function cm_ajax_browser_scan_lookup() {
     }
     $rows = cm_browser_scan_rows( array(
         'cookies'   => $list( $data, 'cookies', 200 ),
-        'existing'  => $list( $data, 'existing', 200 ),
         'local'     => $list( $data, 'local', 200 ),
         'session'   => $list( $data, 'session', 200 ),
         'durations' => $durations,

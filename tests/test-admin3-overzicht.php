@@ -40,6 +40,10 @@ $pv     = cm_default_privacy();
 $checks = cm_compliance_checks( $s, $pv, cm_default_cookies() );
 cm_assert( 'alle vijftien controles uit 2.4, plus "Cookielijst recent gecontroleerd" (3.1)', count( $checks ) === 16 );
 cm_assert( 'alleen de statussen ok, warn en fail', ! array_diff( array_unique( array_column( $checks, 'status' ) ), array( 'ok', 'warn', 'fail' ) ) );
+$ua_checks = array_column( cm_compliance_checks( array_merge( $s, array( 'ua_tracking_id' => 'UA-154811-2' ) ), $pv, cm_default_cookies() ), null, 'title' );
+cm_assert( 'alleen een UA-ID: waarschuwing dat Universal Analytics niets meer meet (3.1.1)', isset( $ua_checks['Geen verouderde Universal Analytics'] ) && $ua_checks['Geen verouderde Universal Analytics']['status'] === 'warn' && strpos( $ua_checks['Geen verouderde Universal Analytics']['detail'], 'UA-154811-2' ) !== false );
+cm_assert( 'UA telt niet als Consent Mode v2 (UA kent geen Consent Mode)', $ua_checks['Google Consent Mode v2']['status'] === 'warn' );
+cm_assert( 'zonder UA-ID geen UA-controle', ! in_array( 'Geen verouderde Universal Analytics', array_column( $checks, 'title' ), true ) );
 $tabs = cm_admin_tabs();
 $bad  = array();
 foreach ( $checks as $c ) {

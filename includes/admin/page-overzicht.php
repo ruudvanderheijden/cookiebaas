@@ -65,7 +65,9 @@ function cm_compliance_checks( array $s, array $pv, array $cookies ) {
     $prominence = $reject_lum < 0.5 || abs( $reject_lum - $accept_lum ) < 0.45;
     $body       = $get( 'txt_banner_body' );
     $has_link   = strpos( $body, 'href' ) !== false || strpos( $body, 'privac' ) !== false;
-    $self_load  = preg_match( '/^G-[A-Z0-9]+$/i', $get( 'ga4_measurement_id' ) ) || preg_match( '/^GTM-[A-Z0-9]+$/i', $get( 'gtm_container_id' ) ) || preg_match( '/^UA-[0-9]+-[0-9]+$/i', $get( 'ua_tracking_id' ) );
+    $ga4_gtm    = preg_match( '/^G-[A-Z0-9]+$/i', $get( 'ga4_measurement_id' ) ) || preg_match( '/^GTM-[A-Z0-9]+$/i', $get( 'gtm_container_id' ) );
+    $has_ua     = (bool) preg_match( '/^UA-[0-9]+-[0-9]+$/i', $get( 'ua_tracking_id' ) );
+    $self_load  = $ga4_gtm || $has_ua;
     $blocking   = $get( 'block_analytics_patterns' ) !== '' || $get( 'block_marketing_patterns' ) !== '' || $self_load;
     $expiry     = (int) ( $get( 'expiry_months' ) !== '' ? $get( 'expiry_months' ) : 12 );
     $retention  = (int) $get( 'log_retention_months' );
@@ -95,7 +97,11 @@ function cm_compliance_checks( array $s, array $pv, array $cookies ) {
     $pre_note = is_array( $pre_check ) && ! empty( $pre_check['date'] ) ? ' Laatste meting: ' . (int) $pre_check['pages'] . ' pagina’s op ' . wp_date( 'j F Y', strtotime( $pre_check['date'] . ' UTC' ) ) . '.' : '';
     $add( $g, 'Niets vóór toestemming', 'Gemeten met de uitgebreide scan: bij een nieuwe bezoeker die nog niets koos, plaatst of laadt de site niets waarvoor toestemming nodig is. De blokkering werkt in drie lagen: de output-buffer in PHP, een MutationObserver in JavaScript en Google Consent Mode v2.' . $pre_note, 'Tw art. 11.7a · ePrivacyrichtlijn', $pre_status, cm_admin_page_url( 'cookiebaas-cookies', 'scannen' ), 'Uitgebreide scan uitvoeren', $pre_detail );
     $add( $g, 'Embeds geblokkeerd vóór toestemming', 'YouTube, Vimeo, Google Maps, Spotify, TikTok en meer worden automatisch geblokkeerd en vervangen door een placeholder.', 'Tw art. 11.7a · AP-standpunt over ingesloten content', ! empty( $s['embed_blocker_enabled'] ) ? 'ok' : 'warn', $block( 'embeds' ), 'Embedblokkering inschakelen' );
-    $add( $g, 'Google Consent Mode v2', 'Automatische koppeling met GA4 en GTM: standaard “denied”, na toestemming “granted”.', 'Google EU User Consent Policy · Digital Markets Act', $self_load ? 'ok' : 'warn', $block( 'google' ), 'GA4- of GTM-ID invullen', $self_load ? '' : 'Vul een GA4- of GTM-ID in voor automatische Consent Mode v2.' );
+    // Universal Analytics kent geen Consent Mode: telt hier niet mee
+    $add( $g, 'Google Consent Mode v2', 'Automatische koppeling met GA4 en GTM: standaard “denied”, na toestemming “granted”.', 'Google EU User Consent Policy · Digital Markets Act', $ga4_gtm ? 'ok' : 'warn', $block( 'google' ), 'GA4- of GTM-ID invullen', $ga4_gtm ? '' : 'Vul een GA4- of GTM-ID in voor automatische Consent Mode v2.' );
+    if ( $has_ua ) {
+        $add( $g, 'Geen verouderde Universal Analytics', 'Universal Analytics is op 1 juli 2023 gestopt en verzamelt sindsdien niets meer.', 'Google', 'warn', $block( 'google' ), 'GA4-ID invullen', 'Er staat nog een UA-ID ingesteld (' . $get( 'ua_tracking_id' ) . '). Uw site meet daarmee geen bezoekers: vul het GA4-ID (G-…) in en maak het UA-veld leeg.' );
+    }
     $add( $g, 'Toestemming verloopt binnen 12 maanden', 'De toestemmingscookie verloopt na de ingestelde periode. De AP adviseert maximaal 12 maanden.', 'AP-handhavingscriteria · EDPB-aanbeveling', $expiry <= 12 ? 'ok' : 'warn', $banner( 'gedrag' ), 'Geldigheid aanpassen', $expiry <= 12 ? '' : 'Nu ingesteld: ' . $expiry . ' maanden.' );
 
     $g = 'Verantwoordingsplicht (AVG art. 5 lid 2)';

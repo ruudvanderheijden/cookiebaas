@@ -450,11 +450,10 @@
         failed = res.failed;
         return cookieExpiries().then(function (durations) {
           var after = snapshot();
-          var fresh = newKeys(before.c, after.c);
-          // Cookies die er al stonden meldt de server alleen als ze bekend zijn: onbekende komen vaak van plugins in de admin
+          // Nieuw of door de site bijgewerkt. Een cookie die al in uw browser stond en onveranderd bleef
+          // (bijv. een oude _ga_… van een eerdere opzet, of redux_* uit de admin), zet de site nu niet
           var data = {
-            cookies: fresh,
-            existing: Object.keys(after.c).filter(function (n) { return fresh.indexOf(n) === -1; }),
+            cookies: changedKeys(before.c, after.c),
             local: newKeys(before.l, after.l),
             session: newKeys(before.s, after.s),
             durations: durations,

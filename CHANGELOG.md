@@ -1,5 +1,10 @@
 # Changelog — Cookiebaas
 
+## [3.1.1] - nog niet uitgebracht
+
+- **Universal Analytics:** Cookiebaas waarschuwt nu duidelijk als er nog een UA-ID (`UA-…`) is ingesteld. Google heeft Universal Analytics op 1 juli 2023 stopgezet; zo'n site meet dus geen bezoekers meer. De waarschuwing staat bij Blokkering › Google en als controle op het Overzicht. Die controle vraagt het GA4-ID (`G-…`) in te vullen. Een UA-ID telt ook niet meer mee voor de controle op Google Consent Mode v2, want UA kent geen Consent Mode.
+- **Uitgebreide scan:** een cookie die al in uw browser stond, meldt de scan alleen nog als de site hem tijdens de scan bijwerkt. Een oude cookie van een eerdere opzet, zoals een `_ga_…` van een GA4-property die de site niet meer laadt, verschijnt dus niet meer in de resultaten.
+
 ## [3.1.0] - 2026-09-27
 
 ### Nieuw: uitgebreide scan, met controle vóór toestemming

@@ -99,10 +99,9 @@ cm_assert( 'scanmodus nooit in de paginacache', strpos( $bs, 'DONOTCACHEPAGE' ) 
 cm_test_group( 'Na toestemming: filteren, herkennen, looptijd' );
 $r = cm_browser_scan_rows( array(
     'cookies'   => array( '_ga', '_ga_ABC123', 'cc_cm_consent', 'cm_sid', 'wp-settings-1', 'wp-saving-post', 'wordpress_test_cookie', '_ga', 'raar_ding' ),
-    'existing'  => array( 'redux_current_tab', 'redux_current_tab_get', '_gid', 'raar_oud' ), // stonden al in de browser (Brinckers: Redux uit het Salient-optiescherm)
     'local'     => array( 'lenis-state' ),
     'session'   => array( 'tab-state' ),
-    'durations' => array( '_ga' => 400 * 86400, 'raar_ding' => 0, '_gid' => 3600 ),
+    'durations' => array( '_ga' => 400 * 86400, 'raar_ding' => 0 ),
     'resources' => array(
         'https://www.googletagmanager.com/gtm.js',
         'https://example.test/wp-content/themes/x.js',
@@ -126,8 +125,8 @@ cm_assert( 'GTM geladen → _gcl_au afgeleid', isset( $by['_gcl_au'] ) && $by['_
 cm_assert( '_ga_ niet naast _ga_ABC123', ! in_array( '_ga_', $names, true ) );
 cm_assert( 'onbekend domein gemeld; eigen, herkende en cookieloze hosts niet', $r['hosts'] === array( 'cdn.onbekend.example' ) );
 cm_assert( 'ontvangers zonder cookies (IP-adres) apart, niet verborgen', $r['external'] === array( 'fonts.googleapis.com', 'cdn.jsdelivr.net' ) );
-cm_assert( 'al aanwezige onbekende cookies (redux_*) niet gemeld', ! in_array( 'redux_current_tab', $names, true ) && ! in_array( 'redux_current_tab_get', $names, true ) );
-cm_assert( 'al aanwezige bekende cookie (_gid) wel, zonder de resterende tijd als looptijd', isset( $by['_gid'] ) && $by['_gid']['how'] === 'browser' && $by['_gid']['duration'] !== '1 uur' );
+$js_scan = file_get_contents( CM_PLUGIN_ROOT . '/assets/js/admin-cookies.js' );
+cm_assert( 'na toestemming: alleen nieuwe of door de site bijgewerkte cookies (3.1.1: geen oude _ga_… uit een eerdere opzet, geen redux_* uit de admin)', strpos( $js_scan, 'cookies: changedKeys(before.c, after.c),' ) !== false && strpos( $js_scan, 'existing:' ) === false );
 
 cm_test_group( 'Vóór toestemming' );
 update_option( 'cm_cookie_list', array( array( 'name' => 'eigen_marketing', 'category' => 'marketing' ), array( 'name' => 'eigen_functioneel', 'category' => 'functional' ) ) );
