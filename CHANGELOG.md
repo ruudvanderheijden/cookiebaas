@@ -1,6 +1,6 @@
 # Changelog — Cookiebaas
 
-## [3.1.2] - nog niet uitgebracht
+## [3.1.2] - 2026-09-30
 
 ### Licentie
 
