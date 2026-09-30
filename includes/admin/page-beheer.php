@@ -77,7 +77,7 @@ function cm_render_beheer_licentie() {
         echo '<tr><th scope="row">Laatste controle</th><td>' . esc_html( ! empty( $lic['last_check'] ) ? wp_date( 'j F Y, H:i', $lic['last_check'] ) : 'Nog niet gecontroleerd' ) . '</td></tr>';
         echo '</tbody></table>';
         echo '<div>' . cm_admin_action_form( 'license_check', 'Status controleren' ) . ' '
-           . cm_admin_action_form( 'license_deactivate', 'Deactiveren', array(), 'De licentie op deze website deactiveren? ' . ucfirst( cm_premium_features_text() ) . ' pauzeren tot u opnieuw activeert. Het vastleggen van toestemmingen gaat door.', 'button button-link-delete' ) . '</div>';
+           . cm_admin_action_form( 'license_deactivate', 'Deactiveren', array(), 'De licentie deactiveren en van deze website verwijderen? ' . ucfirst( cm_premium_features_text() ) . ' pauzeren tot u opnieuw activeert. Het vastleggen van toestemmingen gaat door.', 'button button-link-delete' ) . '</div>';
     }
 
     echo '<h2>' . esc_html( ! empty( $lic['key'] ) ? 'Andere sleutel activeren' : 'Licentie activeren' ) . '</h2>';

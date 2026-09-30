@@ -110,18 +110,24 @@ function cm_license_api_call( $endpoint, $params = array() ) {
         'timeout' => 15,
     ) );
 
+    // 'network': de server gaf geen (bruikbaar) antwoord. Dat zegt niets over de sleutel.
     if ( is_wp_error( $response ) ) {
-        return array( 'success' => false, 'error' => $response->get_error_message() );
+        return array( 'success' => false, 'network' => true, 'error' => cm_license_network_message( $response->get_error_message() ) );
     }
 
     $code = wp_remote_retrieve_response_code( $response );
     $body = json_decode( wp_remote_retrieve_body( $response ), true );
 
     if ( ! is_array( $body ) ) {
-        return array( 'success' => false, 'error' => 'Ongeldig antwoord van licentieserver (HTTP ' . $code . ').' );
+        return array( 'success' => false, 'network' => true, 'error' => cm_license_network_message( 'HTTP ' . $code . ', geen geldig antwoord' ) );
     }
 
     return $body;
+}
+
+/** Uitleg bij een mislukte verbinding: het ligt aan de verbinding, niet aan de sleutel. */
+function cm_license_network_message( $detail ) {
+    return 'De licentieserver (cookiebaas.nl) gaf vanaf deze website geen antwoord. Dat ligt aan de verbinding tussen de hosting van deze website en de licentieserver, niet aan uw sleutel. Probeer het later opnieuw; blijft het zo, vraag uw hoster of de server verbinding mag maken met cookiebaas.nl. Technische melding: ' . $detail;
 }
 
 function cm_license_get_domain() {
@@ -136,29 +142,29 @@ function cm_license_get_domain() {
 function cm_license_activate( $key ) {
     $domain = cm_license_get_domain();
 
-    // Als er al een actieve licentie is met een andere sleutel: eerst deactiveren
     $existing = cm_license_get();
-    if ( ! empty( $existing['key'] ) && $existing['key'] !== $key && $existing['status'] === 'active' ) {
-        cm_license_api_call( 'deactivate', array(
-            'license_key' => $existing['key'],
-            'domain'      => $domain,
-        ) );
-        $existing['status']       = '';
-        $existing['domain']       = '';
-        $existing['last_success'] = 0;
-        cm_license_save( $existing );
-    }
 
     $result = cm_license_api_call( 'activate', array(
         'license_key' => $key,
         'domain'      => $domain,
     ) );
 
+    // Geen antwoord van de server: niets opslaan. De sleutel is daarmee niet ongeldig,
+    // en een licentie die al actief was blijft zoals hij was.
+    if ( ! empty( $result['network'] ) ) {
+        return array( 'success' => false, 'error' => cm_license_str( $result['error'] ?? '', 'Activatie mislukt.' ) );
+    }
+
     $lic = cm_license_get();
     $lic['key']    = $key;
     $lic['domain'] = $domain;
 
     if ( ! empty( $result['success'] ) ) {
+        // Stond er een andere actieve sleutel: die pas na een geslaagde activatie bij de server afmelden,
+        // zodat een mislukte poging de bestaande licentie niet weghaalt
+        if ( ! empty( $existing['key'] ) && $existing['key'] !== $key && isset( $existing['status'] ) && $existing['status'] === 'active' ) {
+            cm_license_api_call( 'deactivate', array( 'license_key' => $existing['key'], 'domain' => $domain ) );
+        }
         $lic['status']       = 'active';
         $lic['expires_at']   = cm_license_str( $result['expires_at'] ?? '' );
         $lic['max_sites']    = (int) ( is_scalar( $result['max_sites'] ?? null ) ? $result['max_sites'] : 1 );
@@ -188,18 +194,13 @@ function cm_license_deactivate() {
         'domain'      => cm_license_get_domain(),
     ) );
 
-    // Altijd lokaal resetten na deactivatie
-    $lic['status']       = '';
-    $lic['domain']       = '';
-    $lic['last_check']   = time();
-    $lic['last_success'] = 0;
-    cm_license_save( $lic );
+    // Deactiveren haalt de licentie altijd van deze website af, ook de sleutel
+    delete_option( 'cm_license_data' );
 
-    if ( ! empty( $result['success'] ) ) {
-        return array( 'success' => true, 'message' => cm_license_str( $result['message'] ?? '', 'Licentie gedeactiveerd.' ) );
+    if ( ! empty( $result['network'] ) ) {
+        return array( 'success' => true, 'remote' => false, 'message' => 'De licentie is van deze website verwijderd, maar de licentieserver was niet bereikbaar. Dit domein staat daar dus nog als geactiveerd; verwijder het ook in uw account op cookiebaas.nl, anders telt het nog mee.' );
     }
-
-    return array( 'success' => true, 'remote' => false, 'message' => 'De licentie is op deze website gedeactiveerd, maar de licentieserver was niet bereikbaar. Deactiveer de website eventueel ook in uw account op cookiebaas.nl.' );
+    return array( 'success' => true, 'message' => 'De licentie is gedeactiveerd en van deze website verwijderd.' );
 }
 
 /* ================================================================

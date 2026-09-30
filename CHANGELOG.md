@@ -1,5 +1,13 @@
 # Changelog — Cookiebaas
 
+## [3.1.2] - nog niet uitgebracht
+
+### Licentie
+
+- **Deactiveren** haalt de licentie nu helemaal van de website af, ook de sleutel. Voorheen bleef de sleutel staan met de status "Ongeldig". Is de licentieserver niet bereikbaar, dan wordt de licentie toch van de website verwijderd en meldt Cookiebaas dat het domein bij de server nog als geactiveerd staat.
+- Geeft de licentieserver bij het activeren geen antwoord (bijvoorbeeld een time-out), dan wordt de sleutel niet meer als "Ongeldig" opgeslagen en blijft een licentie die al actief was gewoon staan. De melding legt uit dat het aan de verbinding tussen de hosting en de licentieserver ligt, niet aan de sleutel.
+- Activeert u een andere sleutel, dan wordt de oude pas bij de server afgemeld nadat de nieuwe is geaccepteerd.
+
 ## [3.1.1] - 2026-09-28
 
 - **Universal Analytics:** Cookiebaas waarschuwt nu duidelijk als er nog een UA-ID (`UA-…`) is ingesteld. Google heeft Universal Analytics op 1 juli 2023 stopgezet; zo'n site meet dus geen bezoekers meer. De waarschuwing staat bij Blokkering › Google en als controle op het Overzicht. Die controle vraagt het GA4-ID (`G-…`) in te vullen. Een UA-ID telt ook niet meer mee voor de controle op Google Consent Mode v2, want UA kent geen Consent Mode.
