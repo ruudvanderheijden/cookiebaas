@@ -1,6 +1,6 @@
 # Changelog — Cookiebaas
 
-## [3.2.1] - nog niet uitgebracht
+## [3.2.1] - 2026-10-01
 
 - **Licentie:** bij activeren en bij de dagelijkse statuscontrole stuurt Cookiebaas nu ook zijn eigen versie, de WordPress-versie en de PHP-versie mee naar de licentieserver. Zo ziet de licentieserver welke sites een oude versie draaien en welke zich niet meer melden. Er gaan geen persoonsgegevens of bezoekersgegevens mee.
 
