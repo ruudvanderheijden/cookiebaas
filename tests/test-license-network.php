@@ -23,6 +23,7 @@ $GLOBALS['cm_test_http']  = array(); // wachtrij met antwoorden
 $GLOBALS['cm_test_calls'] = array(); // aangeroepen endpoints
 function wp_remote_post( $url, $args = array() ) {
     $GLOBALS['cm_test_calls'][] = basename( $url );
+    $GLOBALS['cm_test_bodies'][] = json_decode( $args['body'], true );
     return array_shift( $GLOBALS['cm_test_http'] );
 }
 function wp_remote_retrieve_response_code( $r ) { return $r['code']; }
@@ -77,5 +78,13 @@ update_option( 'cm_license_data', $active );
 $GLOBALS['cm_test_http'] = array( http_ok( array( 'success' => false, 'error' => 'Domein was niet gekoppeld aan deze licentie.' ), 404 ) );
 $r = cm_license_deactivate();
 cm_assert( 'domein stond niet bij de server: gewoon verwijderd, zonder waarschuwing', $r['success'] === true && ! isset( $r['remote'] ) && empty( cm_license_get()['key'] ) );
+
+cm_test_group( 'Versies voor het overzicht op de licentieserver (3.2.1)' );
+$GLOBALS['cm_test_bodies'] = array();
+$GLOBALS['cm_test_http'] = array( http_ok( array( 'valid' => true ) ) );
+update_option( 'cm_license_data', $active );
+cm_license_check_status();
+$b = end( $GLOBALS['cm_test_bodies'] );
+cm_assert( 'statuscontrole stuurt plugin-, WordPress- en PHP-versie mee', $b['plugin_version'] === CM_VERSION && isset( $b['wp_version'] ) && $b['php_version'] === PHP_VERSION && $b['license_key'] === 'CB-OUD' );
 
 exit( cm_test_summary() );

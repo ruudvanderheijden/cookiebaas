@@ -103,6 +103,12 @@ add_action( 'delete_option', function ( $name ) {
    ================================================================ */
 function cm_license_api_call( $endpoint, $params = array() ) {
     $url = cm_license_api_url() . '/wp-json/cookiebaas-license/v1/' . $endpoint;
+    // Versies voor het overzicht op de licentieserver (welke sites oude versies draaien); geen persoonsgegevens
+    $params = array_merge( $params, array(
+        'plugin_version' => CM_VERSION,
+        'wp_version'     => (string) get_bloginfo( 'version' ),
+        'php_version'    => PHP_VERSION,
+    ) );
 
     $response = wp_remote_post( $url, array(
         'headers' => array( 'Content-Type' => 'application/json' ),
