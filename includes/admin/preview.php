@@ -46,6 +46,8 @@ function cm_preview_var_map() {
     foreach ( array( 'accept_border' => 'accept-border', 'reject_border' => 'reject-border', 'allowall_border' => 'allowall-border', 'outline_hover_bg' => 'outline-hover-bg' ) as $suffix => $var ) {
         $m[] = array( 'color_' . $suffix, 'dm_' . $suffix, '--cm-' . $var, '', 'transparent' );
     }
+    // Vinkjes in de kaartweergave: leeg = kleur van "Schakelaar aan"
+    $m[] = array( 'color_card_check', 'dm_card_check', '--cm-card-check', '', 'var(--cm-toggle-on)' );
     return $m;
 }
 

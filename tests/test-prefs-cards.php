@@ -96,4 +96,17 @@ $css = file_get_contents( CM_PLUGIN_ROOT . '/assets/css/frontend.css' );
 cm_assert( 'vakjes en vinkjes gebruiken de schakelaar- en labelkleuren', strpos( $css, 'var(--cm-toggle-on, #0091ff)' ) !== false && strpos( $css, '#cm-prefs .cm-card input[type="checkbox"]:disabled { background: var(--cm-always-bg' ) !== false && strpos( $css, '#cm-prefs .cm-card-points li::before' ) !== false );
 cm_assert( 'akkoordknop gebruikt de kleuren van "Alles akkoord"', strpos( $css, '#cm-prefs .cm-btn-allowall,' ) !== false && strpos( $css, 'var(--cm-allowall-bg, #0091ff)' ) !== false );
 
+cm_test_group( 'Knoppen, vinkkleur en kop (na eerste test)' );
+cm_assert( 'knoppen op één rij: afwijzen links, opslaan en akkoord rechts; tekst breekt binnen de knop', strpos( $css, '#cm-prefs .cm-prefs-cards .cm-prefs-footer { flex-wrap: nowrap;' ) !== false && strpos( $css, '#cm-prefs .cm-prefs-cards #cm-rejectall-btn { margin-right: auto; }' ) !== false && strpos( $css, 'white-space: normal !important' ) !== false );
+cm_assert( 'compactere kop', strpos( $css, '#cm-prefs .cm-prefs-cards .cm-prefs-header { padding: 24px 36px 14px; border-bottom: 0; }' ) !== false );
+cm_assert( 'vinkjes bij de punten: eigen kleur, anders "Schakelaar aan"', strpos( $css, 'border: solid var(--cm-card-check, var(--cm-toggle-on, #0091ff))' ) !== false );
+$vg = array_column( cm_admin_field_list( 'cm_settings', array( 'banner' => cm_tabs_banner() ) ), null, 'key' );
+cm_assert( 'kleurveld voor de vinkjes (licht en donker, optioneel)', isset( $vg['color_card_check'], $vg['dm_card_check'] ) && $vg['color_card_check']['type'] === 'color_optional' );
+set_settings( array( 'color_toggle_on' => '#123456' ) );
+ob_start(); cm_output_inline_css(); $inline = ob_get_clean();
+cm_assert( 'zonder eigen kleur: vinkjes in de kleur van "Schakelaar aan"', strpos( $inline, '--cm-card-check:var(--cm-toggle-on);' ) !== false && strpos( $inline, '--cm-toggle-on:#123456;' ) !== false );
+set_settings( array( 'color_card_check' => '#00a32a' ) );
+ob_start(); cm_output_inline_css(); $inline = ob_get_clean();
+cm_assert( 'met eigen kleur: die kleur', strpos( $inline, '--cm-card-check:#00a32a;' ) !== false );
+
 exit( cm_test_summary() );

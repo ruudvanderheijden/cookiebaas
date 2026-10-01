@@ -89,6 +89,7 @@ function cm_color_sections( $theme ) {
             $c( 'toggle_off', 'Schakelaar uit' ),
             $c( 'always_bg', '"Altijd actief" — achtergrond' ),
             $c( 'always_on_color', '"Altijd actief" — tekst' ),
+            $o( 'card_check', 'Vinkjes bij de punten (kaarten)', 'Zoals "Schakelaar aan"' ),
             $c( 'expand_bg', 'Uitklapicoon — achtergrond' ),
             $c( 'expand_icon', 'Uitklapicoon — icoon' ),
             $c( 'expand_open_bg', 'Uitklapicoon open — achtergrond' ),

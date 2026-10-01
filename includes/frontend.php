@@ -70,6 +70,7 @@ function cm_output_inline_css() {
     echo '--cm-toggle-on:'           . esc_attr( cm_get('color_toggle_on') )                  . ';';
     echo '--cm-always-bg:'           . esc_attr( cm_get('color_always_bg') )                  . ';';
     echo '--cm-always-on-color:'     . esc_attr( cm_get('color_always_on_color') ?: '#0091ff' ) . ';';
+    echo '--cm-card-check:'          . esc_attr( cm_get('color_card_check') ?: 'var(--cm-toggle-on)' ) . ';'; // leeg = kleur van "Schakelaar aan"
     echo '--cm-badge-text:'          . esc_attr( cm_get('color_badge_text') ?: '#0091ff' )     . ';';
     echo '--cm-badge-bg:'            . esc_attr( cm_get('color_badge_bg') ?: '#e8f4ff' )       . ';';
     echo '--cm-badge-border:'        . esc_attr( cm_get('color_badge_border') ?: '#0091ff' )   . ';';
@@ -169,6 +170,7 @@ function cm_output_inline_css() {
         echo '--cm-close-hover-bg:'        . esc_attr( $dm('dm_close_hover_bg','#f2f2f2') )                  . ';';
         echo '--cm-close-icon:'            . esc_attr( $dm('dm_close_icon','#888888') )                      . ';';
         echo '--cm-toggle-on:'             . esc_attr( $dm('dm_toggle_on','#6eb8ff') )                       . ';';
+        echo '--cm-card-check:'            . esc_attr( $dm('dm_card_check', 'var(--cm-toggle-on)') )         . ';';
         echo '--cm-always-bg:'             . esc_attr( $dm('dm_always_bg','#0c2a45') )                       . ';';
         echo '--cm-expand-bg:'             . esc_attr( $dm('dm_expand_bg','#2a2a2a') )                       . ';';
         echo '--cm-expand-icon:'           . esc_attr( $dm('dm_expand_icon','#aaaaaa') )                     . ';';

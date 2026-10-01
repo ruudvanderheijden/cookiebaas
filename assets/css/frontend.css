@@ -629,7 +629,10 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
 }
 
 /* ---- VOORKEURENVENSTER ALS KAARTEN (3.2) — kleuren volgen de bestaande instellingen ---- */
+#cm-prefs .cm-prefs-cards .cm-prefs-header { padding: 24px 36px 14px; border-bottom: 0; }
+#cm-prefs .cm-prefs-cards .cm-prefs-title { margin-bottom: 4px; }
 #cm-prefs .cm-prefs-cards .cm-prefs-text { margin-bottom: 0; }
+#cm-prefs .cm-prefs-cards .cm-prefs-body { padding-top: 4px; }
 #cm-prefs .cm-prefs-cards .cm-categories { border: 0; border-radius: 0; overflow: visible; display: flex; flex-direction: column; gap: 12px; }
 #cm-prefs .cm-card { border: 1.5px solid var(--cm-cat-border, #e8e4de); border-radius: 12px; padding: 16px 18px; background: var(--cm-popup-bg, #fff); }
 #cm-prefs .cm-card-head { display: flex; align-items: center; gap: 12px; }
@@ -644,16 +647,22 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
 #cm-prefs .cm-card input[type="checkbox"]:focus-visible { outline: 3px solid var(--cm-toggle-on, #0091ff); outline-offset: 2px; }
 #cm-prefs .cm-card-points { list-style: none; margin: 10px 0 0; padding: 0 0 0 34px; }
 #cm-prefs .cm-card-points li { position: relative; margin: 4px 0; padding-left: 24px; font-size: 0.875rem; line-height: 1.55; color: var(--cm-body-color, #555); }
-#cm-prefs .cm-card-points li::before { content: ''; position: absolute; left: 4px; top: 4px; width: 5px; height: 10px; border: solid var(--cm-toggle-on, #0091ff); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+#cm-prefs .cm-card-points li::before { content: ''; position: absolute; left: 4px; top: 4px; width: 5px; height: 10px; border: solid var(--cm-card-check, var(--cm-toggle-on, #0091ff)); border-width: 0 2px 2px 0; transform: rotate(45deg); }
 #cm-prefs .cm-card-text { margin: 10px 0 0 34px; font-size: 0.875rem; line-height: 1.55; color: var(--cm-body-color, #555); }
-#cm-prefs .cm-prefs-cards .cm-prefs-footer { justify-content: flex-end; }
+/* Eén rij: afwijzen links, opslaan en akkoord rechts; past de tekst niet, dan breekt die binnen de knop */
+#cm-prefs .cm-prefs-cards .cm-prefs-footer { flex-wrap: nowrap; justify-content: flex-end; gap: 10px; }
+#cm-prefs .cm-prefs-cards .cm-prefs-footer .cm-btn,
+body #cm-prefs .cm-prefs-cards .cm-prefs-footer .cm-btn { min-width: 0 !important; padding: 11px 16px !important; white-space: normal !important; line-height: 1.25 !important; text-align: center; flex: 0 1 auto; }
+#cm-prefs .cm-prefs-cards #cm-rejectall-btn { margin-right: auto; }
 #cm-prefs .cm-btn-allowall,
 body #cm-prefs .cm-btn-allowall { background: var(--cm-allowall-bg, #0091ff) !important; color: var(--cm-allowall-text, #fff) !important; border: 1.5px solid var(--cm-allowall-border, transparent) !important; border-radius: var(--cm-btn-radius, 10px) !important; box-shadow: none !important; }
 #cm-prefs .cm-btn-allowall:hover,
 body #cm-prefs .cm-btn-allowall:hover { background: var(--cm-allowall-hover-bg, #111) !important; color: var(--cm-allowall-hover-text, #fff) !important; }
 #cm-prefs.cm-page-mode .cm-btn-allowall { display: none !important; }
 @media (max-width: 600px) {
+    #cm-prefs .cm-prefs-cards .cm-prefs-header { padding: 20px 20px 10px; }
     #cm-prefs .cm-prefs-cards .cm-prefs-footer { flex-direction: column-reverse; align-items: stretch; }
+    #cm-prefs .cm-prefs-cards #cm-rejectall-btn { margin-right: 0; }
     #cm-prefs .cm-card-points { padding-left: 0; }
     #cm-prefs .cm-card-text { margin-left: 0; }
 }

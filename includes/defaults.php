@@ -70,6 +70,7 @@ function cm_default_settings() {
         'color_toggle_on'           => '#0091ff',
         'color_always_bg'           => '#e8f4ff',
         'color_always_on_color'     => '#0091ff',   // "Altijd actief" badge tekstkleur
+        'color_card_check'          => '',          // vinkjes bij de punten (kaartweergave); leeg = kleur van "Schakelaar aan"
         // Derde-partij badge
         'color_badge_text'          => '#0091ff',
         'color_badge_bg'            => '#e8f4ff',
@@ -212,6 +213,7 @@ function cm_default_settings() {
         'dm_toggle_on'                 => '#0091ff',
         'dm_always_bg'                 => '#0c2a45',
         'dm_always_on_color'           => '#6eb8ff',   // "Altijd actief" badge tekstkleur
+        'dm_card_check'                => '',          // vinkjes bij de punten (kaartweergave); leeg = "Schakelaar aan"
         // Derde-partij badge (dark)
         'dm_badge_text'                => '#ffd97a',
         'dm_badge_bg'                  => '#3a2e00',
