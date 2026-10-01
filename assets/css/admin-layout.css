@@ -60,9 +60,10 @@
 .cm-inline-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 16px 0; }
 
 /* Tussenkoppen binnen een sectie (bijv. per soort knop) */
-.cm-admin .form-table .cm-subheading th { padding: 20px 10px 4px 0; }
+.cm-admin .form-table .cm-subheading th { padding: 28px 10px 6px 0; }
 .cm-admin .form-table .cm-subheading:first-child th { padding-top: 8px; }
-.cm-admin .form-table .cm-subheading h3 { margin: 0; font-size: 1em; }
+/* Tussenkop (bijv. Knop "Akkoord"): groter en met een lijn, zodat de groepen duidelijk los staan */
+.cm-admin .form-table .cm-subheading h3 { margin: 0; padding-bottom: 6px; font-size: 1.15em; border-bottom: 1px solid rgba(0, 0, 0, 0.13); }
 
 /* Premium-melding zonder licentie */
 .cm-premium { margin: 16px 0; }
