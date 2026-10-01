@@ -159,4 +159,16 @@ cm_assert( 'functioneel: geen handje en geen hover', strpos( $css, '#cm-prefs #c
 set_settings( array( 'prefs_layout' => 'cards' ) );
 cm_assert( 'vakje zit in het label (anders werkt de klik niet)', (bool) preg_match( '#<label class="cm-card-label"><input type="checkbox" id="cm-toggle-analytics">#', prefs_markup() ) );
 
+cm_test_group( 'Vormgeving per onderdeel (optie A)' );
+$secs = cm_color_sections( 'light' );
+cm_assert( 'volgorde: Algemeen, Cookiebanner, Voorkeurenvenster, Zweefknop, video\'s', array_column( $secs, 'title' ) === array( 'Algemeen', 'Cookiebanner', 'Voorkeurenvenster', 'Zweefknop', 'Placeholder voor geblokkeerde video\'s' ) );
+$in_sec = function ( $title, $key ) use ( $secs ) {
+    foreach ( $secs as $sec ) if ( $sec['title'] === $title ) return in_array( $key, array_column( $sec['fields'], 'key' ), true );
+    return false;
+};
+cm_assert( 'gedeelde basis in Algemeen (ook hoekafronding knoppen)', $in_sec( 'Algemeen', 'color_popup_bg' ) && $in_sec( 'Algemeen', 'radius_btn' ) && $in_sec( 'Algemeen', 'overlay_opacity' ) );
+cm_assert( 'bannerknoppen bij de Cookiebanner', $in_sec( 'Cookiebanner', 'color_accept_bg' ) && $in_sec( 'Cookiebanner', 'color_reject_bg' ) && $in_sec( 'Cookiebanner', 'color_prefs_border' ) );
+cm_assert( 'vensterknoppen, schakelaars en kaartkleuren bij het Voorkeurenvenster', $in_sec( 'Voorkeurenvenster', 'color_save_bg' ) && $in_sec( 'Voorkeurenvenster', 'color_allowall_bg' ) && $in_sec( 'Voorkeurenvenster', 'color_toggle_on' ) && $in_sec( 'Voorkeurenvenster', 'color_card_check' ) );
+cm_assert( 'donker thema dezelfde indeling', array_column( cm_color_sections( 'dark' ), 'title' ) === array_column( $secs, 'title' ) );
+
 exit( cm_test_summary() );

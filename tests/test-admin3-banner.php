@@ -96,10 +96,10 @@ cm_test_group( 'Foutmelding noemt thema en sectie (licht/donker hebben dezelfde 
 $idx = cm_admin_field_index( 'cm_settings', array( 'cookiebaas-banner' => cm_tabs_banner() ) );
 $GLOBALS['cm_test_errors'] = array();
 cm_sanitize_field_value( $idx['dm_title'], 'geen-kleur', '#111111' );
-cm_assert( 'dm_title: melding bevat "Donker thema › Venster"', strpos( end( $GLOBALS['cm_test_errors'] ), 'Donker thema › Venster' ) !== false );
+cm_assert( 'dm_title: melding bevat "Donker thema › Algemeen"', strpos( end( $GLOBALS['cm_test_errors'] ), 'Donker thema › Algemeen' ) !== false );
 $GLOBALS['cm_test_errors'] = array();
 cm_sanitize_field_value( $idx['color_title'], 'geen-kleur', '#111111' );
-cm_assert( 'color_title: melding bevat "Licht thema › Venster"', strpos( end( $GLOBALS['cm_test_errors'] ), 'Licht thema › Venster' ) !== false );
+cm_assert( 'color_title: melding bevat "Licht thema › Algemeen"', strpos( end( $GLOBALS['cm_test_errors'] ), 'Licht thema › Algemeen' ) !== false );
 $GLOBALS['cm_test_errors'] = array();
 cm_sanitize_field_value( $idx['banner_width_bottom_center'], 'abc', '760' );
 cm_assert( 'breedte onderaan-midden: melding bevat de context', strpos( end( $GLOBALS['cm_test_errors'] ), 'Onderaan in het midden' ) !== false );

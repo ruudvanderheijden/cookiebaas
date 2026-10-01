@@ -14,6 +14,7 @@ De kaarten gebruiken de kleuren die u al heeft ingesteld: de vakjes de kleuren v
 In de kaartweergave staan de cookies niet in het venster, maar alleen in de cookieverklaring. Kies daarom onder Banner › Weergave de pagina met de cookieverklaring en zet daar `[cookiebaas_cookies]` op, of gebruik de privacyverklaring met `[cookiebaas_privacy]`. Cookiebaas waarschuwt bij die instelling als de gekozen pagina geen van beide shortcodes bevat. Ook de controle "Elke cookie heeft een doel en looptijd" op het Overzicht wordt dan oranje.
 
 ### Gewijzigd
+- **Vormgeving per onderdeel.** Banner › Vormgeving is ingedeeld per onderdeel. Onder **Algemeen** staat wat de banner en het voorkeurenvenster delen: achtergrond, titels, tekst, links, hoekafronding en de donkerte van de achtergrond. Daarna volgen **Cookiebanner** (de knoppen Akkoord, Weigeren en Cookievoorkeuren), **Voorkeurenvenster** (knoppen, sluitknop, categorieën, uitklaplijst en kaartweergave), **Zweefknop** en **Placeholder voor geblokkeerde video's**. De kleuren zelf zijn niet veranderd.
 - De standaardtekst van de knop "Alle cookies toestaan" is nu **Alles akkoord** (Engels: Accept all). Een tekst die u zelf heeft ingesteld, blijft staan.
 - **Mijn keuzes opslaan** heeft eigen kleuren onder Banner › Vormgeving › Knoppen, los van Akkoord. Standaard ziet de knop eruit als "Cookievoorkeuren": geen achtergrond, met een rand. Had u de Akkoord-knop eigen kleuren gegeven, dan neemt de update die over voor Mijn keuzes opslaan, zodat er voor uw bezoekers niets verandert.
 
