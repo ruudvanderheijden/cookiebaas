@@ -999,7 +999,8 @@ function cm_credit_link() {
  * selectievakje en korte punten, zonder cookielijst (die staat dan in de
  * cookieverklaring). Zelfde id's als de uitklaplijst (cm-toggle-analytics,
  * cm-save-btn, …), dus hetzelfde script; zonder dienstschakelaars geldt de
- * keuze per categorie.
+ * keuze per categorie. Alleen opslaan en akkoord: zonder eerdere keuze staat
+ * alles uit (ook als "Analytische cookies standaard aangevinkt" aan staat).
  */
 function cm_prefs_cards_inner() {
     $cats = array( 1 => '', 2 => 'analytics', 3 => 'marketing' );
@@ -1025,8 +1026,8 @@ function cm_prefs_cards_inner() {
         }
         $h .= '</div>';
     }
+    // Geen "Alles afwijzen": alles staat standaard uit, dus opslaan zonder vinkjes is weigeren (één klik)
     $h .= '</div></div><div class="cm-prefs-footer">'
-        . '<button type="button" class="cm-btn cm-btn-outline" id="cm-rejectall-btn">' . esc_html( cm_t( 'txt_btn_rejectall' ) ) . '</button>'
         . '<button type="button" class="cm-btn cm-btn-accept" id="cm-save-btn">' . esc_html( cm_t( 'txt_btn_save' ) ) . '</button>'
         . '<button type="button" class="cm-btn cm-btn-allowall" id="cm-allowall-btn">' . esc_html( cm_t( 'txt_btn_allowall' ) ) . '</button>'
         . '</div>';
@@ -1482,7 +1483,8 @@ function cm_render_frontend() {
         var AJAX_URL          = '<?php echo esc_js( site_url("/wp-admin/admin-ajax.php") ); ?>';
         // Bekende embed-diensten: alleen daarvan wordt een iframe teruggezet (zie releaseEmbeds)
         var EMBED_HOSTS       = <?php echo wp_json_encode( array_keys( cm_get_embed_domains() ) ); ?>;
-        var ANALYTICS_DEFAULT = <?php echo cm_get('analytics_default') ? 'true' : 'false'; ?>;
+        // Kaartweergave heeft geen "Alles afwijzen": daar staat alles standaard uit, zodat opslaan = weigeren
+        var ANALYTICS_DEFAULT = <?php echo ( cm_get('analytics_default') && cm_get('prefs_layout') !== 'cards' ) ? 'true' : 'false'; ?>;
         var RESPECT_DNT       = <?php echo cm_get('respect_dnt') ? 'true' : 'false'; ?>;
         var RESPECT_GPC       = <?php echo cm_get('respect_gpc') ? 'true' : 'false'; ?>;
         var IS_DNT            = RESPECT_DNT && (navigator.doNotTrack === '1' || window.doNotTrack === '1' || navigator.msDoNotTrack === '1');

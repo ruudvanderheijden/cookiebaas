@@ -207,7 +207,7 @@ function cm_text_sections( $lang ) {
             cm_field( 'txt_prefs_title' . $s, 'text', 'Titel' ),
             cm_field( 'txt_prefs_body' . $s, 'html', 'Tekst', array( 'description' => $html ) ),
             cm_field( 'txt_btn_allowall' . $s, 'text', 'Knop "Alles akkoord"' ),
-            cm_field( 'txt_btn_rejectall' . $s, 'text', 'Knop "Alles afwijzen"' ),
+            cm_field( 'txt_btn_rejectall' . $s, 'text', 'Knop "Alles afwijzen"', array( 'description' => 'Niet in de kaartweergave: daar staat alles standaard uit, dus opslaan zonder vinkjes is weigeren.' ) ),
             cm_field( 'txt_btn_save' . $s, 'text', 'Knop "Keuzes opslaan"' ),
         ) ),
     );
@@ -327,7 +327,7 @@ function cm_tab_banner_weergave() {
                     cm_field( 'prefs_layout', 'radio', 'Weergave', array(
                         'options' => array(
                             'accordion' => 'Uitklaplijst: per categorie en per dienst kiezen, met de cookies in het venster',
-                            'cards'     => 'Kaarten: per categorie kiezen, met korte punten',
+                            'cards'     => 'Kaarten: per categorie kiezen, met korte punten. Alleen opslaan en akkoord; alles staat standaard uit',
                         ),
                     ) ),
                     cm_field( 'prefs_cards_notice', 'custom', '', array( 'store' => false, 'render' => 'cm_render_prefs_cards_notice', 'show_if' => array( 'prefs_layout' => 'cards' ) ) ),
@@ -390,7 +390,7 @@ function cm_tab_banner_gedrag() {
                 'fields' => array(
                     cm_field( 'analytics_default', 'checkbox', 'Analytische cookies', array(
                         'checkbox_label' => 'Standaard aangevinkt in het voorkeurenvenster',
-                        'description'    => 'Marketingcookies staan altijd standaard uit (AVG-vereiste). Staat "Google-cookies direct laden" aan (Blokkering › Google), dan staat dit automatisch ook aan.',
+                        'description'    => 'Marketingcookies staan altijd standaard uit (AVG-vereiste). Staat "Google-cookies direct laden" aan (Blokkering › Google), dan staat dit automatisch ook aan. Geldt niet voor de kaartweergave: daar staat alles standaard uit, omdat er geen knop "Alles afwijzen" is.',
                     ) ),
                 ),
             ),

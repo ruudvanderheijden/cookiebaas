@@ -50,12 +50,12 @@ cm_test_group( 'Kaartweergave' );
 set_settings( array( 'prefs_layout' => 'cards', 'cookie_page_id' => '12' ) );
 $h = prefs_markup();
 cm_assert( 'kaarten: drie kaarten, geen uitklapkoppen', strpos( $h, 'cm-prefs-cards' ) !== false && substr_count( $h, 'class="cm-card"' ) === 3 && strpos( $h, 'cm-cat-header' ) === false );
-cm_assert( 'zelfde id\'s als de uitklaplijst (zelfde script)', substr_count( $h, 'id="cm-toggle-analytics"' ) === 1 && substr_count( $h, 'id="cm-toggle-marketing"' ) === 1 && substr_count( $h, 'id="cm-save-btn"' ) === 1 && substr_count( $h, 'id="cm-allowall-btn"' ) === 1 && substr_count( $h, 'id="cm-rejectall-btn"' ) === 1 && substr_count( $h, 'id="cm-prefs-close"' ) === 1 );
+cm_assert( 'zelfde id\'s als de uitklaplijst (zelfde script)', substr_count( $h, 'id="cm-toggle-analytics"' ) === 1 && substr_count( $h, 'id="cm-toggle-marketing"' ) === 1 && substr_count( $h, 'id="cm-save-btn"' ) === 1 && substr_count( $h, 'id="cm-allowall-btn"' ) === 1 && substr_count( $h, 'id="cm-prefs-close"' ) === 1 );
 cm_assert( 'functioneel: vast aangevinkt met "Altijd actief"', strpos( $h, '<input type="checkbox" checked disabled>' ) !== false && strpos( $h, 'Altijd actief' ) !== false );
 cm_assert( 'geen dienstschakelaars en geen cookielijst', strpos( $h, 'cm-service-toggle' ) === false && strpos( $h, 'cm-cookie-item' ) === false );
 cm_assert( 'punten met vinkje (2 + 2 + 1)', substr_count( $h, '<li>' ) >= 5 && strpos( $h, '<li>De website werkt goed en veilig.</li>' ) !== false && strpos( $h, '<li>Advertenties die beter bij u passen.</li>' ) !== false );
-$rej = strpos( $h, 'id="cm-rejectall-btn"' ); $sav = strpos( $h, 'id="cm-save-btn"' ); $all = strpos( $h, 'id="cm-allowall-btn"' );
-cm_assert( 'knoppen: afwijzen, opslaan, akkoord', $rej < $sav && $sav < $all );
+$sav = strpos( $h, 'id="cm-save-btn"' ); $all = strpos( $h, 'id="cm-allowall-btn"' );
+cm_assert( 'alleen opslaan en akkoord, geen "Alles afwijzen"', $sav < $all && strpos( $h, 'cm-rejectall-btn' ) === false );
 cm_assert( 'introregel met beide links', strpos( $h, 'Meer weten? Bekijk ons <a href="https://example.test/privacy/">privacybeleid</a> of de <a href="https://example.test/pagina-12/">cookieverklaring</a>.' ) !== false );
 cm_assert( 'vermelding Cookiebaas blijft', strpos( $h, 'class="cm-credit"' ) !== false || cm_license_is_valid() );
 
@@ -97,7 +97,7 @@ cm_assert( 'vakjes en vinkjes gebruiken de schakelaar- en labelkleuren', strpos(
 cm_assert( 'akkoordknop gebruikt de kleuren van "Alles akkoord"', strpos( $css, '#cm-prefs .cm-btn-allowall,' ) !== false && strpos( $css, 'var(--cm-allowall-bg, #0091ff)' ) !== false );
 
 cm_test_group( 'Knoppen, vinkkleur en kop (na eerste test)' );
-cm_assert( 'knoppen op één rij: afwijzen links, opslaan en akkoord rechts; tekst breekt binnen de knop', strpos( $css, '#cm-prefs .cm-prefs-cards .cm-prefs-footer { flex-wrap: nowrap;' ) !== false && strpos( $css, '#cm-prefs .cm-prefs-cards #cm-rejectall-btn { margin-right: auto; }' ) !== false && strpos( $css, 'white-space: normal !important' ) !== false );
+cm_assert( 'knoppen rechts op één rij; tekst breekt binnen de knop', strpos( $css, '#cm-prefs .cm-prefs-cards .cm-prefs-footer { flex-wrap: nowrap; justify-content: flex-end;' ) !== false && strpos( $css, 'white-space: normal !important' ) !== false );
 cm_assert( 'compactere kop', strpos( $css, '#cm-prefs .cm-prefs-cards .cm-prefs-header { padding: 24px 36px 14px; border-bottom: 0; }' ) !== false );
 cm_assert( 'vinkjes bij de punten: eigen kleur, anders "Schakelaar aan"', strpos( $css, 'border: solid var(--cm-card-check, var(--cm-toggle-on, #0091ff))' ) !== false );
 $vg = array_column( cm_admin_field_list( 'cm_settings', array( 'banner' => cm_tabs_banner() ) ), null, 'key' );
@@ -108,5 +108,12 @@ cm_assert( 'zonder eigen kleur: vinkjes in de kleur van "Schakelaar aan"', strpo
 set_settings( array( 'color_card_check' => '#00a32a' ) );
 ob_start(); cm_output_inline_css(); $inline = ob_get_clean();
 cm_assert( 'met eigen kleur: die kleur', strpos( $inline, '--cm-card-check:#00a32a;' ) !== false );
+
+cm_test_group( 'Alles standaard uit in de kaartweergave' );
+$fe_src = file_get_contents( CM_PLUGIN_ROOT . '/includes/frontend.php' );
+cm_assert( '"Analytische cookies standaard aangevinkt" geldt niet voor kaarten (opslaan zonder vinkjes = weigeren)', strpos( $fe_src, "var ANALYTICS_DEFAULT = <?php echo ( cm_get('analytics_default') && cm_get('prefs_layout') !== 'cards' ) ? 'true' : 'false'; ?>;" ) !== false );
+set_settings( array( 'prefs_layout' => 'cards' ) );
+$h = prefs_markup();
+cm_assert( 'vakjes analytisch en marketing staan in de HTML uit', strpos( $h, '<input type="checkbox" id="cm-toggle-analytics">' ) !== false && strpos( $h, '<input type="checkbox" id="cm-toggle-marketing">' ) !== false );
 
 exit( cm_test_summary() );
