@@ -1,22 +1,22 @@
 # Changelog — Cookiebaas
 
-## [3.2.0] - nog niet uitgebracht
+## [3.2.0] - 2026-10-01
 
 ### Nieuw: voorkeurenvenster als kaarten
 
 Onder Banner › Weergave kiest u nu hoe het voorkeurenvenster eruitziet:
 
 - **Uitklaplijst** (zoals tot nu toe, de standaard): per categorie en per dienst kiezen, met de cookies in het venster.
-- **Kaarten:** per categorie een kaart met een selectievakje en een paar korte punten met een vinkje. Het venster is daardoor rustiger. Bovenaan staat "Meer weten? Bekijk ons privacybeleid of de cookieverklaring.", met links naar de pagina's die u kiest. Onderaan staan alleen de knoppen Mijn keuzes opslaan en Alles akkoord. Zonder eerdere keuze staat alles uit (ook als "Analytische cookies standaard aangevinkt" aan staat), dus opslaan zonder vinkjes is weigeren, net zo makkelijk als akkoord geven.
+- **Kaarten:** per categorie een kaart met een selectievakje en een paar korte punten met een vinkje. Het venster is daardoor rustiger. Een klik op de kaart zet de categorie aan of uit. Bovenaan staat "Meer weten? Bekijk ons privacybeleid of de cookieverklaring.", met links naar de pagina's die u kiest. Onderaan staan alleen de knoppen Mijn keuzes opslaan en Alles akkoord. Zonder eerdere keuze staat alles uit (ook als "Analytische cookies standaard aangevinkt" aan staat), dus opslaan zonder vinkjes is weigeren, net zo makkelijk als akkoord geven.
 
-De kaarten gebruiken de kleuren die u al heeft ingesteld: de vakjes de kleuren van de schakelaars, het vaste vakje bij functionele cookies de kleuren van "Altijd actief", en de knoppen hun eigen kleuren. Onder Banner › Vormgeving › Voorkeurenvenster en cookielijst › Kaartweergave stelt u, voor het lichte en het donkere thema, apart in: de achtergrond van een aangevinkt vakje, het vinkje in het vakje en de vinkjes bij de punten. Laat u een veld leeg, dan volgt het de kleur van "Schakelaar aan" (het vinkje in het vakje wordt dan wit). De twee knoppen staan op één rij, opslaan links en akkoord rechts; op een telefoon staan ze onder elkaar. De punten per categorie stelt u in onder Banner › Teksten, ook in het Engels.
+De kaarten gebruiken de kleuren die u al heeft ingesteld: de vakjes de kleuren van de schakelaars, het vaste vakje bij functionele cookies de kleuren van "Altijd actief", en de knoppen hun eigen kleuren. Onder Banner › Vormgeving › Voorkeurenvenster › Kaartweergave stelt u, voor het lichte en het donkere thema, apart in: de achtergrond van een aangevinkt vakje, het vinkje in het vakje en de vinkjes bij de punten. Laat u een veld leeg, dan volgt het de kleur van "Schakelaar aan" (het vinkje in het vakje wordt dan wit). De twee knoppen staan op één rij, opslaan links en akkoord rechts; op een telefoon staan ze onder elkaar. De punten per categorie stelt u in onder Banner › Teksten, ook in het Engels.
 
 In de kaartweergave staan de cookies niet in het venster, maar alleen in de cookieverklaring. Kies daarom onder Banner › Weergave de pagina met de cookieverklaring en zet daar `[cookiebaas_cookies]` op, of gebruik de privacyverklaring met `[cookiebaas_privacy]`. Cookiebaas waarschuwt bij die instelling als de gekozen pagina geen van beide shortcodes bevat. Ook de controle "Elke cookie heeft een doel en looptijd" op het Overzicht wordt dan oranje.
 
 ### Gewijzigd
-- **Vormgeving per onderdeel.** Banner › Vormgeving is ingedeeld per onderdeel. Onder **Algemeen** staat wat de banner en het voorkeurenvenster delen: achtergrond, titels, tekst, links, hoekafronding en de donkerte van de achtergrond. Daarna volgen **Cookiebanner** (de knoppen Akkoord, Weigeren en Cookievoorkeuren), **Voorkeurenvenster** (knoppen, sluitknop, categorieën, uitklaplijst en kaartweergave), **Zweefknop** en **Placeholder voor geblokkeerde video's**. De kleuren zelf zijn niet veranderd.
+- **Vormgeving per onderdeel.** Banner › Vormgeving is ingedeeld per onderdeel. Onder **Algemeen** staat wat de banner en het voorkeurenvenster delen: achtergrond, titels, tekst, links, hoekafronding en de donkerte van de achtergrond. Daarna volgen **Cookiebanner** (de knoppen Akkoord, Weigeren en Cookievoorkeuren), **Voorkeurenvenster** (knoppen, sluitknop, categorieën, uitklaplijst en kaartweergave), **Zweefknop** en **Placeholder voor geblokkeerde video's**. De kleuren zelf zijn niet veranderd. De tussenkopjes, zoals Knop "Akkoord", zijn groter en hebben een lijn eronder.
 - De standaardtekst van de knop "Alle cookies toestaan" is nu **Alles akkoord** (Engels: Accept all). Een tekst die u zelf heeft ingesteld, blijft staan.
-- **Mijn keuzes opslaan** heeft eigen kleuren onder Banner › Vormgeving › Knoppen, los van Akkoord. Standaard ziet de knop eruit als "Cookievoorkeuren": geen achtergrond, met een rand. Had u de Akkoord-knop eigen kleuren gegeven, dan neemt de update die over voor Mijn keuzes opslaan, zodat er voor uw bezoekers niets verandert.
+- **Mijn keuzes opslaan** heeft eigen kleuren onder Banner › Vormgeving › Voorkeurenvenster, los van Akkoord. Standaard ziet de knop eruit als "Cookievoorkeuren": geen achtergrond, met een rand. Had u de Akkoord-knop eigen kleuren gegeven, dan neemt de update die over voor Mijn keuzes opslaan, zodat er voor uw bezoekers niets verandert.
 
 ## [3.1.3] - 2026-10-01
 
