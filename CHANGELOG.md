@@ -1,6 +1,6 @@
 # Changelog — Cookiebaas
 
-## [3.1.3] - nog niet uitgebracht
+## [3.1.3] - 2026-10-01
 
 - **Cookienamen zonder ID voor bezoekers.** Bevat een cookienaam een ID of hash, dan tonen het voorkeurenvenster en de cookietabel van de privacyverklaring die als `*`: `_ga_V41VJXRM2G` wordt `_ga_*`, `_hjSessionUser_3512357` wordt `_hjSessionUser_*`, en een WooCommerce-sessie met hash wordt `wp_woocommerce_session_*`. Elke naam staat er één keer, ook als de lijst twee GA4-ID's bevat. De opgeslagen naam blijft volledig, zodat het opruimen bij weigeren precies blijft werken. In de admin ziet u de volledige namen.
 
