@@ -25,6 +25,7 @@ function cm_preview_var_map() {
         'accept_bg' => 'accept-bg', 'accept_text' => 'accept-text', 'accept_hover_bg' => 'accept-hover-bg', 'accept_hover_text' => 'accept-hover-text',
         'reject_bg' => 'reject-bg', 'reject_text' => 'reject-text', 'reject_hover_bg' => 'reject-hover-bg', 'reject_hover_text' => 'reject-hover-text',
         'prefs_border' => 'prefs-border', 'prefs_text' => 'prefs-text', 'prefs_hover_border' => 'prefs-hover-border', 'prefs_hover_text' => 'prefs-hover-text',
+        'save_text' => 'save-text', 'save_border' => 'save-border', 'save_hover_text' => 'save-hover-text', 'save_hover_border' => 'save-hover-border',
         'allowall_bg' => 'allowall-bg', 'allowall_text' => 'allowall-text', 'allowall_hover_bg' => 'allowall-hover-bg', 'allowall_hover_text' => 'allowall-hover-text',
         'outline_border' => 'outline-border', 'outline_text' => 'outline-text', 'outline_hover_border' => 'outline-hover-border', 'outline_hover_text' => 'outline-hover-text',
         'close_bg' => 'close-bg', 'close_hover_bg' => 'close-hover-bg', 'close_icon' => 'close-icon',
@@ -43,11 +44,13 @@ function cm_preview_var_map() {
         $m[] = array( 'color_' . $suffix, 'dm_' . $suffix, '--cm-' . $var, '', '' );
     }
     // Optionele randen/achtergrond: leeg = transparant (zelfde als de frontend)
-    foreach ( array( 'accept_border' => 'accept-border', 'reject_border' => 'reject-border', 'allowall_border' => 'allowall-border', 'outline_hover_bg' => 'outline-hover-bg' ) as $suffix => $var ) {
+    foreach ( array( 'accept_border' => 'accept-border', 'reject_border' => 'reject-border', 'allowall_border' => 'allowall-border', 'save_bg' => 'save-bg', 'save_hover_bg' => 'save-hover-bg', 'outline_hover_bg' => 'outline-hover-bg' ) as $suffix => $var ) {
         $m[] = array( 'color_' . $suffix, 'dm_' . $suffix, '--cm-' . $var, '', 'transparent' );
     }
     // Vinkjes in de kaartweergave: leeg = kleur van "Schakelaar aan"
     $m[] = array( 'color_card_check', 'dm_card_check', '--cm-card-check', '', 'var(--cm-toggle-on)' );
+    $m[] = array( 'color_card_box_on', 'dm_card_box_on', '--cm-card-box-on', '', 'var(--cm-toggle-on)' );
+    $m[] = array( 'color_card_box_tick', 'dm_card_box_tick', '--cm-card-box-tick', '', '#fff' );
     return $m;
 }
 

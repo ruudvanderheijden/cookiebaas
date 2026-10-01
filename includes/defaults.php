@@ -29,6 +29,13 @@ function cm_default_settings() {
         'color_accept_hover_bg'     => '#0091ff',
         'color_accept_hover_text'   => '#ffffff',
         'color_accept_border'       => '',
+        // "Mijn keuzes opslaan" in het voorkeurenvenster (3.2: eigen kleuren, standaard zoals "Cookievoorkeuren")
+        'color_save_bg'             => '',          // leeg = geen achtergrond
+        'color_save_text'           => '#111111',
+        'color_save_border'         => '#d1d1d1',
+        'color_save_hover_bg'       => '',          // leeg = geen achtergrond
+        'color_save_hover_text'     => '#111111',
+        'color_save_hover_border'   => '#111111',
         // Weigeren button
         'color_reject_bg'           => '#111111',
         'color_reject_hover_bg'     => '#0091ff',
@@ -71,6 +78,8 @@ function cm_default_settings() {
         'color_always_bg'           => '#e8f4ff',
         'color_always_on_color'     => '#0091ff',   // "Altijd actief" badge tekstkleur
         'color_card_check'          => '',          // vinkjes bij de punten (kaartweergave); leeg = kleur van "Schakelaar aan"
+        'color_card_box_on'         => '',          // aangevinkt vakje (kaartweergave); leeg = kleur van "Schakelaar aan"
+        'color_card_box_tick'       => '',          // vinkje in het vakje (kaartweergave); leeg = wit
         // Derde-partij badge
         'color_badge_text'          => '#0091ff',
         'color_badge_bg'            => '#e8f4ff',
@@ -188,6 +197,12 @@ function cm_default_settings() {
         'dm_accept_hover_bg'           => '#0091ff',
         'dm_accept_hover_text'         => '#ffffff',
         'dm_accept_border'             => '',
+        'dm_save_bg'                   => '',
+        'dm_save_text'                 => '#ffffff',
+        'dm_save_border'               => '#ffffff',
+        'dm_save_hover_bg'             => '',
+        'dm_save_hover_text'           => '#f2f2f2',
+        'dm_save_hover_border'         => '#666666',
         'dm_reject_bg'                 => '#f2f2f2',
         'dm_reject_hover_bg'           => '#0091ff',
         'dm_reject_text'               => '#111111',
@@ -214,6 +229,8 @@ function cm_default_settings() {
         'dm_always_bg'                 => '#0c2a45',
         'dm_always_on_color'           => '#6eb8ff',   // "Altijd actief" badge tekstkleur
         'dm_card_check'                => '',          // vinkjes bij de punten (kaartweergave); leeg = "Schakelaar aan"
+        'dm_card_box_on'               => '',
+        'dm_card_box_tick'             => '',
         // Derde-partij badge (dark)
         'dm_badge_text'                => '#ffd97a',
         'dm_badge_bg'                  => '#3a2e00',
@@ -1032,4 +1049,24 @@ function cm_default_privacy() {
         'pv_profilering_enabled' => '0',
         'pv_profilering_tekst'   => '',
     );
+}
+
+/** Zie de 3.2-migratie: eigen Akkoord-kleuren gaan mee naar "Mijn keuzes opslaan". */
+function cm_migrate_save_button_colors( array $existing, array &$merged ) {
+    $def = cm_default_settings();
+    foreach ( array( 'color_', 'dm_' ) as $px ) {
+        $custom = false;
+        foreach ( array( 'bg', 'text', 'hover_bg', 'hover_text', 'border' ) as $part ) {
+            $k = $px . 'accept_' . $part;
+            if ( isset( $existing[ $k ] ) && $existing[ $k ] !== '' && $existing[ $k ] !== $def[ $k ] ) $custom = true;
+        }
+        if ( ! $custom || isset( $existing[ $px . 'save_text' ] ) ) continue;
+        $a = function ( $part ) use ( $merged, $px ) { return (string) $merged[ $px . 'accept_' . $part ]; };
+        $merged[ $px . 'save_bg' ]           = $a( 'bg' );
+        $merged[ $px . 'save_text' ]         = $a( 'text' );
+        $merged[ $px . 'save_border' ]       = $a( 'border' ) !== '' ? $a( 'border' ) : $a( 'bg' );
+        $merged[ $px . 'save_hover_bg' ]     = $a( 'hover_bg' );
+        $merged[ $px . 'save_hover_text' ]   = $a( 'hover_text' );
+        $merged[ $px . 'save_hover_border' ] = $a( 'border' ) !== '' ? $a( 'border' ) : $a( 'hover_bg' );
+    }
 }

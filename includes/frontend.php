@@ -34,6 +34,12 @@ function cm_output_inline_css() {
     echo '--cm-accept-hover-bg:'. esc_attr( cm_get('color_accept_hover_bg') )    . ';';
     echo '--cm-accept-hover-text:' . esc_attr( cm_get('color_accept_hover_text') ) . ';';
     echo '--cm-accept-border:'  . esc_attr( $ab ) . ';';
+    echo '--cm-save-bg:'        . esc_attr( cm_get('color_save_bg') ?: 'transparent' )       . ';';
+    echo '--cm-save-text:'      . esc_attr( cm_get('color_save_text') )                      . ';';
+    echo '--cm-save-border:'    . esc_attr( cm_get('color_save_border') )                    . ';';
+    echo '--cm-save-hover-bg:'  . esc_attr( cm_get('color_save_hover_bg') ?: 'transparent' ) . ';';
+    echo '--cm-save-hover-text:'. esc_attr( cm_get('color_save_hover_text') )                . ';';
+    echo '--cm-save-hover-border:' . esc_attr( cm_get('color_save_hover_border') )           . ';';
     echo '--cm-reject-text:'    . esc_attr( cm_get('color_reject_text') )        . ';';
     echo '--cm-reject-hover-text:' . esc_attr( cm_get('color_reject_hover_text') ) . ';';
     echo '--cm-reject-bg:'      . esc_attr( cm_get('color_reject_bg') ?: '#111111' )   . ';';
@@ -71,6 +77,8 @@ function cm_output_inline_css() {
     echo '--cm-always-bg:'           . esc_attr( cm_get('color_always_bg') )                  . ';';
     echo '--cm-always-on-color:'     . esc_attr( cm_get('color_always_on_color') ?: '#0091ff' ) . ';';
     echo '--cm-card-check:'          . esc_attr( cm_get('color_card_check') ?: 'var(--cm-toggle-on)' ) . ';'; // leeg = kleur van "Schakelaar aan"
+    echo '--cm-card-box-on:'         . esc_attr( cm_get('color_card_box_on') ?: 'var(--cm-toggle-on)' ) . ';';
+    echo '--cm-card-box-tick:'       . esc_attr( cm_get('color_card_box_tick') ?: '#fff' ) . ';';
     echo '--cm-badge-text:'          . esc_attr( cm_get('color_badge_text') ?: '#0091ff' )     . ';';
     echo '--cm-badge-bg:'            . esc_attr( cm_get('color_badge_bg') ?: '#e8f4ff' )       . ';';
     echo '--cm-badge-border:'        . esc_attr( cm_get('color_badge_border') ?: '#0091ff' )   . ';';
@@ -147,6 +155,12 @@ function cm_output_inline_css() {
         echo '--cm-accept-hover-bg:'       . esc_attr( $dm('dm_accept_hover_bg','#6eb8ff') )                 . ';';
         echo '--cm-accept-hover-text:'     . esc_attr( $dm('dm_accept_hover_text','#111111') )               . ';';
         echo '--cm-accept-border:'         . esc_attr( $dm_ab )                                              . ';';
+        echo '--cm-save-bg:'               . esc_attr( $dm('dm_save_bg','transparent') )                     . ';';
+        echo '--cm-save-text:'             . esc_attr( $dm('dm_save_text','#ffffff') )                       . ';';
+        echo '--cm-save-border:'           . esc_attr( $dm('dm_save_border','#ffffff') )                     . ';';
+        echo '--cm-save-hover-bg:'         . esc_attr( $dm('dm_save_hover_bg','transparent') )               . ';';
+        echo '--cm-save-hover-text:'       . esc_attr( $dm('dm_save_hover_text','#f2f2f2') )                 . ';';
+        echo '--cm-save-hover-border:'     . esc_attr( $dm('dm_save_hover_border','#666666') )               . ';';
         echo '--cm-reject-bg:'             . esc_attr( $dm('dm_reject_bg','#f2f2f2') )                       . ';';
         echo '--cm-reject-text:'           . esc_attr( $dm('dm_reject_text','#111111') )                     . ';';
         echo '--cm-reject-hover-bg:'       . esc_attr( $dm('dm_reject_hover_bg','#6eb8ff') )                 . ';';
@@ -171,6 +185,8 @@ function cm_output_inline_css() {
         echo '--cm-close-icon:'            . esc_attr( $dm('dm_close_icon','#888888') )                      . ';';
         echo '--cm-toggle-on:'             . esc_attr( $dm('dm_toggle_on','#6eb8ff') )                       . ';';
         echo '--cm-card-check:'            . esc_attr( $dm('dm_card_check', 'var(--cm-toggle-on)') )         . ';';
+        echo '--cm-card-box-on:'           . esc_attr( $dm('dm_card_box_on', 'var(--cm-toggle-on)') )        . ';';
+        echo '--cm-card-box-tick:'         . esc_attr( $dm('dm_card_box_tick', '#fff') )                  . ';';
         echo '--cm-always-bg:'             . esc_attr( $dm('dm_always_bg','#0c2a45') )                       . ';';
         echo '--cm-expand-bg:'             . esc_attr( $dm('dm_expand_bg','#2a2a2a') )                       . ';';
         echo '--cm-expand-icon:'           . esc_attr( $dm('dm_expand_icon','#aaaaaa') )                     . ';';
@@ -1028,7 +1044,7 @@ function cm_prefs_cards_inner() {
     }
     // Geen "Alles afwijzen": alles staat standaard uit, dus opslaan zonder vinkjes is weigeren (één klik)
     $h .= '</div></div><div class="cm-prefs-footer">'
-        . '<button type="button" class="cm-btn cm-btn-accept" id="cm-save-btn">' . esc_html( cm_t( 'txt_btn_save' ) ) . '</button>'
+        . '<button type="button" class="cm-btn cm-btn-save" id="cm-save-btn">' . esc_html( cm_t( 'txt_btn_save' ) ) . '</button>'
         . '<button type="button" class="cm-btn cm-btn-allowall" id="cm-allowall-btn">' . esc_html( cm_t( 'txt_btn_allowall' ) ) . '</button>'
         . '</div>';
     return $h;
@@ -1388,7 +1404,7 @@ function cm_banner_markup() {
                 </div>
             </div>
             <div class="cm-prefs-footer">
-                <button type="button" class="cm-btn cm-btn-accept" id="cm-save-btn"><?php echo esc_html( cm_t('txt_btn_save') ); ?></button>
+                <button type="button" class="cm-btn cm-btn-save" id="cm-save-btn"><?php echo esc_html( cm_t('txt_btn_save') ); ?></button>
                 <button type="button" class="cm-btn cm-btn-outline" id="cm-rejectall-btn"><?php echo esc_html( cm_t('txt_btn_rejectall') ); ?></button>
             </div>
             <?php endif; // uitklaplijst ?>

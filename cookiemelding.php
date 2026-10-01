@@ -199,6 +199,13 @@ add_action( 'plugins_loaded', function() {
                 }
             }
 
+            // 3.2: "Mijn keuzes opslaan" krijgt eigen kleuren, standaard zoals "Cookievoorkeuren".
+            // Tot nu toe had hij die van Akkoord: heeft de site Akkoord eigen kleuren gegeven,
+            // dan neemt opslaan die over, zodat er voor de bezoeker niets verandert.
+            if ( version_compare( $stored_version, '3.2.0', '<' ) ) {
+                cm_migrate_save_button_colors( $existing, $merged );
+            }
+
             update_option( 'cm_settings', $merged );
         }
         update_option( 'cm_version', CM_VERSION );
