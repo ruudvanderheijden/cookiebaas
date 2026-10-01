@@ -152,4 +152,11 @@ cm_migrate_save_button_colors( $existing, $merged );
 cm_assert( 'al eigen opslaankleuren → niets overschreven', $merged['color_save_bg'] === '' && $merged['color_save_text'] === '#123456' );
 cm_assert( 'migratie draait bij de update naar 3.2.0', strpos( $src, "version_compare( \$stored_version, '3.2.0', '<' )" ) !== false && strpos( $src, 'cm_migrate_save_button_colors( $existing, $merged );' ) !== false );
 
+cm_test_group( 'Hele kaart klikbaar' );
+$css = file_get_contents( CM_PLUGIN_ROOT . '/assets/css/frontend.css' );
+cm_assert( 'het label ligt over de hele kaart (klik op de kaart = vinkje aan/uit)', strpos( $css, '#cm-prefs .cm-card { position: relative;' ) !== false && strpos( $css, "#cm-prefs .cm-card-label::after { content: ''; position: absolute; inset: 0;" ) !== false );
+cm_assert( 'functioneel: geen handje en geen hover', strpos( $css, '#cm-prefs #cm-cat-functional .cm-card-label { cursor: default; }' ) !== false && strpos( $css, '.cm-card:not(#cm-cat-functional):hover' ) !== false );
+set_settings( array( 'prefs_layout' => 'cards' ) );
+cm_assert( 'vakje zit in het label (anders werkt de klik niet)', (bool) preg_match( '#<label class="cm-card-label"><input type="checkbox" id="cm-toggle-analytics">#', prefs_markup() ) );
+
 exit( cm_test_summary() );
