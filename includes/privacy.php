@@ -374,9 +374,9 @@ function cm_pv_cookie_tabel( $with_numbers = true ) {
         $out .= '<div class="cm-pv-table-wrap"><table class="cm-pv-table"><thead><tr>'
               . '<th>Cookie</th><th>Organisatie</th><th>Doel</th><th>Looptijd</th>'
               . '</tr></thead><tbody>';
-        foreach ( $cat_data['cookies'] as $ck ) {
+        foreach ( cm_cookies_for_display( $cat_data['cookies'] ) as $ck ) {
             $out .= '<tr>'
-                  . '<td><code>' . esc_html( $ck['name'] ) . '</code></td>'
+                  . '<td><code>' . esc_html( $ck['display'] ) . '</code></td>'
                   . '<td>' . esc_html( $ck['provider'] ?? '' ) . '</td>'
                   . '<td>' . esc_html( $ck['purpose'] ?? '' ) . '</td>'
                   . '<td style="white-space:nowrap">' . esc_html( $ck['duration'] ?? '' ) . '</td>'

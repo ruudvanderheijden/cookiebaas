@@ -1159,9 +1159,9 @@ function cm_banner_markup() {
                             <?php if ( $show_cookie_detail ) : ?>
                             <?php if ( ! empty($cats['functional']) ) : ?>
                             <div class="cm-cookie-list">
-                                <?php foreach ( $cats['functional'] as $ck ) : ?>
+                                <?php foreach ( cm_cookies_for_display( $cats['functional'] ) as $ck ) : ?>
                                 <div class="cm-cookie-item">
-                                    <div class="cm-cookie-name"><?php echo esc_html($ck['name']); ?></div>
+                                    <div class="cm-cookie-name"><?php echo esc_html($ck['display']); ?></div>
                                     <div class="cm-cookie-meta">
                                         <span><?php echo esc_html($ck['purpose']); ?></span>
                                         <span><?php echo esc_html( cm_ui('duration') ); ?>: <?php echo esc_html($ck['duration']); ?></span>
@@ -1220,12 +1220,12 @@ function cm_banner_markup() {
                                         </label>
                                     </div>
                                     <div class="cm-cookie-list">
-                                        <?php foreach ( $cookies as $ck ) :
+                                        <?php foreach ( cm_cookies_for_display( $cookies ) as $ck ) :
                                             $svc = cm_service_for_cookie( $ck['name'] );
                                             $org = $svc ? explode( ' / ', $svc['service'] )[0] : ( isset($ck['provider']) ? $ck['provider'] : '' );
                                         ?>
                                         <div class="cm-cookie-item">
-                                            <div class="cm-cookie-name"><?php echo esc_html($ck['name']); ?></div>
+                                            <div class="cm-cookie-name"><?php echo esc_html($ck['display']); ?></div>
                                             <div class="cm-cookie-meta">
                                                 <div class="cm-cookie-meta-row"><span><?php echo esc_html($ck['purpose']); ?></span></div>
                                                 <div class="cm-cookie-meta-row">
@@ -1289,12 +1289,12 @@ function cm_banner_markup() {
                                         </label>
                                     </div>
                                     <div class="cm-cookie-list">
-                                        <?php foreach ( $cookies as $ck ) :
+                                        <?php foreach ( cm_cookies_for_display( $cookies ) as $ck ) :
                                             $svc = cm_service_for_cookie( $ck['name'] );
                                             $org = $svc ? explode( ' / ', $svc['service'] )[0] : ( isset($ck['provider']) ? $ck['provider'] : '' );
                                         ?>
                                         <div class="cm-cookie-item">
-                                            <div class="cm-cookie-name"><?php echo esc_html($ck['name']); ?></div>
+                                            <div class="cm-cookie-name"><?php echo esc_html($ck['display']); ?></div>
                                             <div class="cm-cookie-meta">
                                                 <div class="cm-cookie-meta-row"><span><?php echo esc_html($ck['purpose']); ?></span></div>
                                                 <div class="cm-cookie-meta-row">

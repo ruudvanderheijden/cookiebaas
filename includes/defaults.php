@@ -314,6 +314,34 @@ function cm_default_settings() {
  * _fbp en _fbc onder "Meta / Facebook Pixel", etc.
  * Toekomstige cookies worden automatisch herkend als ze matchen op prefix of naam.
  */
+/**
+ * Naam zoals bezoekers hem zien: een ID of hash in de naam wordt *
+ * (_ga_V41VJXRM2G → _ga_*, _hjSessionUser_3512357 → _hjSessionUser_*,
+ * wp_woocommerce_session_<hash> → wp_woocommerce_session_*). Voor de
+ * informatieplicht volstaat de soort cookie; zo blijft de lijst ook kloppen als
+ * het ID wijzigt. Opgeslagen namen (en het opruimen bij weigeren) blijven exact.
+ */
+function cm_cookie_display_name( $name ) {
+    $name = (string) $name;
+    if ( preg_match( '/^_ga_[A-Za-z0-9]{6,}$/', $name ) ) return '_ga_*';
+    if ( preg_match( '/^(.+[_.])(\d{5,}|[a-f0-9]{16,}|(?=[A-Z0-9]*\d)(?=[A-Z0-9]*[A-Z])[A-Z0-9]{8,})$/', $name, $m ) ) return $m[1] . '*';
+    if ( strlen( $name ) > 1 && substr( $name, -1 ) === '_' ) return $name . '*'; // voorvoegsel uit de kennisbank (_ga_, _hjSession_)
+    return $name;
+}
+
+/** Cookies voor de weergave: met 'display' erbij, en elke weergavenaam één keer. */
+function cm_cookies_for_display( array $cookies ) {
+    $out  = array();
+    $seen = array();
+    foreach ( $cookies as $ck ) {
+        $ck['display'] = cm_cookie_display_name( isset( $ck['name'] ) ? $ck['name'] : '' );
+        if ( isset( $seen[ $ck['display'] ] ) ) continue;
+        $seen[ $ck['display'] ] = true;
+        $out[] = $ck;
+    }
+    return $out;
+}
+
 function cm_service_for_cookie( $name ) {
     static $map = null;
     if ( $map === null ) {
