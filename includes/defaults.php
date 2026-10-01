@@ -124,7 +124,7 @@ function cm_default_settings() {
         // Teksten — voorkeuren venster
         'txt_prefs_title'           => 'Uw cookievoorkeuren beheren',
         'txt_prefs_body'            => 'Hieronder kunt u per categorie aangeven welke cookies u toestaat. Functionele cookies zijn altijd actief omdat de website anders niet werkt. U kunt uw keuze op elk moment wijzigen. Meer informatie in ons <a href="/privacybeleid">privacybeleid</a>.',
-        'txt_btn_allowall'          => 'Alle cookies toestaan',
+        'txt_btn_allowall'          => 'Alles akkoord',
         'txt_btn_rejectall'         => 'Alles afwijzen',
         'txt_btn_save'              => 'Mijn keuzes opslaan',
         // Teksten — categorieën
@@ -137,6 +137,10 @@ function cm_default_settings() {
         'txt_cat3_name'             => 'Marketing & tracking cookies',
         'txt_cat3_short'            => 'Gepersonaliseerde advertenties en remarketing',
         'txt_cat3_long'             => 'Marketing cookies worden gebruikt om advertenties beter af te stemmen op uw interesses. Deze cookies kunnen uw surfgedrag over meerdere websites volgen.',
+        // Punten per categorie voor de kaartweergave van het voorkeurenvenster (één per regel)
+        'txt_cat1_points'           => "De website werkt goed en veilig.\nUw keuzes en instellingen worden onthouden.",
+        'txt_cat2_points'           => "We zien welke pagina's goed bezocht worden.\nZo maken we de website beter en sneller.",
+        'txt_cat3_points'           => 'Advertenties die beter bij u passen.',
         'txt_float_label'           => 'Cookie-instellingen',
 
         // Teksten â hoofdbanner (EN)
@@ -148,7 +152,7 @@ function cm_default_settings() {
         // Teksten â voorkeuren venster (EN)
         'txt_prefs_title_en'        => 'Manage your cookie preferences',
         'txt_prefs_body_en'         => 'Below you can indicate per category which cookies you allow. Functional cookies are always active because the website would not work otherwise. You can change your choice at any time. More information in our <a href="/privacy-policy">privacy policy</a>.',
-        'txt_btn_allowall_en'       => 'Allow all cookies',
+        'txt_btn_allowall_en'       => 'Accept all',
         'txt_btn_rejectall_en'      => 'Decline all',
         'txt_btn_save_en'           => 'Save my choices',
         // Teksten â categorieën (EN)
@@ -161,6 +165,9 @@ function cm_default_settings() {
         'txt_cat3_name_en'          => 'Marketing & tracking cookies',
         'txt_cat3_short_en'         => 'Personalised advertising and remarketing',
         'txt_cat3_long_en'          => 'Marketing cookies are used to better tailor advertisements to your interests. These cookies may track your browsing behaviour across multiple websites.',
+        'txt_cat1_points_en'        => "The website works properly and securely.\nYour choices and settings are remembered.",
+        'txt_cat2_points_en'        => "We see which pages are visited most.\nThis helps us make the website better and faster.",
+        'txt_cat3_points_en'        => 'Advertisements that better match your interests.',
         'txt_float_label_en'        => 'Cookie settings',
         // Zweefknop stijl: 'text' = tekstknop (standaard), 'icon' = rond icoontje
         'float_btn_style'              => 'icon',
@@ -262,6 +269,9 @@ function cm_default_settings() {
         'banner_width_compact'         => 420,    // px — breedte bij linksonder/rechtsonder
         'banner_mobile_padding'        => 1,      // 1 = padding rondom op mobiel, 0 = geen padding
         'prefs_cookie_detail'          => 1,      // 1 = cookies per categorie tonen, 0 = alleen categoriebeschrijving
+        'prefs_layout'                 => 'accordion', // 'accordion' (uitklaplijst) of 'cards' (kaarten, 3.2)
+        'privacy_page_id'              => 0,      // kaartweergave: link naar het privacybeleid (0 = privacypagina van WordPress)
+        'cookie_page_id'               => 0,      // kaartweergave: link naar de cookieverklaring (met de cookielijst)
         // Zweefknop — tekstknop kleuren
         'color_float_text_bg'          => '#ffffff',
         'color_float_text_color'       => '#111111',

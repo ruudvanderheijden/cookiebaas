@@ -1,5 +1,21 @@
 # Changelog — Cookiebaas
 
+## [3.2.0] - nog niet uitgebracht
+
+### Nieuw: voorkeurenvenster als kaarten
+
+Onder Banner › Weergave kiest u nu hoe het voorkeurenvenster eruitziet:
+
+- **Uitklaplijst** (zoals tot nu toe, de standaard): per categorie en per dienst kiezen, met de cookies in het venster.
+- **Kaarten:** per categorie een kaart met een selectievakje en een paar korte punten met een vinkje. Het venster is daardoor rustiger. Bovenaan staat "Meer weten? Bekijk ons privacybeleid of de cookieverklaring.", met links naar de pagina's die u kiest. Onderaan staan de knoppen Alles afwijzen, Mijn keuzes opslaan en Alles akkoord.
+
+De kaarten gebruiken de kleuren die u al heeft ingesteld: de vakjes en vinkjes de kleuren van de schakelaars, het vaste vakje bij functionele cookies de kleuren van "Altijd actief", en de knoppen hun eigen kleuren. De punten per categorie stelt u in onder Banner › Teksten, ook in het Engels.
+
+In de kaartweergave staan de cookies niet in het venster, maar alleen in de cookieverklaring. Kies daarom onder Banner › Weergave de pagina met de cookieverklaring en zet daar `[cookiebaas_cookies]` op, of gebruik de privacyverklaring met `[cookiebaas_privacy]`. Cookiebaas waarschuwt bij die instelling als de gekozen pagina geen van beide shortcodes bevat. Ook de controle "Elke cookie heeft een doel en looptijd" op het Overzicht wordt dan oranje.
+
+### Gewijzigd
+- De standaardtekst van de knop "Alle cookies toestaan" is nu **Alles akkoord** (Engels: Accept all). Een tekst die u zelf heeft ingesteld, blijft staan.
+
 ## [3.1.3] - 2026-10-01
 
 - **Cookienamen zonder ID voor bezoekers.** Bevat een cookienaam een ID of hash, dan tonen het voorkeurenvenster en de cookietabel van de privacyverklaring die als `*`: `_ga_V41VJXRM2G` wordt `_ga_*`, `_hjSessionUser_3512357` wordt `_hjSessionUser_*`, en een WooCommerce-sessie met hash wordt `wp_woocommerce_session_*`. Elke naam staat er één keer, ook als de lijst twee GA4-ID's bevat. De opgeslagen naam blijft volledig, zodat het opruimen bij weigeren precies blijft werken. In de admin ziet u de volledige namen.

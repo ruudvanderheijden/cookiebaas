@@ -249,6 +249,12 @@ function cm_ui( $key ) {
                 'third_party'     => 'Derde partij',
                 'data_outside_eu' => 'Gegevens worden doorgegeven buiten de EU',
                 'no_cookies'      => 'Geen cookies in deze categorie gevonden.',
+                'more_info'       => 'Meer weten? Bekijk',
+                'our'             => 'ons',
+                'the'             => 'de',
+                'or'              => 'of',
+                'privacy_policy'  => 'privacybeleid',
+                'cookie_statement'=> 'cookieverklaring',
             ),
             'en' => array(
                 'always_active'   => 'Always active',
@@ -257,6 +263,12 @@ function cm_ui( $key ) {
                 'third_party'     => 'Third party',
                 'data_outside_eu' => 'Data is transferred outside the EU',
                 'no_cookies'      => 'No cookies are currently used in this category.',
+                'more_info'       => 'Want to know more? Read',
+                'our'             => 'our',
+                'the'             => 'the',
+                'or'              => 'or',
+                'privacy_policy'  => 'privacy policy',
+                'cookie_statement'=> 'cookie statement',
             ),
         );
     }
@@ -981,6 +993,59 @@ function cm_credit_link() {
 }
 
 /**
+ * Voorkeurenvenster als kaarten (3.2): per categorie een kaart met een
+ * selectievakje en korte punten, zonder cookielijst (die staat dan in de
+ * cookieverklaring). Zelfde id's als de uitklaplijst (cm-toggle-analytics,
+ * cm-save-btn, …), dus hetzelfde script; zonder dienstschakelaars geldt de
+ * keuze per categorie.
+ */
+function cm_prefs_cards_inner() {
+    $cats = array( 1 => '', 2 => 'analytics', 3 => 'marketing' );
+    $h  = '<div class="cm-prefs-header">'
+        . '<button type="button" class="cm-prefs-close" id="cm-prefs-close" aria-label="Sluiten">&#x2715;</button>'
+        . '<p class="cm-prefs-title" id="cm-prefs-title-h2" role="heading" aria-level="2">' . esc_html( cm_t( 'txt_prefs_title' ) ) . '</p>'
+        . '<p class="cm-prefs-text" id="cm-prefs-desc">' . cm_prefs_cards_intro() . '</p>'
+        . '</div><div class="cm-prefs-body"><div class="cm-categories">';
+    foreach ( $cats as $i => $id ) {
+        $name   = cm_t( "txt_cat{$i}_name" );
+        $points = array_values( array_filter( array_map( 'trim', preg_split( '/\r\n|\r|\n/', (string) cm_t( "txt_cat{$i}_points" ) ) ), 'strlen' ) );
+        $h .= '<div class="cm-card" id="cm-cat-' . ( $id !== '' ? $id : 'functional' ) . '"><div class="cm-card-head"><label class="cm-card-label">'
+            . ( $id === '' ? '<input type="checkbox" checked disabled>' : '<input type="checkbox" id="cm-toggle-' . $id . '">' )
+            . '<span class="cm-cat-name">' . esc_html( $name ) . '</span></label>'
+            . ( $id === '' ? '<span class="cm-always-on">' . esc_html( cm_ui( 'always_active' ) ) . '</span>' : '' )
+            . '</div>';
+        if ( $points ) {
+            $h .= '<ul class="cm-card-points">';
+            foreach ( $points as $pt ) $h .= '<li>' . esc_html( $pt ) . '</li>';
+            $h .= '</ul>';
+        } else {
+            $h .= '<p class="cm-card-text">' . esc_html( cm_t( "txt_cat{$i}_long" ) ) . '</p>';
+        }
+        $h .= '</div>';
+    }
+    $h .= '</div></div><div class="cm-prefs-footer">'
+        . '<button type="button" class="cm-btn cm-btn-outline" id="cm-rejectall-btn">' . esc_html( cm_t( 'txt_btn_rejectall' ) ) . '</button>'
+        . '<button type="button" class="cm-btn cm-btn-accept" id="cm-save-btn">' . esc_html( cm_t( 'txt_btn_save' ) ) . '</button>'
+        . '<button type="button" class="cm-btn cm-btn-allowall" id="cm-allowall-btn">' . esc_html( cm_t( 'txt_btn_allowall' ) ) . '</button>'
+        . '</div>';
+    return $h;
+}
+
+/** "Meer weten? Bekijk ons privacybeleid of de cookieverklaring." met de gekozen pagina's. */
+function cm_prefs_cards_intro() {
+    $pid     = (int) cm_get( 'privacy_page_id' );
+    $privacy = $pid ? get_permalink( $pid ) : ( function_exists( 'get_privacy_policy_url' ) ? get_privacy_policy_url() : '' );
+    $cid     = (int) cm_get( 'cookie_page_id' );
+    $cookie  = $cid ? get_permalink( $cid ) : '';
+    $link    = function ( $url, $key ) { return '<a href="' . esc_url( $url ) . '">' . esc_html( cm_ui( $key ) ) . '</a>'; };
+    $parts   = array();
+    if ( $privacy ) $parts[] = esc_html( cm_ui( 'our' ) ) . ' ' . $link( $privacy, 'privacy_policy' );
+    if ( $cookie )  $parts[] = esc_html( cm_ui( 'the' ) ) . ' ' . $link( $cookie, 'cookie_statement' );
+    if ( ! $parts ) return '';
+    return esc_html( cm_ui( 'more_info' ) ) . ' ' . implode( ' ' . esc_html( cm_ui( 'or' ) ) . ' ', $parts ) . '.';
+}
+
+/**
  * Banner, voorkeurenvenster en zweefknop — de zichtbare markup, zonder script.
  * Gedeeld door de frontend en de admin-preview. Geeft de cookies per
  * categorie terug; het frontend-script heeft die nodig (COOKIE_NAMES).
@@ -1132,7 +1197,9 @@ function cm_banner_markup() {
          aria-labelledby="cm-prefs-title-h2"
          aria-describedby="cm-prefs-desc"
          style="display:none">
-        <div class="cm-prefs-box">
+        <?php $cm_cards = cm_get('prefs_layout') === 'cards'; ?>
+        <div class="cm-prefs-box<?php echo $cm_cards ? ' cm-prefs-cards' : ''; ?>">
+            <?php if ( $cm_cards ) : echo cm_prefs_cards_inner(); else : ?>
             <div class="cm-prefs-header">
                 <button type="button" class="cm-prefs-close" id="cm-prefs-close" aria-label="Sluiten">&#x2715;</button>
                 <p class="cm-prefs-title" id="cm-prefs-title-h2" role="heading" aria-level="2"><?php echo esc_html( cm_t('txt_prefs_title') ); ?></p>
@@ -1321,6 +1388,7 @@ function cm_banner_markup() {
                 <button type="button" class="cm-btn cm-btn-accept" id="cm-save-btn"><?php echo esc_html( cm_t('txt_btn_save') ); ?></button>
                 <button type="button" class="cm-btn cm-btn-outline" id="cm-rejectall-btn"><?php echo esc_html( cm_t('txt_btn_rejectall') ); ?></button>
             </div>
+            <?php endif; // uitklaplijst ?>
             <?php echo cm_credit_link(); ?>
         </div>
     </div>

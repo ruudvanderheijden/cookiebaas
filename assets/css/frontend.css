@@ -628,6 +628,36 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
     .cm-prefs-box { border-radius: 16px 16px 0 0; max-height: 92vh; }
 }
 
+/* ---- VOORKEURENVENSTER ALS KAARTEN (3.2) — kleuren volgen de bestaande instellingen ---- */
+#cm-prefs .cm-prefs-cards .cm-prefs-text { margin-bottom: 0; }
+#cm-prefs .cm-prefs-cards .cm-categories { border: 0; border-radius: 0; overflow: visible; display: flex; flex-direction: column; gap: 12px; }
+#cm-prefs .cm-card { border: 1.5px solid var(--cm-cat-border, #e8e4de); border-radius: 12px; padding: 16px 18px; background: var(--cm-popup-bg, #fff); }
+#cm-prefs .cm-card-head { display: flex; align-items: center; gap: 12px; }
+#cm-prefs .cm-card-label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; margin: 0; cursor: pointer; }
+#cm-prefs .cm-card-label .cm-cat-name { margin: 0; }
+#cm-prefs .cm-card input[type="checkbox"] { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; margin: 0; padding: 0; flex-shrink: 0; border: 2px solid var(--cm-toggle-off, #ddd); border-radius: 6px; background: var(--cm-popup-bg, #fff); cursor: pointer; display: grid; place-content: center; transition: background 0.15s, border-color 0.15s; }
+#cm-prefs .cm-card input[type="checkbox"]::after { content: ''; width: 6px; height: 11px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg) translate(-1px, -1px); opacity: 0; }
+#cm-prefs .cm-card input[type="checkbox"]:checked { background: var(--cm-toggle-on, #0091ff); border-color: var(--cm-toggle-on, #0091ff); }
+#cm-prefs .cm-card input[type="checkbox"]:checked::after { opacity: 1; }
+#cm-prefs .cm-card input[type="checkbox"]:disabled { background: var(--cm-always-bg, #e8f4ff); border-color: var(--cm-always-bg, #e8f4ff); cursor: default; }
+#cm-prefs .cm-card input[type="checkbox"]:disabled::after { border-color: var(--cm-always-on-color, #0091ff); }
+#cm-prefs .cm-card input[type="checkbox"]:focus-visible { outline: 3px solid var(--cm-toggle-on, #0091ff); outline-offset: 2px; }
+#cm-prefs .cm-card-points { list-style: none; margin: 10px 0 0; padding: 0 0 0 34px; }
+#cm-prefs .cm-card-points li { position: relative; margin: 4px 0; padding-left: 24px; font-size: 0.875rem; line-height: 1.55; color: var(--cm-body-color, #555); }
+#cm-prefs .cm-card-points li::before { content: ''; position: absolute; left: 4px; top: 4px; width: 5px; height: 10px; border: solid var(--cm-toggle-on, #0091ff); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+#cm-prefs .cm-card-text { margin: 10px 0 0 34px; font-size: 0.875rem; line-height: 1.55; color: var(--cm-body-color, #555); }
+#cm-prefs .cm-prefs-cards .cm-prefs-footer { justify-content: flex-end; }
+#cm-prefs .cm-btn-allowall,
+body #cm-prefs .cm-btn-allowall { background: var(--cm-allowall-bg, #0091ff) !important; color: var(--cm-allowall-text, #fff) !important; border: 1.5px solid var(--cm-allowall-border, transparent) !important; border-radius: var(--cm-btn-radius, 10px) !important; box-shadow: none !important; }
+#cm-prefs .cm-btn-allowall:hover,
+body #cm-prefs .cm-btn-allowall:hover { background: var(--cm-allowall-hover-bg, #111) !important; color: var(--cm-allowall-hover-text, #fff) !important; }
+#cm-prefs.cm-page-mode .cm-btn-allowall { display: none !important; }
+@media (max-width: 600px) {
+    #cm-prefs .cm-prefs-cards .cm-prefs-footer { flex-direction: column-reverse; align-items: stretch; }
+    #cm-prefs .cm-card-points { padding-left: 0; }
+    #cm-prefs .cm-card-text { margin-left: 0; }
+}
+
 /* ---- FLOAT KNOP — ICOONTJE VARIANT ---- */
 #cm-float-btn.cm-float-icon {
     width: 52px !important;

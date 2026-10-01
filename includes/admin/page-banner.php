@@ -205,7 +205,7 @@ function cm_text_sections( $lang ) {
         array( 'title' => 'Voorkeurenvenster', 'attrs' => $pane, 'fields' => array(
             cm_field( 'txt_prefs_title' . $s, 'text', 'Titel' ),
             cm_field( 'txt_prefs_body' . $s, 'html', 'Tekst', array( 'description' => $html ) ),
-            cm_field( 'txt_btn_allowall' . $s, 'text', 'Knop "Alles toestaan"' ),
+            cm_field( 'txt_btn_allowall' . $s, 'text', 'Knop "Alles akkoord"' ),
             cm_field( 'txt_btn_rejectall' . $s, 'text', 'Knop "Alles afwijzen"' ),
             cm_field( 'txt_btn_save' . $s, 'text', 'Knop "Keuzes opslaan"' ),
         ) ),
@@ -215,6 +215,7 @@ function cm_text_sections( $lang ) {
             cm_field( "txt_cat{$i}_name{$s}", 'text', 'Naam' ),
             cm_field( "txt_cat{$i}_short{$s}", 'text', 'Korte omschrijving' ),
             cm_field( "txt_cat{$i}_long{$s}", 'textarea', 'Uitgebreide omschrijving' ),
+            cm_field( "txt_cat{$i}_points{$s}", 'textarea', 'Punten (kaartweergave)', array( 'description' => 'Eén punt per regel, met een vinkje ervoor. Alleen voor de kaartweergave van het voorkeurenvenster. Leeg = de standaardpunten.' ) ),
         ) );
     }
     $sections[] = array( 'title' => 'Zweefknop', 'attrs' => $pane, 'fields' => array(
@@ -261,6 +262,31 @@ function cm_banner_icon_type( array $values ) {
     return 'default';
 }
 
+/** Gepubliceerde pagina's als opties: id => titel, met een eerste optie voor "geen". */
+function cm_page_options( $none ) {
+    $out = array( '0' => $none );
+    foreach ( get_pages( array( 'post_status' => 'publish' ) ) as $page ) {
+        $out[ (string) $page->ID ] = $page->post_title !== '' ? $page->post_title : '#' . $page->ID;
+    }
+    return $out;
+}
+
+/** Staat de cookielijst op deze pagina ([cookiebaas_cookies] of de privacyverklaring)? */
+function cm_page_shows_cookie_list( $page_id ) {
+    $post = $page_id ? get_post( (int) $page_id ) : null;
+    if ( ! $post || $post->post_status !== 'publish' ) return false;
+    return strpos( $post->post_content, '[cookiebaas_cookies' ) !== false || strpos( $post->post_content, '[cookiebaas_privacy' ) !== false;
+}
+
+/** Kaartweergave: de cookies staan dan alleen in de cookieverklaring. */
+function cm_render_prefs_cards_notice() {
+    $id = (int) cm_get( 'cookie_page_id' );
+    $ok = cm_page_shows_cookie_list( $id );
+    $status = $ok ? ' De gekozen pagina toont de cookielijst.'
+        : ( $id ? ' Op de gekozen pagina vindt Cookiebaas nog geen van beide shortcodes.' : '' );
+    echo '<div class="notice notice-' . ( $ok ? 'info' : 'warning' ) . ' inline"><p><strong>Let op:</strong> in de kaartweergave staan de cookies niet in het venster. Bezoekers vinden ze alleen in de cookieverklaring. Kies hieronder die pagina en zet daar <code>[cookiebaas_cookies]</code> op (of de privacyverklaring met <code>[cookiebaas_privacy]</code>).' . esc_html( $status ) . '</p></div>';
+}
+
 /** Array (of oude komma-string) van pagina-id's → '7,12'. */
 function cm_sanitize_csv_ids( $raw ) {
     if ( ! is_array( $raw ) ) return sanitize_text_field( $raw );
@@ -297,12 +323,28 @@ function cm_tab_banner_weergave() {
             array(
                 'title'  => 'Voorkeurenvenster',
                 'fields' => array(
+                    cm_field( 'prefs_layout', 'radio', 'Weergave', array(
+                        'options' => array(
+                            'accordion' => 'Uitklaplijst: per categorie en per dienst kiezen, met de cookies in het venster',
+                            'cards'     => 'Kaarten: per categorie kiezen, met korte punten',
+                        ),
+                    ) ),
+                    cm_field( 'prefs_cards_notice', 'custom', '', array( 'store' => false, 'render' => 'cm_render_prefs_cards_notice', 'show_if' => array( 'prefs_layout' => 'cards' ) ) ),
+                    cm_field( 'privacy_page_id', 'select', 'Privacybeleid', array(
+                        'options' => function () { return cm_page_options( 'Standaard: de privacypagina van WordPress' ); },
+                        'show_if' => array( 'prefs_layout' => 'cards' ),
+                    ) ),
+                    cm_field( 'cookie_page_id', 'select', 'Cookieverklaring', array(
+                        'options' => function () { return cm_page_options( '— Kies een pagina —' ); },
+                        'show_if' => array( 'prefs_layout' => 'cards' ),
+                    ) ),
                     cm_field( 'prefs_cookie_detail', 'radio', 'Detailniveau', array(
                         'options'     => array(
                             '1' => 'Gedetailleerd: categorieën met de cookies per categorie',
                             '0' => 'Vereenvoudigd: alleen categorieën met hun omschrijving',
                         ),
                         'description' => 'De schakelaars per categorie zijn altijd zichtbaar.',
+                        'show_if'     => array( 'prefs_layout' => 'accordion' ),
                     ) ),
                 ),
             ),
