@@ -154,7 +154,9 @@ cm_assert( 'migratie draait bij de update naar 3.2.0', strpos( $src, "version_co
 
 cm_test_group( 'Hele kaart klikbaar' );
 $css = file_get_contents( CM_PLUGIN_ROOT . '/assets/css/frontend.css' );
-cm_assert( 'het label ligt over de hele kaart (klik op de kaart = vinkje aan/uit)', strpos( $css, '#cm-prefs .cm-card { position: relative;' ) !== false && strpos( $css, "#cm-prefs .cm-card-label::after { content: ''; position: absolute; inset: 0;" ) !== false );
+cm_assert( 'het label ligt over de hele kaart (klik op de kaart = vinkje aan/uit)', strpos( $css, '#cm-prefs .cm-card { position: relative;' ) !== false && strpos( $css, "#cm-prefs .cm-card-label::after { content: ''; position: absolute; inset: 0; z-index: 1;" ) !== false );
+cm_assert( 'ook over de punten (die zijn zelf gepositioneerd) en niet beperkt tot het label', strpos( $css, '#cm-prefs .cm-card-label { position: static; }' ) !== false );
+cm_assert( 'geen opsommingsteken van het thema vóór het vinkje', strpos( $css, '#cm-prefs .cm-card-points li { list-style: none !important;' ) !== false && strpos( $css, '#cm-prefs .cm-card-points li::marker { content: none; }' ) !== false );
 cm_assert( 'functioneel: geen handje en geen hover', strpos( $css, '#cm-prefs #cm-cat-functional .cm-card-label { cursor: default; }' ) !== false && strpos( $css, '.cm-card:not(#cm-cat-functional):hover' ) !== false );
 set_settings( array( 'prefs_layout' => 'cards' ) );
 cm_assert( 'vakje zit in het label (anders werkt de klik niet)', (bool) preg_match( '#<label class="cm-card-label"><input type="checkbox" id="cm-toggle-analytics">#', prefs_markup() ) );

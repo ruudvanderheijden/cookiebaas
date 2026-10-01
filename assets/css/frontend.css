@@ -642,7 +642,8 @@ body #cm-prefs .cm-btn-save:hover { background: var(--cm-save-hover-bg, transpar
 #cm-prefs .cm-prefs-cards .cm-categories { border: 0; border-radius: 0; overflow: visible; display: flex; flex-direction: column; gap: 12px; }
 #cm-prefs .cm-card { position: relative; border: 1.5px solid var(--cm-cat-border, #e8e4de); border-radius: 12px; padding: 16px 18px; background: var(--cm-popup-bg, #fff); transition: background 0.15s; }
 /* De hele kaart is klikbaar: het label legt zich over de kaart heen (geen JS nodig) */
-#cm-prefs .cm-card-label::after { content: ''; position: absolute; inset: 0; border-radius: 12px; }
+#cm-prefs .cm-card-label { position: static; } /* thema's zetten label soms op relative: dan zou de laag alleen het label beslaan */
+#cm-prefs .cm-card-label::after { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: 12px; } /* z-index: boven de punten, die voor hun vinkje zelf gepositioneerd zijn */
 #cm-prefs .cm-card:not(#cm-cat-functional):hover { background: var(--cm-cat-header-hover, #fafcff); }
 #cm-prefs #cm-cat-functional .cm-card-label { cursor: default; }
 #cm-prefs .cm-card-head { display: flex; align-items: center; gap: 12px; }
@@ -655,8 +656,9 @@ body #cm-prefs .cm-btn-save:hover { background: var(--cm-save-hover-bg, transpar
 #cm-prefs .cm-card input[type="checkbox"]:disabled { background: var(--cm-always-bg, #e8f4ff); border-color: var(--cm-always-bg, #e8f4ff); cursor: default; }
 #cm-prefs .cm-card input[type="checkbox"]:disabled::after { border-color: var(--cm-always-on-color, #0091ff); }
 #cm-prefs .cm-card input[type="checkbox"]:focus-visible { outline: 3px solid var(--cm-toggle-on, #0091ff); outline-offset: 2px; }
-#cm-prefs .cm-card-points { list-style: none; margin: 10px 0 0; padding: 0 0 0 34px; }
-#cm-prefs .cm-card-points li { position: relative; margin: 4px 0; padding-left: 24px; font-size: 0.875rem; line-height: 1.55; color: var(--cm-body-color, #555); }
+#cm-prefs .cm-card-points { list-style: none !important; margin: 10px 0 0; padding: 0 0 0 34px; }
+#cm-prefs .cm-card-points li::marker { content: none; }
+#cm-prefs .cm-card-points li { list-style: none !important; position: relative; margin: 4px 0; padding-left: 24px; font-size: 0.875rem; line-height: 1.55; color: var(--cm-body-color, #555); }
 #cm-prefs .cm-card-points li::before { content: ''; position: absolute; left: 4px; top: 4px; width: 5px; height: 10px; border: solid var(--cm-card-check, var(--cm-toggle-on, #0091ff)); border-width: 0 2px 2px 0; transform: rotate(45deg); }
 #cm-prefs .cm-card-text { margin: 10px 0 0 34px; font-size: 0.875rem; line-height: 1.55; color: var(--cm-body-color, #555); }
 /* Eén rij: opslaan links, akkoord rechts; past de tekst niet, dan breekt die binnen de knop */
