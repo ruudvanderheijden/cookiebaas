@@ -97,7 +97,7 @@ cm_assert( 'vakjes en vinkjes gebruiken de schakelaar- en labelkleuren', strpos(
 cm_assert( 'akkoordknop gebruikt de kleuren van "Alles akkoord"', strpos( $css, '#cm-prefs .cm-btn-allowall,' ) !== false && strpos( $css, 'var(--cm-allowall-bg, #0091ff)' ) !== false );
 
 cm_test_group( 'Knoppen, vinkkleur en kop (na eerste test)' );
-cm_assert( 'knoppen op één rij: opslaan links, akkoord rechts; tekst breekt binnen de knop', strpos( $css, '#cm-prefs .cm-prefs-cards .cm-prefs-footer { flex-wrap: nowrap;' ) !== false && strpos( $css, '#cm-prefs .cm-prefs-cards #cm-save-btn { margin-right: auto; }' ) !== false && strpos( $css, 'white-space: normal !important' ) !== false );
+cm_assert( 'knoppen op één rij: opslaan links, akkoord rechts; tekst breekt binnen de knop', strpos( $css, '#cm-prefs .cm-prefs-cards .cm-prefs-footer { flex-wrap: nowrap;' ) !== false && strpos( $css, '#cm-prefs .cm-prefs-cards #cm-save-btn { order: 1; margin-right: auto; }' ) !== false && strpos( $css, '#cm-prefs .cm-prefs-cards #cm-allowall-btn { order: 2; }' ) !== false && strpos( $css, 'white-space: normal !important' ) !== false );
 cm_assert( 'compactere kop', strpos( $css, '#cm-prefs .cm-prefs-cards .cm-prefs-header { padding: 24px 36px 14px; border-bottom: 0; }' ) !== false );
 cm_assert( 'vinkjes bij de punten: eigen kleur, anders "Schakelaar aan"', strpos( $css, 'border: solid var(--cm-card-check, var(--cm-toggle-on, #0091ff))' ) !== false );
 $vg = array_column( cm_admin_field_list( 'cm_settings', array( 'banner' => cm_tabs_banner() ) ), null, 'key' );

@@ -653,7 +653,8 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
 #cm-prefs .cm-prefs-cards .cm-prefs-footer { flex-wrap: nowrap; justify-content: flex-end; gap: 10px; }
 #cm-prefs .cm-prefs-cards .cm-prefs-footer .cm-btn,
 body #cm-prefs .cm-prefs-cards .cm-prefs-footer .cm-btn { min-width: 0 !important; padding: 11px 16px !important; white-space: normal !important; line-height: 1.25 !important; text-align: center; flex: 0 1 auto; }
-#cm-prefs .cm-prefs-cards #cm-save-btn { margin-right: auto; }
+#cm-prefs .cm-prefs-cards #cm-save-btn { order: 1; margin-right: auto; } /* de algemene regel geeft opslaan order 2 */
+#cm-prefs .cm-prefs-cards #cm-allowall-btn { order: 2; }
 #cm-prefs .cm-btn-allowall,
 body #cm-prefs .cm-btn-allowall { background: var(--cm-allowall-bg, #0091ff) !important; color: var(--cm-allowall-text, #fff) !important; border: 1.5px solid var(--cm-allowall-border, transparent) !important; border-radius: var(--cm-btn-radius, 10px) !important; box-shadow: none !important; }
 #cm-prefs .cm-btn-allowall:hover,

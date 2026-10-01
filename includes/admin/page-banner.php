@@ -49,7 +49,7 @@ function cm_color_sections( $theme ) {
             cm_field( $r . 'overlay_opacity', 'number', 'Donkerte achtergrond', array( 'min' => 0, 'max' => 90, 'unit' => '%', 'description' => 'Hoe donker de pagina achter het venster wordt.' ) ),
         ) ),
         array( 'title' => 'Knoppen', 'collapsible' => true, 'attrs' => $pane, 'fields' => array(
-            $h( 'Akkoord' ),
+            $h( 'Akkoord, en "Mijn keuzes opslaan" in het voorkeurenvenster' ),
             $c( 'accept_bg', 'Achtergrond', $in( 'Akkoord' ) ),
             $c( 'accept_text', 'Tekst', $in( 'Akkoord' ) ),
             $c( 'accept_hover_bg', 'Achtergrond bij hover', $in( 'Akkoord' ) ),
@@ -66,7 +66,7 @@ function cm_color_sections( $theme ) {
             $c( 'prefs_text', 'Tekst', $in( 'Cookievoorkeuren' ) ),
             $c( 'prefs_hover_border', 'Rand bij hover', $in( 'Cookievoorkeuren' ) ),
             $c( 'prefs_hover_text', 'Tekst bij hover', $in( 'Cookievoorkeuren' ) ),
-            $h( 'Alles toestaan (voorkeurenvenster)' ),
+            $h( 'Alles akkoord (voorkeurenvenster)' ),
             $c( 'allowall_bg', 'Achtergrond', $in( 'Alles toestaan' ) ),
             $c( 'allowall_text', 'Tekst', $in( 'Alles toestaan' ) ),
             $c( 'allowall_hover_bg', 'Achtergrond bij hover', $in( 'Alles toestaan' ) ),
