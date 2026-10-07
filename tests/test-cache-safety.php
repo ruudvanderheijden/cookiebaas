@@ -60,7 +60,7 @@ function run_mode( $advanced ) {
 
     cm_test_group( "[$label] Geen ingebakken consent-status" );
     cm_assert( 'consent-update gebruikt runtime-variabelen (a/k), geen ingebakken status',
-        strpos( $none, "gtag('consent', 'update', {\n        'analytics_storage':  a," ) !== false );
+        strpos( $none, "gtag('consent', 'update', {\n'analytics_storage':  a," ) !== false );
     cm_assert( 'geen ingebakken cm_method (bijv. accept-all)', strpos( $accepted, 'accept-all' ) === false );
     cm_assert( 'consent DEFAULT staat wel in de HTML (denied)', strpos( $none, "'analytics_storage':  'denied'" ) !== false );
     cm_assert( 'client-side cookie-lezer aanwezig', strpos( $none, 'cc_cm_consent=([^;]*)' ) !== false );

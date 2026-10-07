@@ -79,7 +79,7 @@ $out = render_consent( array(), array( 'analytics' => false, 'marketing' => fals
 cm_assert( 'update leest de status uit de browser-cookie',
     strpos( $out, "var a = c.analytics ? 'granted' : 'denied';" ) !== false );
 cm_assert( 'update wordt gestuurd vóór gtag.js laadt (zelfde inline script)',
-    strpos( $out, "gtag('consent', 'update', {\n        'analytics_storage':  a," ) !== false );
+    strpos( $out, "gtag('consent', 'update', {\n'analytics_storage':  a," ) !== false );
 cm_assert( 'GTM blijft geladen (advanced: cookieloze pings)', loads_gtm_live( $out ) );
 
 // --- Akkoord (client-side; event + UET) ------------------------------------

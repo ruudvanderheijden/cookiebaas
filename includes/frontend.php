@@ -248,6 +248,22 @@ function cm_output_inline_css() {
     }
 }
 
+/**
+ * Inline scripts compacter uitvoeren (Lighthouse "JavaScript verkleinen"):
+ * per regel de inspringing eraf, lege regels en regels met alleen
+ * //-commentaar weg. De regeleindes blijven, dus automatische puntkomma's
+ * werken als voorheen. Veilig zolang de scripts geen meerregelige strings
+ * (backticks) hebben; test-compact-js.php bewaakt dat.
+ */
+function cm_compact_js( $html ) {
+    $out = array();
+    foreach ( explode( "\n", $html ) as $line ) {
+        $line = trim( $line );
+        if ( $line !== '' && strncmp( $line, '//', 2 ) !== 0 ) $out[] = $line;
+    }
+    return implode( "\n", $out ) . "\n";
+}
+
 /* ================================================================
    MEERTALIGHEID — vertaalhelpers
 ================================================================ */
@@ -403,6 +419,7 @@ function cm_inject_google_consent_mode() {
     // zodat Google-tags hun cookies echt zetten en de scan ze ziet.
     $scan = function_exists( 'cm_is_browser_scan' ) && cm_is_browser_scan();
     if ( $scan ) $load_google = true;
+    ob_start();
     ?>
 <!-- Cookiebaas Consent Mode v2 -->
 <script data-no-defer="1" nowprocket>
@@ -491,8 +508,8 @@ window.uetq.push('consent', 'update', { 'ad_storage': 'granted' });
     if ( $ua_id && preg_match('/^UA-[0-9]+-[0-9]+$/i', $ua_id) ) : ?>
 <script type="text/plain" data-cm-type="analytics" data-cm-blocked-src="https://www.google-analytics.com/analytics.js" async></script>
 <script type="text/plain" data-cm-type="analytics">window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;ga('create','<?php echo esc_js($ua_id); ?>','auto');ga('send','pageview');</script>
-    <?php endif; ?>
-    <?php
+    <?php endif;
+    echo cm_compact_js( ob_get_clean() );
 }
 
 /* ================================================================
@@ -836,6 +853,7 @@ function cm_output_script_blocker() {
     // Bewust GEEN licentiecheck: de runtime-blocker hoort bij de compliance-kern.
     // Altijd renderen — ook zonder patronen (voor Consent Mode update)
     $config = cm_blocker_config();
+    ob_start();
     ?>
 <script id="cm-blocker" data-no-defer="1" nowprocket>(function(){
     /* --- Consent lezen --- */
@@ -947,6 +965,7 @@ function cm_output_script_blocker() {
     document.addEventListener('DOMContentLoaded',function(){obs.disconnect();});
 })();</script>
     <?php
+    echo cm_compact_js( ob_get_clean() );
 }
 
 /* ================================================================
@@ -1486,6 +1505,7 @@ function cm_render_frontend() {
     // (admin-ajax cm_geo_check). Zie de init()/geoDecide()-logica hieronder.
 
     $cats = cm_banner_markup();
+    ob_start();
     ?>
 
     <script data-no-defer="1" nowprocket>
@@ -2560,6 +2580,7 @@ function cm_render_frontend() {
     </script>
     <!-- ===== /COOKIEMELDING PLUGIN ===== -->
     <?php
+    echo cm_compact_js( ob_get_clean() );
 }
 
 
