@@ -1,6 +1,6 @@
 # Changelog — Cookiebaas
 
-## [Unreleased]
+## [3.2.2] - 2026-10-07
 
 - **Lighthouse:** de scripts die Cookiebaas in de pagina zet, zijn compacter: zonder inspringing, lege regels en commentaarregels. Het bannerscript gaat van ongeveer 50 naar 30 KB, waardoor Lighthouse Cookiebaas niet meer noemt bij "JavaScript verkleinen". De werking is niet veranderd.
 - **Toegankelijkheid:** de vermelding "Cookiebaas" rechtsonder (gratis versie) heeft nu de tekstkleur van de banner in plaats van een vaste lichtgrijze kleur. Het contrast haalt daardoor WCAG AA, ook in het donkere thema en op een eigen achtergrondkleur.
