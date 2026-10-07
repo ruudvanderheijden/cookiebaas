@@ -3,7 +3,8 @@
  * Vermelding "Cookiebaas" in de gratis versie (3.0).
  *
  * Borgt: zonder geldige licentie staat rechtsonder in de banner én in het
- * voorkeurenvenster een vaste, grijze link naar cookiebaas.nl (nofollow);
+ * voorkeurenvenster een link naar cookiebaas.nl (nofollow) in de tekstkleur
+ * van het venster, zodat het contrast overal AA haalt;
  * met een geldige licentie niet. De paginacache wordt alleen geleegd als de
  * geldigheid van de licentie echt verandert.
  */
@@ -40,8 +41,8 @@ cm_assert( 'geldige licentie → geen vermelding', strpos( markup(), 'cm-credit'
 
 cm_test_group( 'Vaste stijl, niet instelbaar' );
 $css = file_get_contents( CM_PLUGIN_ROOT . '/assets/css/frontend.css' );
-cm_assert( 'eigen grijze kleur met !important (thema en kleurinstellingen veranderen hem niet)', (bool) preg_match( '/\.cm-credit[^{]*\{[^}]*color:\s*#[0-9a-f]{6}\s*!important/i', $css ) );
-cm_assert( 'geen CSS-variabele voor de vermelding', ! preg_match( '/\.cm-credit[^{]*\{[^}]*var\(/i', $css ) );
+cm_assert( 'tekstkleur van het venster met !important (AA-contrast, het thema verandert hem niet)', (bool) preg_match( '/\.cm-credit[^{]*\{[^}]*color:\s*var\(--cm-body-color[^)]*\)\s*!important/i', $css ) );
+cm_assert( 'geen vaste grijstint meer (#8c8f94 haalde geen AA)', stripos( $css, '#8c8f94' ) === false );
 cm_assert( 'geen instelling in de defaults', ! preg_grep( '/credit/i', array_keys( cm_default_settings() ) ) );
 
 cm_test_group( 'nofollow blijft ook in de browser' );

@@ -517,7 +517,7 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
     border: 0 !important;
     font: 400 10px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     letter-spacing: 0 !important;
-    color: #8c8f94 !important;
+    color: var(--cm-body-color, #494949) !important; /* kleur van de tekst in het venster: zelfde contrast (AA) op elke achtergrond, licht en donker */
     text-decoration: none !important;
     opacity: 1 !important;
 }
@@ -526,7 +526,7 @@ body #cm-prefs .cm-allow-all { border-radius: var(--cm-btn-radius, 10px) !import
 @media (max-width: 600px) { #cm-prefs .cm-prefs-box > .cm-credit { margin: -18px 20px 8px auto !important; } }
 #cm-prefs.cm-page-mode .cm-prefs-box > .cm-credit { margin-right: 0 !important; }
 #cm-banner .cm-credit:hover,
-#cm-prefs .cm-credit:hover { color: #646970 !important; text-decoration: underline !important; }
+#cm-prefs .cm-credit:hover { text-decoration: underline !important; }
 
 /* ---- FLOAT BUTTON — geen emoji ---- */
 #cm-float { position: fixed !important; bottom: 24px; z-index: 98900; display: none; }
