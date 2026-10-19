@@ -264,6 +264,21 @@ function cm_compact_js( $html ) {
     return implode( "\n", $out ) . "\n";
 }
 
+/**
+ * WooCommerce Order Attribution (sbjs_*-cookies) alleen met
+ * marketingtoestemming. WooCommerce kent de keuze in Cookiebaas niet en zet
+ * de cookies anders bij elk bezoek. Dit script staat direct vóór
+ * order-attribution.js en zet allowTracking in de browser uit zonder
+ * marketingtoestemming: de HTML is voor iedereen gelijk, dus cache-veilig.
+ * Na een keuze op de pagina regelt sendConsentSignals() het.
+ */
+add_action( 'wp_footer', 'cm_wc_order_attribution_consent', 1 );
+function cm_wc_order_attribution_consent() {
+    if ( ! wp_script_is( 'wc-order-attribution', 'enqueued' ) ) return;
+    if ( function_exists( 'cm_is_browser_scan' ) && cm_is_browser_scan() ) return; // browserscan: alles toegestaan
+    wp_add_inline_script( 'wc-order-attribution', "(function(){var p=window.wc_order_attribution&&wc_order_attribution.params;if(!p)return;try{var m=document.cookie.match(/(?:^|;\\s*)cc_cm_consent=([^;]*)/),c=m&&JSON.parse(decodeURIComponent(m[1]));if(!(c&&c.marketing))p.allowTracking=false;}catch(e){p.allowTracking=false;}})();", 'before' );
+}
+
 /* ================================================================
    MEERTALIGHEID — vertaalhelpers
 ================================================================ */
@@ -1554,8 +1569,8 @@ function cm_render_frontend() {
             var past  = 'Thu, 01 Jan 1970 00:00:00 GMT';
 
             var prefixes = type === 'analytics'
-                ? ['_ga', '_gid', '_gat', '_utm', '__utm', 'mp_', '_hjSession', '_hjid', '_hjFirst', '_hjIncluded', 'ajs_', '__hstc', 'hubspotutk', '_clck', '_clsk', 'sbjs_']
-                : ['_fbp', '_fbc', 'fr', 'IDE', 'DSID', 'test_cookie', 'NID', 'ANID', 'anj', '__gads', '__gpi', '_gcl', '_uetsid', '_uetvid', '_ttp', '_tt_', 'li_sugr', 'bcookie', 'lidc', 'UserMatchHistory', '_pin_unauth'];
+                ? ['_ga', '_gid', '_gat', '_utm', '__utm', 'mp_', '_hjSession', '_hjid', '_hjFirst', '_hjIncluded', 'ajs_', '__hstc', 'hubspotutk', '_clck', '_clsk']
+                : ['sbjs_', '_fbp', '_fbc', 'fr', 'IDE', 'DSID', 'test_cookie', 'NID', 'ANID', 'anj', '__gads', '__gpi', '_gcl', '_uetsid', '_uetvid', '_ttp', '_tt_', 'li_sugr', 'bcookie', 'lidc', 'UserMatchHistory', '_pin_unauth'];
 
             // Verzamel alle te verwijderen namen: expliciet + prefix-scan op document.cookie
             var toDelete = names.slice();
@@ -2094,6 +2109,8 @@ function cm_render_frontend() {
             // Microsoft UET (Bing Ads) consent update
             window.uetq = window.uetq || [];
             window.uetq.push('consent', 'update', { 'ad_storage': k });
+            // WooCommerce Order Attribution (sbjs_*): uit zet WooCommerce zelf de cookies weg
+            if (window.wc_order_attribution && typeof wc_order_attribution.setOrderTracking === 'function') wc_order_attribution.setOrderTracking(!!marketing);
         }
 
         function applyConsent(analytics, marketing, method, serviceConsent) {

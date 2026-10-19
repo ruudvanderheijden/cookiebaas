@@ -1,5 +1,10 @@
 # Changelog — Cookiebaas
 
+## [Unreleased]
+
+- **WooCommerce Order Attribution pas na toestemming.** De sbjs_*-cookies, waarmee WooCommerce bijhoudt via welke bron en campagne een bestelling binnenkomt, werden bij elk bezoek gezet, ook zonder toestemming: WooCommerce kende de keuze in Cookiebaas niet. Cookiebaas zet de tracking van WooCommerce nu pas aan na toestemming voor marketing, en zet hem weer uit als die wordt ingetrokken. Van bezoekers zonder toestemming ziet u bij een bestelling dus geen bron of campagne meer.
+- **sbjs_*-cookies onder Marketing, met de juiste looptijd.** WooCommerce rekent ze zelf tot marketing en maakt er sinds versie 8.5 sessiecookies van (sbjs_session: 30 minuten). Cookiebaas toonde ze als analytisch met een looptijd van 6 maanden. De update past dat aan in uw cookielijst; een categorie of looptijd die u zelf heeft gekozen, blijft staan.
+
 ## [3.2.2] - 2026-10-07
 
 - **Lighthouse:** de scripts die Cookiebaas in de pagina zet, zijn compacter: zonder inspringing, lege regels en commentaarregels. Het bannerscript gaat van ongeveer 50 naar 30 KB, waardoor Lighthouse Cookiebaas niet meer noemt bij "JavaScript verkleinen". De werking is niet veranderd.

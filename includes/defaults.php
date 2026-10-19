@@ -1052,6 +1052,26 @@ function cm_default_privacy() {
 }
 
 /** Zie de 3.2-migratie: eigen Akkoord-kleuren gaan mee naar "Mijn keuzes opslaan". */
+/**
+ * 3.2.3: de sbjs_*-cookies van WooCommerce Order Attribution stonden als
+ * analytisch met een looptijd van 6 maanden in de lijst. WooCommerce rekent ze
+ * tot marketing en maakt er sinds 8.5 sessiecookies van (sbjs_session: 30
+ * minuten). Alleen rijen van WooCommerce; een zelf gekozen categorie of
+ * looptijd blijft staan.
+ */
+function cm_migrate_sbjs_cookies() {
+    $list = get_option( 'cm_cookie_list', array() );
+    if ( ! is_array( $list ) ) return;
+    $changed = false;
+    foreach ( $list as &$row ) {
+        if ( ! is_array( $row ) || strpos( (string) ( $row['name'] ?? '' ), 'sbjs_' ) !== 0 || ( $row['provider'] ?? '' ) !== 'WooCommerce' ) continue;
+        if ( ( $row['category'] ?? '' ) === 'analytics' ) { $row['category'] = 'marketing'; $changed = true; }
+        if ( in_array( $row['duration'] ?? '', array( '6 maanden', 'Sessie/1 jaar' ), true ) ) { $row['duration'] = 'Sessie'; $changed = true; }
+    }
+    unset( $row );
+    if ( $changed ) update_option( 'cm_cookie_list', $list );
+}
+
 function cm_migrate_save_button_colors( array $existing, array &$merged ) {
     $def = cm_default_settings();
     foreach ( array( 'color_', 'dm_' ) as $px ) {

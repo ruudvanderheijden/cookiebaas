@@ -470,7 +470,7 @@ function cm_fallback_cookies() {
         'wp-postpass_'          => array('functional','WordPress','10 dagen','Onthoudt het wachtwoord voor wachtwoordbeveiligde berichten.'),
         'wp_lang'               => array('functional','WordPress','Sessie','Voorkeurstaal op de inlogpagina.'),
         'comment_author_'       => array('functional','WordPress','1 jaar','Onthoudt naam, e-mailadres en website van bezoekers die een reactie achterlaten.'),
-        'sbjs_'                 => array('analytics','WooCommerce','Sessie/1 jaar','WooCommerce Order Attribution (sourcebuster): registreert de herkomst van de bezoeker (bron, campagne) voor bestellingstoeschrijving.'),
+        'sbjs_'                 => array('marketing','WooCommerce','Sessie','WooCommerce Order Attribution (sourcebuster): registreert de herkomst van de bezoeker (bron, campagne) voor bestellingstoeschrijving.'),
         'woocommerce_cart_hash' => array('functional','WooCommerce','Sessie','Winkelwagen hash.'),
         'woocommerce_items_in_cart' => array('functional','WooCommerce','Sessie','Items in winkelwagen.'),
         'wp_woocommerce_session_' => array('functional','WooCommerce','2 dagen','WooCommerce sessie.'),
@@ -556,11 +556,13 @@ function cm_server_env_cookies( $litespeed_seen = false ) {
         $cookies['woocommerce_cart_hash']     = array('functional','WooCommerce','Sessie','Bijhouden van de winkelwagen (hash).');
         $cookies['woocommerce_items_in_cart'] = array('functional','WooCommerce','Sessie','Bijhouden of er items in de winkelwagen liggen.');
         $cookies['wp_woocommerce_session_']   = array('functional','WooCommerce','2 dagen','Sessie-identifier voor WooCommerce winkelwagen.');
-        // Order Attribution staat sinds WooCommerce 8.5 standaard aan
+        // Order Attribution staat sinds WooCommerce 8.5 standaard aan. WooCommerce
+        // rekent hem tot marketing (WP Consent API) en zet de looptijd op
+        // 0,00001 maand, wat sourcebuster afrondt naar 0: sessiecookies.
         if ( get_option('woocommerce_feature_order_attribution_enabled', 'yes') !== 'no' ) {
             $attr_desc = 'WooCommerce Order Attribution (sourcebuster): registreert de herkomst van de bezoeker (bron, campagne) voor bestellingstoeschrijving.';
-            foreach ( array('sbjs_current' => '6 maanden', 'sbjs_current_add' => '6 maanden', 'sbjs_first' => '6 maanden', 'sbjs_first_add' => '6 maanden', 'sbjs_udata' => '6 maanden', 'sbjs_session' => '30 min', 'sbjs_migrations' => '6 maanden') as $sbjs_name => $sbjs_dur ) {
-                $cookies[ $sbjs_name ] = array('analytics','WooCommerce', $sbjs_dur, $attr_desc);
+            foreach ( array('sbjs_current' => 'Sessie', 'sbjs_current_add' => 'Sessie', 'sbjs_first' => 'Sessie', 'sbjs_first_add' => 'Sessie', 'sbjs_udata' => 'Sessie', 'sbjs_session' => '30 min', 'sbjs_migrations' => 'Sessie') as $sbjs_name => $sbjs_dur ) {
+                $cookies[ $sbjs_name ] = array('marketing','WooCommerce', $sbjs_dur, $attr_desc);
             }
         }
     }

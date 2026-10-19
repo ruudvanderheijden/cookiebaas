@@ -31,7 +31,7 @@ cm_assert( '__Secure-BUCKET aanwezig', isset( $fb['__Secure-BUCKET'] ) );
 cm_assert( 'NID aanwezig', isset( $fb['NID'] ) );
 cm_assert( 'wordpress_sec_ (met underscore) aanwezig', isset( $fb['wordpress_sec_'] ) );
 cm_assert( 'wp-postpass_ aanwezig', isset( $fb['wp-postpass_'] ) );
-cm_assert( 'sbjs_ als analytics', isset( $fb['sbjs_'] ) && $fb['sbjs_'][0] === 'analytics' );
+cm_assert( 'sbjs_ als marketing, sessie (zoals WooCommerce)', isset( $fb['sbjs_'] ) && $fb['sbjs_'][0] === 'marketing' && $fb['sbjs_'][2] === 'Sessie' );
 cm_assert( 'comment_author_ aanwezig', isset( $fb['comment_author_'] ) );
 
 $sig = cm_script_signatures();
@@ -71,8 +71,8 @@ $c = cm_server_env_cookies( false );
 cm_assert( 'comment_author_ bij open reacties', isset( $c['comment_author_'] ) );
 cm_assert( 'wp-postpass_ bij wachtwoordbeveiligde post', isset( $c['wp-postpass_'] ) );
 cm_assert( 'wp_woocommerce_session_ bij WooCommerce', isset( $c['wp_woocommerce_session_'] ) );
-cm_assert( 'sbjs_current (Order Attribution) als analytics', isset( $c['sbjs_current'] ) && $c['sbjs_current'][0] === 'analytics' );
-cm_assert( 'sbjs_session aanwezig', isset( $c['sbjs_session'] ) );
+cm_assert( 'sbjs_current (Order Attribution) als marketing, sessie', isset( $c['sbjs_current'] ) && $c['sbjs_current'][0] === 'marketing' && $c['sbjs_current'][2] === 'Sessie' );
+cm_assert( 'sbjs_session 30 minuten', isset( $c['sbjs_session'] ) && $c['sbjs_session'][2] === '30 min' );
 cm_assert( 'ook met WooCommerce geen inlogcookies (alleen wat anonieme bezoekers krijgen)', ! isset( $c['wordpress_logged_in_'] ) && ! isset( $c['wordpress_test_cookie'] ) );
 
 exit( cm_test_summary() );

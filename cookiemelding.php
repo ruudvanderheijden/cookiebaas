@@ -138,6 +138,8 @@ add_action( 'plugins_loaded', function() {
         if ( version_compare( $stored_version, '3.1.0', '<' ) && (int) get_option( 'cm_cookie_db_count', 0 ) > 0 && ! wp_next_scheduled( 'cm_cookie_db_refresh' ) ) {
             wp_schedule_single_event( time() + 60, 'cm_cookie_db_refresh' );
         }
+        // 3.2.3: sbjs_* (WooCommerce Order Attribution) is marketing en sessie, niet analytisch en 6 maanden
+        if ( version_compare( $stored_version, '3.2.3', '<' ) ) cm_migrate_sbjs_cookies();
 
         // Tabellen aanmaken/upgraden — alleen bij versie-wissel, niet op elke
         // pageload (dbDelta + INFORMATION_SCHEMA query zijn relatief duur)
